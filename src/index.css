@@ -1,0 +1,45 @@
+/* Fade-in animation for Chess Mate title */
+.fade-in-title {
+	opacity: 0;
+	animation: fadeInTitle 0.8s cubic-bezier(0.4,0,0.2,1) 0.1s forwards;
+}
+
+@keyframes fadeInTitle {
+	from { opacity: 0; transform: translateY(40px) scale(0.98); }
+	to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Fade-in animation for subtitle */
+.fade-in-subtitle {
+	opacity: 0;
+	animation: fadeInSubtitle 0.6s cubic-bezier(0.4,0,0.2,1) 0.6s forwards;
+}
+
+@keyframes fadeInSubtitle {
+	from { opacity: 0; transform: translateY(20px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+/* Stagger animation for tier items */
+.tier-item {
+	opacity: 0;
+	animation: fadeInTierItem 0.5s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+
+@keyframes fadeInTierItem {
+	from { opacity: 0; transform: translateY(30px) scale(0.95); }
+	to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Fade-in animation for bottom section elements */
+.fade-in-bottom-section {
+	opacity: 0;
+	animation: fadeInBottom 1s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+
+@keyframes fadeInBottom {
+	from { opacity: 0; transform: translateY(20px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+@import "tailwindcss";
