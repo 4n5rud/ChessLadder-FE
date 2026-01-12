@@ -6,3 +6,4 @@ export * from './authService';
 export { getOAuthUrl } from './oauthService';
 export * from './apiClient';
 export * from './imageService';
+export * from './userService';
