@@ -59,7 +59,7 @@ const Header = () => {
         <header className="relative sticky border-b border-gray-300 pb-1 pt-1 pl-30 pr-30 mb-2 w-full bg-white flex items-center gap-2 h-14 min-h-0">
             <Link to="/" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition">
                 <img src="/src/assets/images/tier/knight.png" alt="Chess Mate Logo" width="32" height="32"/>
-                <h1 className="text-xl font-bold header-title text-[#2F639D]">ChessMate</h1>
+                <h1 className="text-xl font-bold header-title text-[#2F639D]">ChessLadder</h1>
             </Link>
 
             <div className="items-center flex gap-20 ml-auto text-[#2F639D] font-semibold transition text-l">

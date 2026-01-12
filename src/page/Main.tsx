@@ -158,7 +158,7 @@ function Main() {
 
             <main className="flex flex-col items-center justify-center pt-60 px-4 text-center">
                 <h1 className="md:text-5xl font-extrabold text-white drop-shadow mb-4 tracking-tight">
-                    <span className="text-9xl text-[#2F639D] fade-in-title">Chess Mate</span>
+                    <span className="text-9xl text-[#2F639D] fade-in-title">ChessLadder</span>
                 </h1>
                 <h2 className="text-4xl md:text-2xl text-[#86ABD7] font-bold mb-10 fade-in-subtitle">
                     체스 레이팅의 새로운 기준
@@ -225,8 +225,8 @@ function Main() {
             {/* 티어 시스템 섹션 */}
             <div className="w-full" style={{background: 'linear-gradient(to bottom, transparent 0%, #0a1f33 10%, #0a1f33 100%)'}}>
                 <div className="flex flex-col pt-100 pb-20 px-4 max-w-6xl mx-auto text-white">
-                    <h2 className="text-4xl font-bold mb-4">ChessMate 티어 시스템</h2>
-                    <p className="text-lg mb-8 text-white/90 font-semibold">ChessMate는 기존의 지루한 레이팅 시스템에서 벗어난 6가지의 티어 시스템을 제공해요</p>
+                    <h2 className="text-4xl font-bold mb-4">ChessLadder 티어 시스템</h2>
+                    <p className="text-lg mb-8 text-white/90 font-semibold">ChessLadder는 기존의 지루한 레이팅 시스템에서 벗어난 6가지의 티어 시스템 을 제공해요</p>
                     
                     {/* Tier icons - Button Style */}
                     <div className="flex flex-row justify-between gap-4 mb-12 w-full flex-wrap">
@@ -304,13 +304,13 @@ function Main() {
                                 설명 내용이 들어갈 영역입니다.
                             </p>
                         </div>
-                    </div>
+                    </div>      
                 </div>
             </div>
 
             {/* 커뮤니티 섹션 - Discord */}
             <div className="w-full bg-[#0a1f33]">
-                <div className="flex flex-col pt-20 pb-20 px-4 max-w-6xl mx-auto text-white">
+                <div className="flex flex-col pt-5 pb-20 px-4 max-w-6xl mx-auto text-white">
                     <h2 className="text-4xl font-bold mb-4">디스코드 링크</h2>
                     <a 
                         href="https://discord.gg/9NeVdmYewQ" 
@@ -328,10 +328,10 @@ function Main() {
 
             {/* 기부 섹션 */}
             <div className="w-full bg-[#0a1f33]">
-                <div className="flex flex-col pt-20 pb-20 px-4 max-w-6xl mx-auto text-white">
-                    <h2 className="text-4xl font-bold mb-4">개발자에게 서버비 기부하기</h2>
+                <div className="flex flex-col pt-5 pb-20 px-4 max-w-6xl mx-auto text-white">
+                    <h2 className="text-4xl font-bold mb-4">개발자에게 커피 한잔 사주기</h2>
                     <a 
-                        href="https://donate.chessmatelink" 
+                        href="https://www.buymeacoffee.com/chessmate" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-3 bg-[#86ABD7] hover:bg-[#6a99c4] text-white font-bold py-3 px-8 rounded-full shadow-lg transition transform hover:scale-105 w-fit"
@@ -339,7 +339,7 @@ function Main() {
                         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
                         </svg>
-                        기부하기
+                        Buy Me a Coffee
                     </a>
                 </div>
             </div>

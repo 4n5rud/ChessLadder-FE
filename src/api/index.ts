@@ -3,5 +3,6 @@
  */
 
 export * from './authService';
-export { getOAuthUrl } from './oauthService'; // logout은 authService에서 사용
+export { getOAuthUrl } from './oauthService';
 export * from './apiClient';
+export * from './imageService';
