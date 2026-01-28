@@ -1,17 +1,31 @@
 import Header from "../global/Header";
 import Footer from "../global/Footer";
 import { useState, useEffect } from "react";
-import type { UserPrincipal } from "../api/authService";
 import { getCurrentUser } from "../api/authService";
 import { getUploadUrl, completeUpload, getImageUrl } from "../api/imageService";
 import type { UserImageType } from "../api/imageService";
-import { getUserProfile, updateUserDescription, getUserStreak } from "../api/userService";
-import type { ProfileResponse, StreakResponse, DailyStreakDto } from "../api/userService";
+import {
+  getUserProfile,
+  updateUserDescription,
+  getUserStreak,
+  getColorStats,
+  getFirstMoveStats,
+  getTierStats,
+} from "../api/userService";
+import type {
+  ProfileResponse,
+  DailyStreakDto,
+  ColorStatsResponse,
+  FirstMoveResponse,
+  TierResponse,
+} from "../api/userService";
 
 const Profile = () => {
+    // 게임 타입 선택 상태
+    const [selectedGameType, setSelectedGameType] = useState<string>('RAPID');
+    
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
-    const [user, setUser] = useState<UserPrincipal | null>(null);
     const [profile, setProfile] = useState<ProfileResponse | null>(null);
     const [description, setDescription] = useState<string>('');
     const [isEditingDescription, setIsEditingDescription] = useState(false);
@@ -22,15 +36,18 @@ const Profile = () => {
     // 스트릭 관련 상태
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [availableYears, setAvailableYears] = useState<number[]>([]);
-    const [streak, setStreak] = useState<StreakResponse | null>(null);
     const [streakMap, setStreakMap] = useState<Map<string, DailyStreakDto>>(new Map());
+
+    // 통계 관련 상태
+    const [colorStats, setColorStats] = useState<ColorStatsResponse | null>(null);
+    const [firstMoveStats, setFirstMoveStats] = useState<FirstMoveResponse | null>(null);
+    const [tierStats, setTierStats] = useState<TierResponse | null>(null);
 
     // 페이지 로드 시 사용자 정보 및 이미지 조회
     useEffect(() => {
         const fetchUserAndImages = async () => {
             try {
-                const userData = await getCurrentUser();
-                setUser(userData);
+                await getCurrentUser();
                 
                 // 프로필 정보 조회 (username, description, joinDate)
                 const profileData = await getUserProfile();
@@ -70,7 +87,6 @@ const Profile = () => {
         const fetchStreak = async () => {
             try {
                 const streakData = await getUserStreak(selectedYear);
-                setStreak(streakData);
                 
                 // 날짜를 key로 하는 Map 생성 (빠른 조회)
                 const map = new Map<string, DailyStreakDto>();
@@ -87,6 +103,28 @@ const Profile = () => {
             fetchStreak();
         }
     }, [selectedYear]);
+
+    // 게임 타입 변경 시 통계 데이터 조회
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const colorData = await getColorStats(selectedGameType);
+                setColorStats(colorData);
+                
+                const firstMoveData = await getFirstMoveStats(selectedGameType);
+                setFirstMoveStats(firstMoveData);
+                
+                const tierData = await getTierStats(selectedGameType);
+                setTierStats(tierData);
+            } catch (error) {
+                // 에러 처리
+            }
+        };
+        
+        if (selectedGameType) {
+            fetchStats();
+        }
+    }, [selectedGameType]);
 
     /**
      * 이미지 업로드 핸들러 (공통)
@@ -214,27 +252,35 @@ const Profile = () => {
             {/* 사용자 정보 섹션 */}
             <div className="bg-white">
                 <div className="max-w-6xl mx-auto px-8 py-12 flex gap-12">
-                    {/* 왼쪽: 체스 타입 버튼 5개 */}
+            {/* 왼쪽: 체스 타입 버튼 5개 */}
                     <div className="flex flex-col gap-3">
-                        <button className="flex items-center gap-3 px-6 py-3 bg-white border-2 border-black text-black font-semibold rounded-lg hover:bg-gray-100 transition">
+                        <button 
+                            onClick={() => setSelectedGameType('CLASSICAL')}
+                            className={`flex items-center gap-3 px-6 py-3 border-2 border-black font-semibold rounded-lg transition ${selectedGameType === 'CLASSICAL' ? 'bg-[#2F639D] text-white' : 'bg-white text-black hover:bg-gray-100'}`}
+                        >
                             <img src="/src/assets/images/logo/game/classical.webp" alt="Classical" className="w-6 h-6" />
                             Classical
                         </button>
-                        <button className="flex items-center gap-3 px-6 py-3 bg-white border-2 border-black text-black font-semibold rounded-lg hover:bg-gray-100 transition">
+                        <button 
+                            onClick={() => setSelectedGameType('RAPID')}
+                            className={`flex items-center gap-3 px-6 py-3 border-2 border-black font-semibold rounded-lg transition ${selectedGameType === 'RAPID' ? 'bg-[#2F639D] text-white' : 'bg-white text-black hover:bg-gray-100'}`}
+                        >
                             <img src="/src/assets/images/logo/game/rapid.webp" alt="Rapid" className="w-6 h-6" />
                             Rapid
                         </button>
-                        <button className="flex items-center gap-3 px-6 py-3 bg-white border-2 border-black text-black font-semibold rounded-lg hover:bg-gray-100 transition">
+                        <button 
+                            onClick={() => setSelectedGameType('BULLET')}
+                            className={`flex items-center gap-3 px-6 py-3 border-2 border-black font-semibold rounded-lg transition ${selectedGameType === 'BULLET' ? 'bg-[#2F639D] text-white' : 'bg-white text-black hover:bg-gray-100'}`}
+                        >
                             <img src="/src/assets/images/logo/game/bullet.webp" alt="Bullet" className="w-6 h-6" />
                             Bullet
                         </button>
-                        <button className="flex items-center gap-3 px-6 py-3 bg-white border-2 border-black text-black font-semibold rounded-lg hover:bg-gray-100 transition">
+                        <button 
+                            onClick={() => setSelectedGameType('BLITZ')}
+                            className={`flex items-center gap-3 px-6 py-3 border-2 border-black font-semibold rounded-lg transition ${selectedGameType === 'BLITZ' ? 'bg-[#2F639D] text-white' : 'bg-white text-black hover:bg-gray-100'}`}
+                        >
                             <img src="/src/assets/images/logo/game/blitz.webp" alt="Blitz" className="w-6 h-6" />
                             Blitz
-                        </button>
-                        <button className="flex items-center gap-3 px-6 py-3 bg-white border-2 border-black text-black font-semibold rounded-lg hover:bg-gray-100 transition">
-                            <img src="/src/assets/images/logo/game/puzzle.webp" alt="Puzzle" className="w-6 h-6" />
-                            Puzzle
                         </button>
                     </div>
 
@@ -320,19 +366,28 @@ const Profile = () => {
             {/* 티어 섹션 */}
             <div className="bg-white border-t-2 border-gray-300">
                 <div className="max-w-6xl mx-auto px-8 py-12">
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-6">티어</h2>
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-6">{selectedGameType} - 티어</h2>
                     <div className="flex gap-12 items-center">
                         <div>
                             <p className="text-gray-600 mb-2">현재 티어</p>
-                            <p className="text-4xl font-bold text-[#2F639D]">Silver</p>
+                            <p className="text-4xl font-bold text-[#2F639D]">{tierStats?.tierInfo?.tier || '-'}</p>
                         </div>
                         <div className="flex-1">
                             <p className="text-gray-600 mb-2">다음 티어까지 남은 레이팅</p>
                             <div className="flex items-center gap-3">
                                 <div className="flex-1 bg-gray-200 rounded-full h-3">
-                                    <div className="bg-[#2F639D] h-3 rounded-full" style={{ width: '65%' }}></div>
+                                    <div 
+                                        className="bg-[#2F639D] h-3 rounded-full" 
+                                        style={{ 
+                                            width: tierStats?.tierInfo && tierStats.tierInfo.nextTierRating > 0
+                                                ? `${(tierStats.tierInfo.rating / tierStats.tierInfo.nextTierRating) * 100}%`
+                                                : '0%'
+                                        }}
+                                    ></div>
                                 </div>
-                                <span className="text-gray-700 font-semibold">1650 / 2000</span>
+                                <span className="text-gray-700 font-semibold">
+                                    {tierStats?.tierInfo?.rating || 0} / {tierStats?.tierInfo?.nextTierRating || 0}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -367,61 +422,47 @@ const Profile = () => {
             {/* 통계 정보 섹션 */}
             <div className="bg-white border-t-2 border-gray-300">
                 <div className="max-w-6xl mx-auto px-8 py-12">
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-6">통계 정보</h2>
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-6">{selectedGameType} - 통계 정보</h2>
                     <div className="grid grid-cols-2 gap-12">
                         <div>
                             <p className="text-gray-700 font-semibold mb-4">흑/백 승률</p>
                             <div className="space-y-3">
-                                <div>
-                                    <div className="flex justify-between mb-1">
-                                        <span className="text-gray-600">흑 (Black)</span>
-                                        <span className="text-gray-800 font-semibold">55%</span>
-                                    </div>
-                                    <div className="bg-gray-200 rounded-full h-2">
-                                        <div className="bg-gray-900 h-2 rounded-full" style={{ width: '55%' }}></div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="flex justify-between mb-1">
-                                        <span className="text-gray-600">백 (White)</span>
-                                        <span className="text-gray-800 font-semibold">50%</span>
-                                    </div>
-                                    <div className="bg-gray-200 rounded-full h-2">
-                                        <div className="bg-gray-400 h-2 rounded-full" style={{ width: '50%' }}></div>
-                                    </div>
-                                </div>
+                                {colorStats?.colorStats?.map((stat) => {
+                                    const isBlack = stat.color === 'BLACK';
+                                    return (
+                                        <div key={stat.color}>
+                                            <div className="flex justify-between mb-1">
+                                                <span className="text-gray-600">{isBlack ? '흑 (Black)' : '백 (White)'}</span>
+                                                <span className="text-gray-800 font-semibold">{stat.winRate.toFixed(1)}%</span>
+                                            </div>
+                                            <div className="bg-gray-200 rounded-full h-2">
+                                                <div 
+                                                    className={`h-2 rounded-full ${isBlack ? 'bg-gray-900' : 'bg-gray-400'}`}
+                                                    style={{ width: `${stat.winRate}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                         <div>
                             <p className="text-gray-700 font-semibold mb-4">첫 무브 통계</p>
                             <div className="space-y-3">
-                                <div>
-                                    <div className="flex justify-between mb-1">
-                                        <span className="text-gray-600">e4</span>
-                                        <span className="text-gray-800 font-semibold">32%</span>
+                                {firstMoveStats?.firstMoveStats?.slice(0, 3)?.map((stat) => (
+                                    <div key={stat.move}>
+                                        <div className="flex justify-between mb-1">
+                                            <span className="text-gray-600">{stat.move}</span>
+                                            <span className="text-gray-800 font-semibold">{stat.frequency.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="bg-gray-200 rounded-full h-2">
+                                            <div 
+                                                className="bg-[#2F639D] h-2 rounded-full"
+                                                style={{ width: `${stat.frequency}%` }}
+                                            ></div>
+                                        </div>
                                     </div>
-                                    <div className="bg-gray-200 rounded-full h-2">
-                                        <div className="bg-[#2F639D] h-2 rounded-full" style={{ width: '32%' }}></div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="flex justify-between mb-1">
-                                        <span className="text-gray-600">d4</span>
-                                        <span className="text-gray-800 font-semibold">28%</span>
-                                    </div>
-                                    <div className="bg-gray-200 rounded-full h-2">
-                                        <div className="bg-[#2F639D] h-2 rounded-full" style={{ width: '28%' }}></div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="flex justify-between mb-1">
-                                        <span className="text-gray-600">기타</span>
-                                        <span className="text-gray-800 font-semibold">40%</span>
-                                    </div>
-                                    <div className="bg-gray-200 rounded-full h-2">
-                                        <div className="bg-[#2F639D] h-2 rounded-full" style={{ width: '40%' }}></div>
-                                    </div>
-                                </div>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -452,7 +493,7 @@ const Profile = () => {
                         <div className="pb-4">
                             {/* 월 레이블 */}
                             <div className="flex gap-0 mb-2 text-xs text-gray-500 font-semibold w-full">
-                                {['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'].map((month, idx) => (
+                                {['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'].map((month) => (
                                     <div key={month} className="flex-1 text-left">
                                         {month}
                                     </div>
@@ -461,7 +502,7 @@ const Profile = () => {
                             <div className="flex w-full" style={{ gap: '1.2px' }}>
                                 {/* 월별 주차 렌더링 */}
                                 {(() => {
-                                    const weeks: JSX.Element[] = [];
+                                    const weeks: React.ReactElement[] = [];
                                     const year = selectedYear;
                                     const firstDay = new Date(year, 0, 1);
                                     const lastDay = new Date(year, 11, 31);
@@ -546,7 +587,7 @@ const Profile = () => {
                             
                             // 스트릭 데이터에서 통계 계산
                             const sortedDates = Array.from(streakMap.keys()).sort();
-                            sortedDates.forEach((date, idx) => {
+                            sortedDates.forEach((date) => {
                                 const daily = streakMap.get(date)!;
                                 totalGames += daily.total;
                                 totalWins += daily.win;
