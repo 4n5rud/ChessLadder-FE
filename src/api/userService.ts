@@ -7,7 +7,9 @@ import { api } from './apiClient';
 export interface ProfileResponse {
   username: string;
   description: string;
-  joinDate?: string; // 가입일 (첫 가입일)
+  createdAt?: string; // ChessMate 가입일 (ISO 8601 형식)
+  lichessCreatedAt?: string; // Lichess 가입일 (ISO 8601 형식)
+  lichessId?: string; // Lichess 사용자명
 }
 
 /**
@@ -124,29 +126,30 @@ export const getFirstMoveStats = async (gameType: string = 'RAPID'): Promise<Fir
 };
 
 /**
- * 티어 정보
+ * 티어 결과 정보
  */
-export interface TierInfo {
-  tier: string; // "Bronze", "Silver", "Gold" 등
+export interface TierResult {
+  mainTier: string; // "PAWN", "KNIGHT", "BISHOP", "ROOK", "QUEEN", "KING"
+  subTier?: string; // "1", "2", "3", "4", "5"
   rating: number; // 현재 레이팅
-  nextTierRating: number; // 다음 티어까지의 레이팅
 }
 
 /**
- * 티어 통계 응답
+ * 사용자 티어 Dto
  */
-export interface TierResponse {
+export interface UserTierDto {
   gameType: string;
-  tierInfo: TierInfo;
+  rating: number;
+  tierResult: TierResult;
 }
 
 /**
  * GET /api/stat/tier?gameType=RAPID
- * 티어 통계 조회
+ * 사용자 티어 정보 조회
  * @param gameType 게임 타입 (RAPID, BLITZ, CLASSICAL, BULLET)
- * @returns Promise<TierResponse>
+ * @returns Promise<UserTierDto>
  */
-export const getTierStats = async (gameType: string = 'RAPID'): Promise<TierResponse> => {
+export const getUserTier = async (gameType: string = 'RAPID'): Promise<UserTierDto> => {
   const res = await api(`/stat/tier?gameType=${gameType}`, { method: 'GET' });
   return res.data;
 };

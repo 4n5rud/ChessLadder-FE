@@ -1,29 +1,19 @@
 import Header from "../global/Header";
 import Footer from "../global/Footer";
 import { useState, useEffect } from "react";
+import type { ReactElement } from "react";
 import { getCurrentUser } from "../api/authService";
 import { getUploadUrl, completeUpload, getImageUrl } from "../api/imageService";
 import type { UserImageType } from "../api/imageService";
-import {
-  getUserProfile,
-  updateUserDescription,
-  getUserStreak,
-  getColorStats,
-  getFirstMoveStats,
-  getTierStats,
-} from "../api/userService";
-import type {
-  ProfileResponse,
-  DailyStreakDto,
-  ColorStatsResponse,
-  FirstMoveResponse,
-  TierResponse,
-} from "../api/userService";
+import { getUserProfile, updateUserDescription, getUserStreak, getUserTier } from "../api/userService";
+import type { ProfileResponse, DailyStreakDto, UserTierDto } from "../api/userService";
+import { getRatingHistory } from "../api/lichessService";
+import RatingHistoryChart from "../components/RatingHistoryChart";
+import { TierSection } from "../components/TierSection";
+import { GameTypeButtons } from "../components/GameTypeButtons";
+import "./Profile.css";
 
 const Profile = () => {
-    // 게임 타입 선택 상태
-    const [selectedGameType, setSelectedGameType] = useState<string>('RAPID');
-    
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -33,15 +23,104 @@ const Profile = () => {
     const [loadingProfile, setLoadingProfile] = useState(false);
     const [savingDescription, setSavingDescription] = useState(false);
     
+    // 게임 타입 관련 상태
+    const [selectedGameType, setSelectedGameType] = useState<string>('RAPID');
+    const gameTypes = ['BULLET', 'BLITZ', 'RAPID', 'CLASSICAL'];
+    
+    // 게임 타입 표시 이름 매핑
+    const gameTypeDisplayNames: { [key: string]: string } = {
+        'BULLET': 'Bullet',
+        'BLITZ': 'Blitz',
+        'RAPID': 'Rapid',
+        'CLASSICAL': 'Classical'
+    };
+    
+    // 티어별 색상 정의
+    const tierColorScheme: { [key: string]: { mainColor: string; lightBg: string; darkBg: string; borderColor: string; lightText: string; darkText: string } } = {
+        'PAWN': { 
+            mainColor: '#aecdb1',
+            lightBg: '#f0f8f3',
+            darkBg: '#dce8e0',
+            borderColor: '#aecdb1',
+            lightText: '#5a7a68',
+            darkText: '#2d4037'
+        },
+        'KNIGHT': { 
+            mainColor: '#87abd6',
+            lightBg: '#f0f5fb',
+            darkBg: '#d8e5f0',
+            borderColor: '#87abd6',
+            lightText: '#3d6a96',
+            darkText: '#1e3a52'
+        },
+        'BISHOP': { 
+            mainColor: '#ae97d7',
+            lightBg: '#f5f1fb',
+            darkBg: '#e5d8f0',
+            borderColor: '#ae97d7',
+            lightText: '#6b4fa5',
+            darkText: '#38245a'
+        },
+        'ROOK': { 
+            mainColor: '#e7ada8',
+            lightBg: '#fdf4f2',
+            darkBg: '#f0dcd8',
+            borderColor: '#e7ada8',
+            lightText: '#a5544a',
+            darkText: '#5a2a22'
+        },
+        'QUEEN': { 
+            mainColor: '#edae6c',
+            lightBg: '#fef9f2',
+            darkBg: '#f5e0d4',
+            borderColor: '#edae6c',
+            lightText: '#b87a36',
+            darkText: '#6a431a'
+        },
+        'KING': { 
+            mainColor: '#edae6c',
+            lightBg: '#fef9f2',
+            darkBg: '#f5e0d4',
+            borderColor: '#edae6c',
+            lightText: '#b87a36',
+            darkText: '#6a431a'
+        }
+    };
+    
+    // 티어별 프로모션 임계값 정의
+    const promotionThresholds: { [key: string]: number } = {
+        'PAWN': 800,
+        'KNIGHT': 1200,
+        'BISHOP': 1600,
+        'ROOK': 2000,
+        'QUEEN': 2400,
+        'KING': 3000
+    };
+    
+    // 숫자 서브티어를 로마자로 변환
+    const convertSubTierToRoman = (subTier: string): string => {
+        const romanMap: { [key: string]: string } = {
+            '1': 'I',
+            '2': 'II',
+            '3': 'III',
+            '4': 'IV',
+            '5': 'V'
+        };
+        return romanMap[subTier] || subTier;
+    };
+    
     // 스트릭 관련 상태
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [availableYears, setAvailableYears] = useState<number[]>([]);
     const [streakMap, setStreakMap] = useState<Map<string, DailyStreakDto>>(new Map());
-
-    // 통계 관련 상태
-    const [colorStats, setColorStats] = useState<ColorStatsResponse | null>(null);
-    const [firstMoveStats, setFirstMoveStats] = useState<FirstMoveResponse | null>(null);
-    const [tierStats, setTierStats] = useState<TierResponse | null>(null);
+    
+    // 레이팅 히스토리 관련 상태
+    const [ratingHistory, setRatingHistory] = useState<any[]>([]);
+    const [loadingRatingHistory, setLoadingRatingHistory] = useState(false);
+    
+    // 티어 관련 상태
+    const [userTier, setUserTier] = useState<UserTierDto | null>(null);
+    const [loadingTier, setLoadingTier] = useState(false);
 
     // 페이지 로드 시 사용자 정보 및 이미지 조회
     useEffect(() => {
@@ -49,21 +128,21 @@ const Profile = () => {
             try {
                 await getCurrentUser();
                 
-                // 프로필 정보 조회 (username, description, joinDate)
+                // 프로필 정보 조회
                 const profileData = await getUserProfile();
                 setProfile(profileData);
                 setDescription(profileData.description);
                 
-                // 가입일부터 현재 년도까지의 년도 배열 생성
-                if (profileData.joinDate) {
-                    const joinYear = new Date(profileData.joinDate).getFullYear();
+                // lichessCreatedAt부터 현재 년도까지의 년도 배열 생성
+                if (profileData.lichessCreatedAt) {
+                    const lichessYear = new Date(profileData.lichessCreatedAt).getFullYear();
                     const currentYear = new Date().getFullYear();
                     const years: number[] = [];
-                    for (let year = joinYear; year <= currentYear; year++) {
+                    for (let year = lichessYear; year <= currentYear; year++) {
                         years.push(year);
                     }
                     setAvailableYears(years);
-                    setSelectedYear(currentYear); // 현재 년도로 초기값 설정
+                    setSelectedYear(currentYear);
                 }
                 
                 // 프로필 이미지 조회
@@ -76,11 +155,42 @@ const Profile = () => {
                 const bannerUrlWithTimestamp = `${bannerUrl}?t=${Date.now()}`;
                 setBannerImage(bannerUrlWithTimestamp);
             } catch (error) {
-                // 에러 처리
+                console.error('Failed to fetch user data:', error);
             }
         };
         fetchUserAndImages();
     }, []);
+
+    // 게임 타입 변경 시 레이팅 히스토리와 티어 정보 조회
+    useEffect(() => {
+        const fetchGameTypeData = async () => {
+            setLoadingTier(true);
+            try {
+                const tierData = await getUserTier(selectedGameType);
+                setUserTier(tierData);
+            } catch (error) {
+                console.error('Failed to fetch tier data:', error);
+                setUserTier(null);
+            } finally {
+                setLoadingTier(false);
+            }
+            
+            if (!profile?.lichessId) return;
+            
+            setLoadingRatingHistory(true);
+            try {
+                const history = await getRatingHistory(profile.lichessId, selectedGameType);
+                setRatingHistory(history);
+            } catch (error) {
+                console.error('Failed to fetch rating history:', error);
+                setRatingHistory([]);
+            } finally {
+                setLoadingRatingHistory(false);
+            }
+        };
+        
+        fetchGameTypeData();
+    }, [selectedGameType, profile?.lichessId]);
 
     // 년도 변경 시 스트릭 데이터 조회
     useEffect(() => {
@@ -88,14 +198,13 @@ const Profile = () => {
             try {
                 const streakData = await getUserStreak(selectedYear);
                 
-                // 날짜를 key로 하는 Map 생성 (빠른 조회)
                 const map = new Map<string, DailyStreakDto>();
                 streakData.dailyStreakDto.forEach(daily => {
                     map.set(daily.date, daily);
                 });
                 setStreakMap(map);
             } catch (error) {
-                // 에러 처리
+                console.error('Failed to fetch streak data:', error);
             }
         };
         
@@ -104,35 +213,6 @@ const Profile = () => {
         }
     }, [selectedYear]);
 
-    // 게임 타입 변경 시 통계 데이터 조회
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const colorData = await getColorStats(selectedGameType);
-                setColorStats(colorData);
-                
-                const firstMoveData = await getFirstMoveStats(selectedGameType);
-                setFirstMoveStats(firstMoveData);
-                
-                const tierData = await getTierStats(selectedGameType);
-                setTierStats(tierData);
-            } catch (error) {
-                // 에러 처리
-            }
-        };
-        
-        if (selectedGameType) {
-            fetchStats();
-        }
-    }, [selectedGameType]);
-
-    /**
-     * 이미지 업로드 핸들러 (공통)
-     * 1. getUploadUrl으로 Presigned URL 요청
-     * 2. R2에 PUT 요청하여 파일 업로드
-     * 3. completeUpload로 서버에 완료 통보
-     * 4. getImageUrl로 CDN URL 조회 및 화면 갱신
-     */
     const handleImageUpload = async (
         e: React.ChangeEvent<HTMLInputElement>,
         type: UserImageType
@@ -144,11 +224,9 @@ const Profile = () => {
         if (type === 'PROFILE') setLoadingProfile(true);
         
         try {
-            // 1️⃣ 업로드 URL 요청 (Presigned URL과 contentType을 함께 받음)
             const result = await getUploadUrl(type, file.type);
             const { uploadUrl, contentType } = result;
             
-            // 2️⃣ Cloudflare R2에 PUT 요청으로 파일 업로드 (Presigned URL 생성 시 사용한 contentType 사용)
             const uploadResponse = await fetch(uploadUrl, {
                 method: 'PUT',
                 body: file,
@@ -158,23 +236,11 @@ const Profile = () => {
             });
             
             if (!uploadResponse.ok) {
-                let errorMsg = '';
-                if (uploadResponse.status === 403) {
-                    errorMsg = 'CORS 오류 또는 Presigned URL 만료. Cloudflare R2 CORS 설정 확인 필요.';
-                } else if (uploadResponse.status === 400) {
-                    errorMsg = '잘못된 요청. Presigned URL 형식 확인 필요.';
-                } else if (uploadResponse.status === 404) {
-                    errorMsg = 'R2 버킷 또는 경로를 찾을 수 없음.';
-                } else {
-                    errorMsg = `R2 업로드 실패 (${uploadResponse.status}: ${uploadResponse.statusText})`;
-                }
-                throw new Error(errorMsg);
+                throw new Error(`Upload failed: ${uploadResponse.status}`);
             }
             
-            // 3️⃣ 서버에 업로드 완료 통보 (DB에 이미지 경로 저장)
             await completeUpload(type);
             
-            // 4️⃣ 새로운 이미지 URL 조회 (캐시 방지를 위해 타임스탬프 추가)
             const imageUrl = await getImageUrl(type);
             const imageUrlWithTimestamp = `${imageUrl}?t=${Date.now()}`;
             
@@ -183,27 +249,13 @@ const Profile = () => {
             
             alert(`${type === 'BANNER' ? '배너' : '프로필'} 이미지가 업로드되었습니다.`);
         } catch (error) {
-            // 에러 메시지 생성
-            let errorMessage = '';
-            if (error instanceof TypeError && error.message === 'Failed to fetch') {
-                // CORS 또는 네트워크 에러
-                errorMessage = 'CORS 정책 또는 네트워크 오류.\n\nCloudflare R2 CORS 설정 필요:\n[{\n  "AllowedOrigins": ["http://localhost:5173"],\n  "AllowedMethods": ["GET", "PUT", "POST"],\n  "AllowedHeaders": ["*"]\n}]';
-            } else if (error instanceof Error) {
-                errorMessage = error.message;
-            } else {
-                errorMessage = String(error);
-            }
-            
-            alert(`이미지 업로드 실패:\n${errorMessage}`);
+            alert(`이미지 업로드 실패: ${error}`);
         } finally {
             if (type === 'BANNER') setLoadingBanner(false);
             if (type === 'PROFILE') setLoadingProfile(false);
         }
     };
 
-    /**
-     * 자기소개 저장 핸들러
-     */
     const handleSaveDescription = async () => {
         setSavingDescription(true);
         try {
@@ -218,21 +270,31 @@ const Profile = () => {
     };
 
     return (
-        <div>
+        <div className="profile-page" style={{
+            backgroundColor: userTier?.tierResult?.mainTier 
+                ? tierColorScheme[userTier.tierResult.mainTier].lightBg
+                : tierColorScheme['KING'].lightBg
+        }}>
             <Header />
             
             {/* 배너 이미지 */}
             <div 
-                className="w-full relative group"
-                style={{
-                    height: '400px',
-                    backgroundImage: bannerImage ? `url(${bannerImage})` : `linear-gradient(135deg, #2F639D 0%, #86ABD7 100%)`,
+                className="w-full relative group banner-section"
+                style={bannerImage ? {
+                    height: '380px',
+                    backgroundImage: `url(${bannerImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                } : {
+                    height: '380px',
+                    backgroundColor: userTier?.tierResult?.mainTier 
+                        ? tierColorScheme[userTier.tierResult.mainTier].mainColor
+                        : tierColorScheme['KING'].mainColor,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
                 }}
             >
-                {/* 배너 변경 버튼 */}
-                <label className="absolute bottom-4 right-4 cursor-pointer">
+                <label className="absolute bottom-4 right-6 cursor-pointer">
                     <input
                         type="file"
                         accept="image/*"
@@ -240,94 +302,105 @@ const Profile = () => {
                         className="hidden"
                         disabled={loadingBanner}
                     />
-                    <div className={`px-4 py-2 bg-black/70 hover:bg-black text-white font-semibold rounded-lg transition flex items-center gap-2 ${loadingBanner ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <div className={`px-4 py-2 bg-white/90 backdrop-blur-sm text-gray-700 font-bold rounded-lg text-sm transition hover:bg-white/100 shadow-lg flex items-center gap-2 ${loadingBanner ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                         </svg>
-                        {loadingBanner ? '업로드 중...' : '배너 변경'}
+                        {loadingBanner ? '업로드 중...' : '편집'}
                     </div>
                 </label>
             </div>
 
-            {/* 사용자 정보 섹션 */}
-            <div className="bg-white">
-                <div className="max-w-6xl mx-auto px-8 py-12 flex gap-12">
-            {/* 왼쪽: 체스 타입 버튼 5개 */}
-                    <div className="flex flex-col gap-3">
-                        <button 
-                            onClick={() => setSelectedGameType('CLASSICAL')}
-                            className={`flex items-center gap-3 px-6 py-3 border-2 border-black font-semibold rounded-lg transition ${selectedGameType === 'CLASSICAL' ? 'bg-[#2F639D] text-white' : 'bg-white text-black hover:bg-gray-100'}`}
-                        >
-                            <img src="/src/assets/images/logo/game/classical.webp" alt="Classical" className="w-6 h-6" />
-                            Classical
-                        </button>
-                        <button 
-                            onClick={() => setSelectedGameType('RAPID')}
-                            className={`flex items-center gap-3 px-6 py-3 border-2 border-black font-semibold rounded-lg transition ${selectedGameType === 'RAPID' ? 'bg-[#2F639D] text-white' : 'bg-white text-black hover:bg-gray-100'}`}
-                        >
-                            <img src="/src/assets/images/logo/game/rapid.webp" alt="Rapid" className="w-6 h-6" />
-                            Rapid
-                        </button>
-                        <button 
-                            onClick={() => setSelectedGameType('BULLET')}
-                            className={`flex items-center gap-3 px-6 py-3 border-2 border-black font-semibold rounded-lg transition ${selectedGameType === 'BULLET' ? 'bg-[#2F639D] text-white' : 'bg-white text-black hover:bg-gray-100'}`}
-                        >
-                            <img src="/src/assets/images/logo/game/bullet.webp" alt="Bullet" className="w-6 h-6" />
-                            Bullet
-                        </button>
-                        <button 
-                            onClick={() => setSelectedGameType('BLITZ')}
-                            className={`flex items-center gap-3 px-6 py-3 border-2 border-black font-semibold rounded-lg transition ${selectedGameType === 'BLITZ' ? 'bg-[#2F639D] text-white' : 'bg-white text-black hover:bg-gray-100'}`}
-                        >
-                            <img src="/src/assets/images/logo/game/blitz.webp" alt="Blitz" className="w-6 h-6" />
-                            Blitz
-                        </button>
-                    </div>
-
-                    {/* 오른쪽: 사용자 정보 */}
-                    <div className="flex-1">
-                        <div className="flex items-end gap-4 mb-8">
-                            <img
-                                src={profileImage || 'https://via.placeholder.com/128'}
-                                alt="프로필 사진"
-                                className="w-32 h-32 rounded-full border-4 border-[#2F639D] object-cover"
-                            />
-                            {/* 프로필 변경 버튼 */}
-                            <label className="cursor-pointer">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={e => handleImageUpload(e, 'PROFILE')}
-                                    className="hidden"
-                                    disabled={loadingProfile}
+            {/* 프로필 섹션 */}
+            <div className="max-w-6xl mx-auto px-6 -mt-20 relative z-10 mb-8">
+                <div className="bg-white border-2 border-gray-200 rounded-2xl p-8 shadow-lg card-section card-hover">
+                    <div className="flex gap-8 items-start">
+                        {/* 프로필 이미지 */}
+                        <div className="flex flex-col items-center gap-4 flex-shrink-0">
+                            <div className="relative group">
+                                <img
+                                    src={profileImage || 'https://via.placeholder.com/140'}
+                                    alt="프로필 사진"
+                                    className="w-36 h-36 rounded-2xl border-4 object-cover shadow-lg profile-image profile-image-hover"
+                                    style={{
+                                        borderColor: userTier?.tierResult?.mainTier 
+                                            ? tierColorScheme[userTier.tierResult.mainTier]?.mainColor || tierColorScheme['KING'].mainColor
+                                            : tierColorScheme['KING'].mainColor
+                                    }}
                                 />
-                                <div className={`px-4 py-2 bg-white border-2 border-black text-black font-semibold rounded-lg transition flex items-center gap-2 ${loadingProfile ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-100'}`}>
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                                    </svg>
-                                    {loadingProfile ? '업로드 중...' : '변경'}
-                                </div>
-                            </label>
+                                <label className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/20 rounded-2xl transition cursor-pointer group">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={e => handleImageUpload(e, 'PROFILE')}
+                                        className="hidden"
+                                        disabled={loadingProfile}
+                                    />
+                                    <div className={`px-3 py-1.5 bg-white/90 backdrop-blur-sm text-gray-700 font-bold text-xs rounded-lg transition shadow-md ${loadingProfile ? 'opacity-50' : 'opacity-0 group-hover:opacity-100'}`}>
+                                        {loadingProfile ? '중...' : '변경'}
+                                    </div>
+                                </label>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-2xl font-semibold text-gray-800">{profile?.username || '-'}</h3>
+
+                        {/* 프로필 정보 */}
+                        <div className="flex-1">
+                            <h1 className="text-4xl font-black text-gray-900 mb-2">
+                                {profile?.username || 'User'}
+                            </h1>
+                            <div className="text-xs font-normal uppercase tracking-wider mb-6 flex gap-4">
+                                <p className="text-gray-500 opacity-60">
+                                    ChessMate 가입: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('ko-KR') : '-'}
+                                </p>
+                                <p className="text-gray-500 opacity-60">
+                                    Lichess 가입: {profile?.lichessCreatedAt ? new Date(profile.lichessCreatedAt).toLocaleDateString('ko-KR') : '-'}
+                                </p>
+                            </div>
+
+                            {/* Lichess 프로필 이동 버튼 */}
+                            {profile?.lichessId && (
+                                <div className="mb-6">
+                                    <a
+                                        href={`https://lichess.org/api/user/${profile.lichessId}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center w-10 h-10 bg-white border-2 border-black rounded-lg hover:shadow-lg transition hover:scale-105"
+                                    >
+                                        <img
+                                            src={new URL("../assets/images/logo/lichess-logo.png", import.meta.url).href}
+                                            alt="Lichess"
+                                            className="w-6 h-6 object-contain"
+                                        />
+                                    </a>
+                                </div>
+                            )}
                             
                             {/* 자기소개 섹션 */}
-                            <div className="mt-6">
+                            <div>
                                 {isEditingDescription ? (
                                     <div className="flex flex-col gap-3">
                                         <textarea
                                             value={description}
                                             onChange={(e) => setDescription(e.target.value)}
                                             placeholder="자기소개를 입력하세요"
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2F639D]"
-                                            rows={4}
+                                            className="w-full p-3 border-2 rounded-lg text-sm focus:outline-none focus:ring-2 bg-white"
+                                            style={{
+                                                borderColor: userTier?.tierResult?.mainTier 
+                                                    ? tierColorScheme[userTier.tierResult.mainTier]?.mainColor || tierColorScheme['KING'].mainColor
+                                                    : tierColorScheme['KING'].mainColor
+                                            }}
+                                            rows={3}
                                         />
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={handleSaveDescription}
                                                 disabled={savingDescription}
-                                                className="px-4 py-2 bg-white border-2 border-black text-black font-semibold rounded-lg hover:bg-gray-100 transition disabled:opacity-50"
+                                                className="px-4 py-2 text-white font-bold text-sm rounded-lg hover:shadow-lg transition disabled:opacity-50"
+                                                style={{
+                                                    backgroundColor: userTier?.tierResult?.mainTier 
+                                                        ? tierColorScheme[userTier.tierResult.mainTier]?.mainColor || tierColorScheme['KING'].mainColor
+                                                        : tierColorScheme['KING'].mainColor
+                                                }}
                                             >
                                                 {savingDescription ? '저장 중...' : '저장'}
                                             </button>
@@ -336,22 +409,36 @@ const Profile = () => {
                                                     setIsEditingDescription(false);
                                                     setDescription(profile?.description || '');
                                                 }}
-                                                className="px-4 py-2 bg-white border-2 border-gray-400 text-black font-semibold rounded-lg hover:bg-gray-100 transition"
+                                                className="px-4 py-2 bg-gray-200 text-gray-700 font-bold text-sm rounded-lg hover:bg-gray-300 transition"
                                             >
                                                 취소
                                             </button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex items-start gap-3">
+                                    <div className="flex items-start gap-4">
                                         <div className="flex-1">
-                                            <p className="text-gray-700 whitespace-pre-wrap">
+                                            <p className="text-gray-700 text-sm leading-relaxed p-4 rounded-lg border-2"
+                                                style={{
+                                                    backgroundColor: userTier?.tierResult?.mainTier 
+                                                        ? tierColorScheme[userTier.tierResult.mainTier]?.lightBg || tierColorScheme['KING'].lightBg
+                                                        : tierColorScheme['KING'].lightBg,
+                                                    borderColor: userTier?.tierResult?.mainTier 
+                                                        ? tierColorScheme[userTier.tierResult.mainTier]?.mainColor || tierColorScheme['KING'].mainColor
+                                                        : tierColorScheme['KING'].mainColor
+                                                }}
+                                            >
                                                 {description || '자기소개가 없습니다.'}
                                             </p>
                                         </div>
                                         <button
                                             onClick={() => setIsEditingDescription(true)}
-                                            className="px-3 py-1 bg-white border-2 border-black text-black font-semibold rounded hover:bg-gray-100 transition text-sm"
+                                            className="px-3 py-1.5 text-gray-600 hover:text-gray-900 font-medium text-sm border-2 rounded transition flex-shrink-0"
+                                            style={{
+                                                borderColor: userTier?.tierResult?.mainTier 
+                                                    ? tierColorScheme[userTier.tierResult.mainTier]?.mainColor || tierColorScheme['KING'].mainColor
+                                                    : tierColorScheme['KING'].mainColor
+                                            }}
                                         >
                                             수정
                                         </button>
@@ -363,281 +450,208 @@ const Profile = () => {
                 </div>
             </div>
 
-            {/* 티어 섹션 */}
-            <div className="bg-white border-t-2 border-gray-300">
-                <div className="max-w-6xl mx-auto px-8 py-12">
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-6">{selectedGameType} - 티어</h2>
-                    <div className="flex gap-12 items-center">
-                        <div>
-                            <p className="text-gray-600 mb-2">현재 티어</p>
-                            <p className="text-4xl font-bold text-[#2F639D]">{tierStats?.tierInfo?.tier || '-'}</p>
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-gray-600 mb-2">다음 티어까지 남은 레이팅</p>
-                            <div className="flex items-center gap-3">
-                                <div className="flex-1 bg-gray-200 rounded-full h-3">
-                                    <div 
-                                        className="bg-[#2F639D] h-3 rounded-full" 
-                                        style={{ 
-                                            width: tierStats?.tierInfo && tierStats.tierInfo.nextTierRating > 0
-                                                ? `${(tierStats.tierInfo.rating / tierStats.tierInfo.nextTierRating) * 100}%`
-                                                : '0%'
-                                        }}
-                                    ></div>
+            {/* 플레이 활동 섹션 - 게임타입 바로 하단 */}
+            <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 text-animate">게임 활동 기록</h2>
+                    <select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(Number(e.target.value))}
+                        className="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:border-blue-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                    >
+                        {availableYears.map((year) => (
+                            <option key={year} value={year}>
+                                {year}년
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-8 shadow-lg card-section card-hover overflow-x-auto">
+                    <p className="text-gray-700 text-sm font-bold uppercase tracking-wider mb-6 text-animate">{selectedYear}년 활동 현황</p>
+                    <div className="pb-6 min-w-full">
+                        <div className="flex gap-0 mb-3 text-xs text-gray-600 font-bold uppercase w-full px-1">
+                            {['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'].map((month) => (
+                                <div key={month} className="flex-1 text-center">
+                                    {month}
                                 </div>
-                                <span className="text-gray-700 font-semibold">
-                                    {tierStats?.tierInfo?.rating || 0} / {tierStats?.tierInfo?.nextTierRating || 0}
-                                </span>
-                            </div>
+                            ))}
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* 기본 정보 섹션 */}
-            <div className="bg-white border-t-2 border-gray-300">
-                <div className="max-w-6xl mx-auto px-8 py-12">
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-6">기본 정보</h2>
-                    <div className="grid grid-cols-4 gap-6">
-                        <div className="bg-gray-50 p-6 rounded-lg">
-                            <p className="text-gray-600 text-sm mb-2">총 게임 수</p>
-                            <p className="text-3xl font-bold text-gray-800">245</p>
-                        </div>
-                        <div className="bg-gray-50 p-6 rounded-lg">
-                            <p className="text-gray-600 text-sm mb-2">승률</p>
-                            <p className="text-3xl font-bold text-gray-800">52.2%</p>
-                        </div>
-                        <div className="bg-gray-50 p-6 rounded-lg">
-                            <p className="text-gray-600 text-sm mb-2">평균 레이팅</p>
-                            <p className="text-3xl font-bold text-gray-800">1450</p>
-                        </div>
-                        <div className="bg-gray-50 p-6 rounded-lg">
-                            <p className="text-gray-600 text-sm mb-2">플레이 시간</p>
-                            <p className="text-3xl font-bold text-gray-800">48h</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* 통계 정보 섹션 */}
-            <div className="bg-white border-t-2 border-gray-300">
-                <div className="max-w-6xl mx-auto px-8 py-12">
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-6">{selectedGameType} - 통계 정보</h2>
-                    <div className="grid grid-cols-2 gap-12">
-                        <div>
-                            <p className="text-gray-700 font-semibold mb-4">흑/백 승률</p>
-                            <div className="space-y-3">
-                                {colorStats?.colorStats?.map((stat) => {
-                                    const isBlack = stat.color === 'BLACK';
-                                    return (
-                                        <div key={stat.color}>
-                                            <div className="flex justify-between mb-1">
-                                                <span className="text-gray-600">{isBlack ? '흑 (Black)' : '백 (White)'}</span>
-                                                <span className="text-gray-800 font-semibold">{stat.winRate.toFixed(1)}%</span>
-                                            </div>
-                                            <div className="bg-gray-200 rounded-full h-2">
-                                                <div 
-                                                    className={`h-2 rounded-full ${isBlack ? 'bg-gray-900' : 'bg-gray-400'}`}
-                                                    style={{ width: `${stat.winRate}%` }}
-                                                ></div>
-                                            </div>
+                        <div className="flex w-full" style={{ gap: '1px' }}>
+                            {(() => {
+                                const weeks: ReactElement[] = [];
+                                const year = selectedYear;
+                                const firstDay = new Date(year, 0, 1);
+                                const lastDay = new Date(year, 11, 31);
+                                
+                                let currentDate = new Date(firstDay);
+                                
+                                let weekCount = 0;
+                                while (currentDate <= lastDay) {
+                                    weeks.push(
+                                        <div key={weekCount} className="flex flex-col flex-1" style={{ gap: '1px' }}>
+                                            {Array.from({ length: 7 }).map((_, day) => {
+                                                const date = new Date(currentDate);
+                                                date.setDate(date.getDate() + day);
+                                                
+                                                const dateStr = date.toISOString().split('T')[0];
+                                                
+                                                if (date < firstDay || date > lastDay) {
+                                                    return <div key={dateStr} className="w-4 h-4"></div>;
+                                                }
+                                                
+                                                const dailyData = streakMap.get(dateStr);
+                                                
+                                                let activity = 0;
+                                                if (dailyData) {
+                                                    const total = dailyData.total;
+                                                    if (total === 0) activity = 0;
+                                                    else if (total <= 2) activity = 1;
+                                                    else if (total <= 5) activity = 2;
+                                                    else if (total <= 8) activity = 3;
+                                                    else activity = 4;
+                                                }
+                                                
+                                                const colors = [
+                                                    'bg-gray-200 border-gray-300',
+                                                    'bg-blue-300 border-blue-400',
+                                                    'bg-blue-500 border-blue-600',
+                                                    'bg-blue-700 border-blue-800',
+                                                    'bg-indigo-900 border-indigo-950'
+                                                ];
+                                                
+                                                return (
+                                                    <div
+                                                        key={dateStr}
+                                                        className={`w-4 h-4 rounded-sm border ${colors[activity]} cursor-help transition hover:ring-2 hover:ring-offset-1 hover:ring-blue-400`}
+                                                        title={dailyData ? `${dailyData.total}게임: ${dailyData.win}승 ${dailyData.lose}패 ${dailyData.draw}무` : '데이터 없음'}
+                                                    />
+                                                );
+                                            })}
                                         </div>
                                     );
-                                })}
-                            </div>
-                        </div>
-                        <div>
-                            <p className="text-gray-700 font-semibold mb-4">첫 무브 통계</p>
-                            <div className="space-y-3">
-                                {firstMoveStats?.firstMoveStats?.slice(0, 3)?.map((stat) => (
-                                    <div key={stat.move}>
-                                        <div className="flex justify-between mb-1">
-                                            <span className="text-gray-600">{stat.move}</span>
-                                            <span className="text-gray-800 font-semibold">{stat.frequency.toFixed(1)}%</span>
-                                        </div>
-                                        <div className="bg-gray-200 rounded-full h-2">
-                                            <div 
-                                                className="bg-[#2F639D] h-2 rounded-full"
-                                                style={{ width: `${stat.frequency}%` }}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    
+                                    currentDate.setDate(currentDate.getDate() + 7);
+                                    weekCount++;
+                                }
+                                
+                                return weeks;
+                            })()}
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* 스트릭 정보 섹션 */}
-            <div className="bg-white border-t-2 border-gray-300">
-                <div className="max-w-6xl mx-auto px-8 py-12">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-semibold text-gray-800">스트릭 정보</h2>
-                        {/* 년도 선택 콤보박스 */}
-                        <select
-                            value={selectedYear}
-                            onChange={(e) => setSelectedYear(Number(e.target.value))}
-                            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2F639D]"
-                        >
-                            {availableYears.map((year) => (
-                                <option key={year} value={year}>
-                                    {year}년
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-8 rounded-lg">
-                        <p className="text-gray-600 mb-4 text-sm font-semibold">{selectedYear}년 게임 활동</p>
-                        <div className="pb-4">
-                            {/* 월 레이블 */}
-                            <div className="flex gap-0 mb-2 text-xs text-gray-500 font-semibold w-full">
-                                {['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'].map((month) => (
-                                    <div key={month} className="flex-1 text-left">
-                                        {month}
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="flex w-full" style={{ gap: '1.2px' }}>
-                                {/* 월별 주차 렌더링 */}
-                                {(() => {
-                                    const weeks: React.ReactElement[] = [];
-                                    const year = selectedYear;
-                                    const firstDay = new Date(year, 0, 1);
-                                    const lastDay = new Date(year, 11, 31);
-                                    
-                                    let currentDate = new Date(firstDay);
-                                    
-                                    let weekCount = 0;
-                                    while (currentDate <= lastDay) {
-                                        weeks.push(
-                                            <div key={weekCount} className="flex flex-col flex-1" style={{ gap: '1.2px' }}>
-                                                {Array.from({ length: 7 }).map((_, day) => {
-                                                    const date = new Date(currentDate);
-                                                    date.setDate(date.getDate() + day);
-                                                    
-                                                    const dateStr = date.toISOString().split('T')[0];
-                                                    
-                                                    // 현재 년도 범위 내에서만 표시
-                                                    if (date < firstDay || date > lastDay) {
-                                                        return <div key={dateStr} className="w-3.5 h-3.5"></div>;
-                                                    }
-                                                    
-                                                    const dailyData = streakMap.get(dateStr);
-                                                    
-                                                    // 게임 수에 따라 색상 결정 (0~4 단계)
-                                                    let activity = 0;
-                                                    if (dailyData) {
-                                                        const total = dailyData.total;
-                                                        if (total === 0) activity = 0;
-                                                        else if (total <= 2) activity = 1;
-                                                        else if (total <= 5) activity = 2;
-                                                        else if (total <= 8) activity = 3;
-                                                        else activity = 4;
-                                                    }
-                                                    
-                                                    const colors = [
-                                                        'bg-gray-200', // 0: 활동 없음
-                                                        'bg-green-200', // 1: 적음
-                                                        'bg-green-400', // 2: 보통
-                                                        'bg-green-600', // 3: 많음
-                                                        'bg-green-800'  // 4: 매우 많음
-                                                    ];
-                                                    
-                                                    return (
-                                                        <div
-                                                            key={dateStr}
-                                                            className={`w-4.5 h-4.5 rounded border border-gray-400 cursor-pointer transition-all hover:ring-2 hover:ring-offset-1 hover:ring-[#2F639D] hover:shadow-md ${colors[activity]}`}
-                                                            title={`${dateStr}\n승리: ${dailyData?.win || 0} | 패배: ${dailyData?.lose || 0} | 무승부: ${dailyData?.draw || 0}\n총 경기: ${dailyData?.total || 0}`}
-                                                        ></div>
-                                                    );
-                                                })}
-                                            </div>
-                                        );
-                                        currentDate.setDate(currentDate.getDate() + 7);
-                                        weekCount++;
-                                    }
-                                    return weeks;
-                                })()}
-                            </div>
-                        </div>
+                {/* 년도별 통계 */}
+                <div className="mt-6">
+                    {(() => {
+                        let totalGames = 0;
+                        let totalWins = 0;
+                        let totalLoses = 0;
+                        let totalDraws = 0;
+                        let activeDays = 0;
+
+                        streakMap.forEach((daily) => {
+                            totalGames += daily.total;
+                            totalWins += daily.win;
+                            totalLoses += daily.lose;
+                            totalDraws += daily.draw;
+                            if (daily.total > 0) activeDays++;
+                        });
+
+                        // 연속 플레이 일수 계산
+                        const year = selectedYear;
+                        const firstDay = new Date(year, 0, 1);
+                        const lastDay = new Date(year, 11, 31);
                         
-                        {/* 범례 */}
-                        <div className="flex gap-6 mt-6 text-xs text-gray-600 mb-8">
-                            <span>덜함</span>
-                            <div className="flex gap-1">
-                                <div className="w-3 h-3 rounded-sm bg-gray-200 border border-gray-300"></div>
-                                <div className="w-3 h-3 rounded-sm bg-green-200 border border-gray-300"></div>
-                                <div className="w-3 h-3 rounded-sm bg-green-400 border border-gray-300"></div>
-                                <div className="w-3 h-3 rounded-sm bg-green-600 border border-gray-300"></div>
-                                <div className="w-3 h-3 rounded-sm bg-green-800 border border-gray-300"></div>
-                            </div>
-                            <span>많음</span>
-                        </div>
-                        
-                        {/* 결산 정보 */}
-                        {(() => {
-                            let totalGames = 0;
-                            let totalWins = 0;
-                            let totalLosses = 0;
-                            let totalDraws = 0;
-                            let consecutiveDays = 0;
-                            let maxConsecutiveDays = 0;
+                        let maxStreak = 0;
+                        let currentStreak = 0;
+                        let tempDate = new Date(firstDay);
+
+                        while (tempDate <= lastDay) {
+                            const dateStr = tempDate.toISOString().split('T')[0];
+                            const dailyData = streakMap.get(dateStr);
                             
-                            // 스트릭 데이터에서 통계 계산
-                            const sortedDates = Array.from(streakMap.keys()).sort();
-                            sortedDates.forEach((date) => {
-                                const daily = streakMap.get(date)!;
-                                totalGames += daily.total;
-                                totalWins += daily.win;
-                                totalLosses += daily.lose;
-                                totalDraws += daily.draw;
-                                
-                                // 연속 플레이 일수 계산
-                                if (daily.total > 0) {
-                                    consecutiveDays++;
-                                    maxConsecutiveDays = Math.max(maxConsecutiveDays, consecutiveDays);
-                                } else {
-                                    consecutiveDays = 0;
-                                }
-                            });
+                            if (dailyData && dailyData.total > 0) {
+                                currentStreak++;
+                                maxStreak = Math.max(maxStreak, currentStreak);
+                            } else {
+                                currentStreak = 0;
+                            }
                             
-                            const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : '0.0';
-                            
-                            return (
-                                <div className="border-t pt-6 mt-6">
-                                    <p className="text-gray-700 font-semibold mb-4">결산</p>
-                                    <div className="grid grid-cols-6 gap-4">
-                                        <div className="bg-white p-4 rounded-lg border border-gray-300">
-                                            <p className="text-gray-600 text-sm mb-1">총 게임</p>
-                                            <p className="text-2xl font-bold text-gray-800">{totalGames}</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-lg border border-gray-300">
-                                            <p className="text-gray-600 text-sm mb-1">승리</p>
-                                            <p className="text-2xl font-bold text-green-600">{totalWins}</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-lg border border-gray-300">
-                                            <p className="text-gray-600 text-sm mb-1">패배</p>
-                                            <p className="text-2xl font-bold text-red-600">{totalLosses}</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-lg border border-gray-300">
-                                            <p className="text-gray-600 text-sm mb-1">무승부</p>
-                                            <p className="text-2xl font-bold text-gray-600">{totalDraws}</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-lg border border-gray-300">
-                                            <p className="text-gray-600 text-sm mb-1">승률</p>
-                                            <p className="text-2xl font-bold text-[#2F639D]">{winRate}%</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-lg border border-gray-300">
-                                            <p className="text-gray-600 text-sm mb-1">연속 플레이</p>
-                                            <p className="text-2xl font-bold text-orange-600">{maxConsecutiveDays}일</p>
-                                        </div>
+                            tempDate.setDate(tempDate.getDate() + 1);
+                        }
+
+                        const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : '0.0';
+
+                        return (
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg p-6 border-2 border-blue-400 shadow-md hover:shadow-lg transition transform hover:scale-105">
+                                    <div className="text-center">
+                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">연속 플레이</p>
+                                        <p className="text-5xl font-black text-blue-700 leading-none mb-1">{maxStreak}</p>
+                                        <p className="text-xs text-gray-600 font-medium">일</p>
                                     </div>
                                 </div>
-                            );
-                        })()}
-                    </div>
+                                <div className="bg-gray-50 rounded-lg p-6 border border-gray-300">
+                                    <div className="text-center">
+                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">활동 일 수</p>
+                                        <p className="text-4xl font-black text-gray-800 leading-none mb-1">{activeDays}</p>
+                                        <p className="text-xs text-gray-600 font-medium">일</p>
+                                    </div>
+                                </div>
+                                <div className="bg-gray-50 rounded-lg p-6 border border-gray-300">
+                                    <div className="text-center">
+                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">총 게임</p>
+                                        <p className="text-4xl font-black text-gray-800 leading-none mb-1">{totalGames}</p>
+                                        <p className="text-xs text-gray-600 font-medium">게임</p>
+                                    </div>
+                                </div>
+                                <div className="bg-gray-50 rounded-lg p-6 border border-gray-300">
+                                    <div className="text-center">
+                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">승률</p>
+                                        <p className="text-4xl font-black text-gray-800 leading-none mb-1">{winRate}%</p>
+                                        <p className="text-xs text-gray-600 font-medium">{totalWins}승 {totalLoses}패</p>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </div>
+            </div>
+
+            {/* 게임 타입 선택 버튼 - 플레이 활동 바로 하단 */}
+            <GameTypeButtons 
+                gameTypes={gameTypes}
+                selectedGameType={selectedGameType}
+                gameTypeDisplayNames={gameTypeDisplayNames}
+                onGameTypeChange={setSelectedGameType}
+            />
+
+            {/* 티어 섹션 */}
+            <TierSection 
+                userTier={userTier}
+                loadingTier={loadingTier}
+                tierColorScheme={tierColorScheme}
+                promotionThresholds={promotionThresholds}
+                convertSubTierToRoman={convertSubTierToRoman}
+            />
+
+            {/* 레이팅 히스토리 섹션 */}
+            <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6 text-animate">레이팅 진행</h2>
+                
+                <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-lg card-section card-hover">
+                    {loadingRatingHistory ? (
+                        <div className="flex items-center justify-center h-80">
+                            <p className="text-gray-500 text-sm">데이터를 불러오는 중입니다...</p>
+                        </div>
+                    ) : ratingHistory.length > 0 ? (
+                        <RatingHistoryChart ratingHistory={ratingHistory} gameType={gameTypeDisplayNames[selectedGameType]} />
+                    ) : (
+                        <div className="flex items-center justify-center h-80">
+                            <p className="text-gray-500 text-sm">{gameTypeDisplayNames[selectedGameType]} 레이팅 데이터가 없습니다.</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
