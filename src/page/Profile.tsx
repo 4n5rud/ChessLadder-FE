@@ -2,12 +2,13 @@ import Header from "../global/Header";
 import Footer from "../global/Footer";
 import { useState, useEffect } from "react";
 import type { ReactElement } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { getCurrentUser } from "../api/authService";
 import { getUploadUrl, completeUpload, getImageUrl } from "../api/imageService";
 import type { UserImageType } from "../api/imageService";
-import { getUserProfile, updateUserDescription, getUserStreak, getUserTier } from "../api/userService";
-import type { ProfileResponse, DailyStreakDto, UserTierDto } from "../api/userService";
-import { getRatingHistory } from "../api/lichessService";
+import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, forceRefreshStats } from "../api/userService";
+import type { ProfileResponse, DailyStreakDto, UserPerfResponse } from "../api/userService";
+import { useRatingHistory } from "../api/queries";
 import RatingHistoryChart from "../components/RatingHistoryChart";
 import { TierSection } from "../components/TierSection";
 import { GameTypeButtons } from "../components/GameTypeButtons";
@@ -89,12 +90,12 @@ const Profile = () => {
     
     // 티어별 프로모션 임계값 정의
     const promotionThresholds: { [key: string]: number } = {
-        'PAWN': 800,
-        'KNIGHT': 1200,
-        'BISHOP': 1600,
-        'ROOK': 2000,
-        'QUEEN': 2400,
-        'KING': 3000
+        'PAWN': 400,
+        'KNIGHT': 901,
+        'BISHOP': 1201,
+        'ROOK': 1501,
+        'QUEEN': 1801,
+        'KING': 2101
     };
     
     // 숫자 서브티어를 로마자로 변환
@@ -109,6 +110,17 @@ const Profile = () => {
         return romanMap[subTier] || subTier;
     };
     
+    // rating으로 tier 계산
+    const getTierFromRating = (rating: number): string => {
+        const tiers = Object.entries(promotionThresholds).sort(([, a], [, b]) => b - a);
+        for (const [tier, minRating] of tiers) {
+            if (rating >= minRating) {
+                return tier;
+            }
+        }
+        return 'PAWN';
+    };
+    
     // 스트릭 관련 상태
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -116,13 +128,41 @@ const Profile = () => {
     
     // 레이팅 히스토리 관련 상태
     const [ratingHistory, setRatingHistory] = useState<any[]>([]);
-    const [loadingRatingHistory, setLoadingRatingHistory] = useState(false);
     
     // 티어 관련 상태
-    const [userTier, setUserTier] = useState<UserTierDto | null>(null);
-    const [loadingTier, setLoadingTier] = useState(false);
+    const [userPerf, setUserPerf] = useState<UserPerfResponse>({
+        rating: 0,
+        gamesPlayed: 0,
+        prov: true,
+        all: 0, rated: 0, wins: 0, losses: 0, draws: 0,
+        tour: 0, berserk: 0, opAvg: 0, seconds: 0, disconnects: 0,
+        highestRating: 0, lowestRating: 0,
+        maxStreak: 0, maxLossStreak: 0,
+        uncertain: true
+    });
+    const [loadingPerf, setLoadingPerf] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const [lastRefreshTime, setLastRefreshTime] = useState<number | null>(null);
+    const [remainingTime, setRemainingTime] = useState(0);
+    const REFRESH_COOLDOWN = 5 * 60 * 1000; // 5분 (밀리초)
 
-    // 페이지 로드 시 사용자 정보 및 이미지 조회
+    // 남은 시간 업데이트 (1초마다)
+    useEffect(() => {
+        if (!lastRefreshTime) return;
+        
+        const interval = setInterval(() => {
+            const now = Date.now();
+            const elapsed = now - lastRefreshTime;
+            const remaining = Math.max(0, REFRESH_COOLDOWN - elapsed);
+            setRemainingTime(remaining);
+            
+            if (remaining === 0) {
+                clearInterval(interval);
+            }
+        }, 1000);
+        
+        return () => clearInterval(interval);
+    }, [lastRefreshTime]);
     useEffect(() => {
         const fetchUserAndImages = async () => {
             try {
@@ -161,36 +201,49 @@ const Profile = () => {
         fetchUserAndImages();
     }, []);
 
+    // QueryClient 인스턴스 접근
+    const queryClient = useQueryClient();
+
     // 게임 타입 변경 시 레이팅 히스토리와 티어 정보 조회
+    const { data: ratingHistoryData, isLoading: isLoadingRatingHistoryQuery } = useRatingHistory(
+        profile?.lichessId || '',
+        selectedGameType
+    );
+
+    // ratingHistoryData가 업데이트되면 ratingHistory 상태 동기화
+    useEffect(() => {
+        if (ratingHistoryData) {
+            setRatingHistory(ratingHistoryData);
+        }
+    }, [ratingHistoryData]);
+
     useEffect(() => {
         const fetchGameTypeData = async () => {
-            setLoadingTier(true);
+            setLoadingPerf(true);
             try {
-                const tierData = await getUserTier(selectedGameType);
-                setUserTier(tierData);
+                const perfData = await getUserPerf(selectedGameType);
+                console.log('📊 perf 데이터 받음:', perfData);
+                setUserPerf(perfData);
             } catch (error) {
-                console.error('Failed to fetch tier data:', error);
-                setUserTier(null);
+                console.error('Failed to fetch perf data:', error);
+                // 에러 시 기본 uncertain 상태
+                setUserPerf({
+                    rating: 0,
+                    gamesPlayed: 0,
+                    prov: true,
+                    all: 0, rated: 0, wins: 0, losses: 0, draws: 0,
+                    tour: 0, berserk: 0, opAvg: 0, seconds: 0, disconnects: 0,
+                    highestRating: 0, lowestRating: 0,
+                    maxStreak: 0, maxLossStreak: 0,
+                    uncertain: true
+                });
             } finally {
-                setLoadingTier(false);
-            }
-            
-            if (!profile?.lichessId) return;
-            
-            setLoadingRatingHistory(true);
-            try {
-                const history = await getRatingHistory(profile.lichessId, selectedGameType);
-                setRatingHistory(history);
-            } catch (error) {
-                console.error('Failed to fetch rating history:', error);
-                setRatingHistory([]);
-            } finally {
-                setLoadingRatingHistory(false);
+                setLoadingPerf(false);
             }
         };
         
         fetchGameTypeData();
-    }, [selectedGameType, profile?.lichessId]);
+    }, [selectedGameType]);
 
     // 년도 변경 시 스트릭 데이터 조회
     useEffect(() => {
@@ -269,10 +322,41 @@ const Profile = () => {
         }
     };
 
+    const handleForceRefresh = async () => {
+        // 쿨타임 체크
+        if (lastRefreshTime && Date.now() - lastRefreshTime < REFRESH_COOLDOWN) {
+            const remaining = Math.ceil((REFRESH_COOLDOWN - (Date.now() - lastRefreshTime)) / 1000);
+            alert(`${remaining}초 후에 다시 시도해주세요.`);
+            return;
+        }
+
+        setRefreshing(true);
+        try {
+            await forceRefreshStats();
+            // 갱신 후 현재 게임 타입의 데이터 다시 로드
+            const perfData = await getUserPerf(selectedGameType);
+            setUserPerf(perfData);
+            
+            // 캐시된 레이팅 히스토리 즉시 갱신
+            queryClient.invalidateQueries({ queryKey: ['ratingHistory'] });
+            
+            setLastRefreshTime(Date.now());
+            setRemainingTime(REFRESH_COOLDOWN);
+            alert('정보가 갱신되었습니다.');
+        } catch (error) {
+            console.error('강제 갱신 실패:', error);
+            alert('정보 갱신에 실패했습니다.');
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
     return (
         <div className="profile-page" style={{
-            backgroundColor: userTier?.tierResult?.mainTier 
-                ? tierColorScheme[userTier.tierResult.mainTier].lightBg
+            backgroundColor: userPerf
+                ? userPerf.uncertain 
+                    ? '#f3f4f6'
+                    : tierColorScheme[getTierFromRating(userPerf.rating)].lightBg
                 : tierColorScheme['KING'].lightBg
         }}>
             <Header />
@@ -287,8 +371,10 @@ const Profile = () => {
                     backgroundPosition: 'center'
                 } : {
                     height: '380px',
-                    backgroundColor: userTier?.tierResult?.mainTier 
-                        ? tierColorScheme[userTier.tierResult.mainTier].mainColor
+                    backgroundColor: userPerf 
+                        ? userPerf.uncertain 
+                            ? '#e5e7eb'
+                            : tierColorScheme[getTierFromRating(userPerf.rating)].mainColor
                         : tierColorScheme['KING'].mainColor,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
@@ -323,8 +409,10 @@ const Profile = () => {
                                     alt="프로필 사진"
                                     className="w-36 h-36 rounded-2xl border-4 object-cover shadow-lg profile-image profile-image-hover"
                                     style={{
-                                        borderColor: userTier?.tierResult?.mainTier 
-                                            ? tierColorScheme[userTier.tierResult.mainTier]?.mainColor || tierColorScheme['KING'].mainColor
+                                        borderColor: userPerf 
+                                            ? userPerf.uncertain
+                                                ? '#9ca3af'
+                                                : tierColorScheme[getTierFromRating(userPerf.rating)]?.mainColor || tierColorScheme['KING'].mainColor
                                             : tierColorScheme['KING'].mainColor
                                     }}
                                 />
@@ -357,11 +445,11 @@ const Profile = () => {
                                 </p>
                             </div>
 
-                            {/* Lichess 프로필 이동 버튼 */}
-                            {profile?.lichessId && (
-                                <div className="mb-6">
+                            {/* Lichess 프로필 이동 버튼 + 강제 갱신 버튼 */}
+                            <div className="mb-6 flex gap-2">
+                                {profile?.lichessId && (
                                     <a
-                                        href={`https://lichess.org/api/user/${profile.lichessId}`}
+                                        href={`https://lichess.org/@/${profile.lichessId}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center justify-center w-10 h-10 bg-white border-2 border-black rounded-lg hover:shadow-lg transition hover:scale-105"
@@ -372,8 +460,16 @@ const Profile = () => {
                                             className="w-6 h-6 object-contain"
                                         />
                                     </a>
-                                </div>
-                            )}
+                                )}
+                                <button
+                                    onClick={handleForceRefresh}
+                                    disabled={refreshing || remainingTime > 0}
+                                    className="inline-flex items-center justify-center px-4 py-2 bg-white border-2 border-black rounded-lg hover:shadow-lg transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm"
+                                    title={remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}초 후에 사용 가능합니다` : 'Lichess에서 최신 정보를 가져옵니다'}
+                                >
+                                    {refreshing ? '갱신 중...' : remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}초 대기` : '데이터 갱신'}
+                                </button>
+                            </div>
                             
                             {/* 자기소개 섹션 */}
                             <div>
@@ -385,8 +481,10 @@ const Profile = () => {
                                             placeholder="자기소개를 입력하세요"
                                             className="w-full p-3 border-2 rounded-lg text-sm focus:outline-none focus:ring-2 bg-white"
                                             style={{
-                                                borderColor: userTier?.tierResult?.mainTier 
-                                                    ? tierColorScheme[userTier.tierResult.mainTier]?.mainColor || tierColorScheme['KING'].mainColor
+                                                borderColor: userPerf 
+                                                    ? userPerf.uncertain
+                                                        ? '#9ca3af'
+                                                        : tierColorScheme[getTierFromRating(userPerf.rating)]?.mainColor || tierColorScheme['KING'].mainColor
                                                     : tierColorScheme['KING'].mainColor
                                             }}
                                             rows={3}
@@ -397,8 +495,10 @@ const Profile = () => {
                                                 disabled={savingDescription}
                                                 className="px-4 py-2 text-white font-bold text-sm rounded-lg hover:shadow-lg transition disabled:opacity-50"
                                                 style={{
-                                                    backgroundColor: userTier?.tierResult?.mainTier 
-                                                        ? tierColorScheme[userTier.tierResult.mainTier]?.mainColor || tierColorScheme['KING'].mainColor
+                                                    backgroundColor: userPerf 
+                                                        ? userPerf.uncertain
+                                                            ? '#9ca3af'
+                                                            : tierColorScheme[getTierFromRating(userPerf.rating)]?.mainColor || tierColorScheme['KING'].mainColor
                                                         : tierColorScheme['KING'].mainColor
                                                 }}
                                             >
@@ -420,11 +520,15 @@ const Profile = () => {
                                         <div className="flex-1">
                                             <p className="text-gray-700 text-sm leading-relaxed p-4 rounded-lg border-2"
                                                 style={{
-                                                    backgroundColor: userTier?.tierResult?.mainTier 
-                                                        ? tierColorScheme[userTier.tierResult.mainTier]?.lightBg || tierColorScheme['KING'].lightBg
+                                                    backgroundColor: userPerf 
+                                                        ? userPerf.uncertain
+                                                            ? '#f3f4f6'
+                                                            : tierColorScheme[getTierFromRating(userPerf.rating)]?.lightBg || tierColorScheme['KING'].lightBg
                                                         : tierColorScheme['KING'].lightBg,
-                                                    borderColor: userTier?.tierResult?.mainTier 
-                                                        ? tierColorScheme[userTier.tierResult.mainTier]?.mainColor || tierColorScheme['KING'].mainColor
+                                                    borderColor: userPerf 
+                                                        ? userPerf.uncertain
+                                                            ? '#9ca3af'
+                                                            : tierColorScheme[getTierFromRating(userPerf.rating)]?.mainColor || tierColorScheme['KING'].mainColor
                                                         : tierColorScheme['KING'].mainColor
                                                 }}
                                             >
@@ -435,8 +539,10 @@ const Profile = () => {
                                             onClick={() => setIsEditingDescription(true)}
                                             className="px-3 py-1.5 text-gray-600 hover:text-gray-900 font-medium text-sm border-2 rounded transition flex-shrink-0"
                                             style={{
-                                                borderColor: userTier?.tierResult?.mainTier 
-                                                    ? tierColorScheme[userTier.tierResult.mainTier]?.mainColor || tierColorScheme['KING'].mainColor
+                                                borderColor: userPerf 
+                                                    ? userPerf.uncertain
+                                                        ? '#9ca3af'
+                                                        : tierColorScheme[getTierFromRating(userPerf.rating)]?.mainColor || tierColorScheme['KING'].mainColor
                                                     : tierColorScheme['KING'].mainColor
                                             }}
                                         >
@@ -449,6 +555,47 @@ const Profile = () => {
                     </div>
                 </div>
             </div>
+
+            {/* 게임 통계 섹션 */}
+            {profile && (
+                <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">게임 통계</h2>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
+                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">전체 게임</p>
+                            <p className="text-4xl font-black text-gray-800">{profile.allGames}</p>
+                            <p className="text-xs text-gray-600 mt-2">게임</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
+                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">레이팅 게임</p>
+                            <p className="text-4xl font-black text-gray-800">{profile.ratedGames}</p>
+                            <p className="text-xs text-gray-600 mt-2">게임</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
+                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">승률</p>
+                            <p className="text-4xl font-black text-gray-800">
+                                {profile.allGames > 0 ? ((profile.wins / profile.allGames) * 100).toFixed(1) : '0.0'}%
+                            </p>
+                            <p className="text-xs text-gray-600 mt-2">{profile.wins}승</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
+                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">승리</p>
+                            <p className="text-4xl font-black text-green-600">{profile.wins}</p>
+                            <p className="text-xs text-gray-600 mt-2">게임</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
+                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">패배</p>
+                            <p className="text-4xl font-black text-red-600">{profile.losses}</p>
+                            <p className="text-xs text-gray-600 mt-2">게임</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
+                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">무승부</p>
+                            <p className="text-4xl font-black text-gray-600">{profile.draws}</p>
+                            <p className="text-xs text-gray-600 mt-2">게임</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* 플레이 활동 섹션 - 게임타입 바로 하단 */}
             <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
@@ -467,7 +614,9 @@ const Profile = () => {
                     </select>
                 </div>
                 
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-8 shadow-lg card-section card-hover overflow-x-auto">
+                <div className={`rounded-lg p-8 shadow-lg card-section card-hover overflow-x-auto ${
+                    userPerf?.uncertain ? 'bg-gray-100 border-2 border-gray-300' : 'bg-blue-50 border-2 border-blue-200'
+                }`}>
                     <p className="text-gray-700 text-sm font-bold uppercase tracking-wider mb-6 text-animate">{selectedYear}년 활동 현황</p>
                     <div className="pb-6 min-w-full">
                         <div className="flex gap-0 mb-3 text-xs text-gray-600 font-bold uppercase w-full px-1">
@@ -512,7 +661,13 @@ const Profile = () => {
                                                     else activity = 4;
                                                 }
                                                 
-                                                const colors = [
+                                                const colors = userPerf?.uncertain ? [
+                                                    'bg-gray-300 border-gray-400',
+                                                    'bg-gray-400 border-gray-500',
+                                                    'bg-gray-500 border-gray-600',
+                                                    'bg-gray-600 border-gray-700',
+                                                    'bg-gray-700 border-gray-800'
+                                                ] : [
                                                     'bg-gray-200 border-gray-300',
                                                     'bg-blue-300 border-blue-400',
                                                     'bg-blue-500 border-blue-600',
@@ -523,8 +678,8 @@ const Profile = () => {
                                                 return (
                                                     <div
                                                         key={dateStr}
-                                                        className={`w-4 h-4 rounded-sm border ${colors[activity]} cursor-help transition hover:ring-2 hover:ring-offset-1 hover:ring-blue-400`}
-                                                        title={dailyData ? `${dailyData.total}게임: ${dailyData.win}승 ${dailyData.lose}패 ${dailyData.draw}무` : '데이터 없음'}
+                                                        className={`w-4 h-4 rounded-sm border ${colors[activity]} cursor-help transition hover:ring-2 hover:ring-offset-1 ${userPerf?.uncertain ? 'hover:ring-gray-400' : 'hover:ring-blue-400'}`}
+                                                        title={dailyData ? `${dateStr} • ${dailyData.total}게임: ${dailyData.win}승 ${dailyData.lose}패 ${dailyData.draw}무\n마지막 레이팅: ${dailyData.lastRating}` : '데이터 없음'}
                                                     />
                                                 );
                                             })}
@@ -629,8 +784,8 @@ const Profile = () => {
 
             {/* 티어 섹션 */}
             <TierSection 
-                userTier={userTier}
-                loadingTier={loadingTier}
+                userPerf={userPerf}
+                loadingPerf={loadingPerf}
                 tierColorScheme={tierColorScheme}
                 promotionThresholds={promotionThresholds}
                 convertSubTierToRoman={convertSubTierToRoman}
@@ -641,7 +796,7 @@ const Profile = () => {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6 text-animate">레이팅 진행</h2>
                 
                 <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-lg card-section card-hover">
-                    {loadingRatingHistory ? (
+                    {isLoadingRatingHistoryQuery ? (
                         <div className="flex items-center justify-center h-80">
                             <p className="text-gray-500 text-sm">데이터를 불러오는 중입니다...</p>
                         </div>

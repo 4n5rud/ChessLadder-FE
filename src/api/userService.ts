@@ -5,11 +5,28 @@ import { api } from './apiClient';
  * 프로필 응답
  */
 export interface ProfileResponse {
+  // 기본 정보
+  id: number;
   username: string;
+  lichessId?: string; // Lichess 사용자명
+  title?: string; // 사용자 칭호
   description: string;
+
+  // 프로필 이미지
+  profileImage?: string;
+  bannerImage?: string;
+
+  // 날짜
   createdAt?: string; // ChessMate 가입일 (ISO 8601 형식)
   lichessCreatedAt?: string; // Lichess 가입일 (ISO 8601 형식)
-  lichessId?: string; // Lichess 사용자명
+
+  // 게임 통계 (전체)
+  allGames: number;
+  ratedGames: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  totalSeconds: number;
 }
 
 /**
@@ -21,6 +38,7 @@ export interface DailyStreakDto {
   lose: number;
   draw: number;
   total: number;
+  lastRating: number; // 해당 날짜의 마지막 레이팅
 }
 
 /**
@@ -126,30 +144,77 @@ export const getFirstMoveStats = async (gameType: string = 'RAPID'): Promise<Fir
 };
 
 /**
- * 티어 결과 정보
+ * 게임 타입별 상세 퍼포먼스 정보
  */
-export interface TierResult {
-  mainTier: string; // "PAWN", "KNIGHT", "BISHOP", "ROOK", "QUEEN", "KING"
-  subTier?: string; // "1", "2", "3", "4", "5"
-  rating: number; // 현재 레이팅
-}
-
-/**
- * 사용자 티어 Dto
- */
-export interface UserTierDto {
-  gameType: string;
+export interface UserPerfResponse {
+  // 기본 레이팅 정보
   rating: number;
-  tierResult: TierResult;
+  gamesPlayed: number;
+  prov: boolean;
+
+  // 게임 통계
+  all: number;              // 전체 게임 수
+  rated: number;            // 레이티드 게임 수
+  wins: number;             // 승리 횟수
+  losses: number;           // 패배 횟수
+  draws: number;            // 무승부 횟수
+  tour: number;             // 토너먼트 게임 수
+  berserk: number;          // 광폭 모드 사용 수
+  opAvg: number;            // 상대방 평균 레이팅
+  seconds: number;          // 총 게임 시간 (초)
+  disconnects: number;      // 연결 끊김 수
+
+  // 레이팅 관련
+  highestRating: number;    // 최고 레이팅
+  lowestRating: number;     // 최저 레이팅
+  maxStreak: number;        // 최대 연승
+  maxLossStreak: number;    // 최대 연패
+  uncertain: boolean;       // 티어 불확실성 (rated < 50이면 true)
 }
 
 /**
- * GET /api/stat/tier?gameType=RAPID
- * 사용자 티어 정보 조회
+ * GET /api/stat/perf?gameType=RAPID
+ * 사용자 게임 타입별 상세 퍼포먼스 정보 조회
  * @param gameType 게임 타입 (RAPID, BLITZ, CLASSICAL, BULLET)
- * @returns Promise<UserTierDto>
+ * @returns Promise<UserPerfResponse>
  */
-export const getUserTier = async (gameType: string = 'RAPID'): Promise<UserTierDto> => {
-  const res = await api(`/stat/tier?gameType=${gameType}`, { method: 'GET' });
+export const getUserPerf = async (gameType: string = 'RAPID'): Promise<UserPerfResponse> => {
+  const res = await api(`/stat/perf?gameType=${gameType}`, { method: 'GET' });
+  
+  // 백엔드에서 data가 null인 경우 (uncertain 상태) 기본값 반환
+  if (res.success && res.data === null) {
+    console.warn('⚠️ UserPerf 데이터 없음 - uncertain 상태:', res.message);
+    return {
+      rating: 0,
+      gamesPlayed: 0,
+      prov: true,
+      all: 0,
+      rated: 0,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      tour: 0,
+      berserk: 0,
+      opAvg: 0,
+      seconds: 0,
+      disconnects: 0,
+      highestRating: 0,
+      lowestRating: 0,
+      maxStreak: 0,
+      maxLossStreak: 0,
+      uncertain: true
+    };
+  }
+  
+  return res.data;
+};
+
+/**
+ * 사용자 정보 강제 갱신
+ * Lichess 데이터를 다시 동기화하고 티어 정보를 업데이트
+ * @returns Promise<any>
+ */
+export const forceRefreshStats = async (): Promise<any> => {
+  const res = await api('/stat/force-refresh', { method: 'PUT' });
   return res.data;
 };

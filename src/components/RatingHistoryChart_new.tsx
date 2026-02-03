@@ -63,7 +63,7 @@ const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({
   tierThresholds = DEFAULT_TIER_THRESHOLDS 
 }) => {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [hoveredPoint, setHoveredPoint] = useState<ChartDataPoint | null>(null);
+  // const [hoveredPoint, setHoveredPoint] = useState<ChartDataPoint | null>(null);
   const [maxRating, setMaxRating] = useState(2400);
   const [minRating, setMinRating] = useState(0);
   const [lineSegments, setLineSegments] = useState<Array<{ data: ChartDataPoint[]; color: string; startIndex: number }>>([]);
@@ -301,24 +301,6 @@ const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({
           </p>
         </div>
       </div>
-
-      {/* 호버 정보 */}
-      {hoveredPoint && (
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-[#2F639D]">
-          <p className="text-sm text-gray-600">
-            <span className="font-semibold">{hoveredPoint.dateStr}</span>
-            {' - '}
-            <span className="font-bold text-[#2F639D]">{hoveredPoint.rating} 레이팅</span>
-            {' - '}
-            <span>{hoveredPoint.tier}</span>
-            {hoveredPoint.isTierChange && (
-              <span className="ml-2 font-semibold">
-                {hoveredPoint.isPromoted ? '✓ 승격' : '✗ 강등'}
-              </span>
-            )}
-          </p>
-        </div>
-      )}
     </div>
   );
 };

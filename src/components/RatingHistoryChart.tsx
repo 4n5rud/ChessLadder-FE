@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, AreaChart } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import type { RatingHistoryEntry } from '../api/lichessService';
 
 interface RatingHistoryChartProps {
@@ -26,12 +26,12 @@ interface LineSegment {
 }
 
 const DEFAULT_TIER_THRESHOLDS: Record<string, number> = {
-  'Pawn': 0,
-  'Knight': 800,
-  'Bishop': 1200,
-  'Rook': 1600,
-  'Queen': 2000,
-  'King': 2400,
+  'PAWN': 400,
+  'KNIGHT': 901,
+  'BISHOP': 1201,
+  'ROOK': 1501,
+  'QUEEN': 1801,
+  'KING': 2101,
 };
 
 const getTierColor = (rating: number, thresholds: Record<string, number> = DEFAULT_TIER_THRESHOLDS): string => {
@@ -40,12 +40,12 @@ const getTierColor = (rating: number, thresholds: Record<string, number> = DEFAU
   for (const [tier, minRating] of tiers) {
     if (rating >= minRating) {
       switch (tier) {
-        case 'Pawn': return '#aecdb1';
-        case 'Knight': return '#87abd6';
-        case 'Bishop': return '#ae97d7';
-        case 'Rook': return '#e7ada8';
-        case 'Queen': return '#edae6c';
-        case 'King': return '#edae6c';
+        case 'PAWN': return '#aecdb1';
+        case 'KNIGHT': return '#87abd6';
+        case 'BISHOP': return '#ae97d7';
+        case 'ROOK': return '#e7ada8';
+        case 'QUEEN': return '#edae6c';
+        case 'KING': return '#edae6c';
         default: return '#2F639D';
       }
     }
@@ -63,30 +63,92 @@ const getRatingTier = (rating: number, thresholds: Record<string, number> = DEFA
     }
   }
   
-  return 'Pawn';
+  return 'PAWN';
 };
 
 const getTierWithSubTier = (rating: number, thresholds: Record<string, number> = DEFAULT_TIER_THRESHOLDS): string => {
   const tier = getRatingTier(rating, thresholds);
-  const tierRating = thresholds[tier] || 0;
-  const nextTierName = Object.keys(thresholds).find(t => thresholds[t] === Object.values(thresholds).find(v => v > tierRating));
-  const nextTierRating = nextTierName ? thresholds[nextTierName] : (tierRating + 400);
   
-  const diffToNext = nextTierRating - rating;
-  let subTier = 1;
+  // 각 티어의 레이팅 범위 및 서브티어 기준
+  const tierRanges: { [key: string]: { min: number; max: number; subTiers: { [key: number]: [number, number] } } } = {
+    'PAWN': {
+      min: 400,
+      max: 900,
+      subTiers: {
+        5: [400, 500],
+        4: [501, 600],
+        3: [601, 700],
+        2: [701, 800],
+        1: [801, 900]
+      }
+    },
+    'KNIGHT': {
+      min: 901,
+      max: 1200,
+      subTiers: {
+        5: [901, 960],
+        4: [961, 1020],
+        3: [1021, 1080],
+        2: [1081, 1140],
+        1: [1141, 1200]
+      }
+    },
+    'BISHOP': {
+      min: 1201,
+      max: 1500,
+      subTiers: {
+        5: [1201, 1260],
+        4: [1261, 1320],
+        3: [1321, 1380],
+        2: [1381, 1440],
+        1: [1441, 1500]
+      }
+    },
+    'ROOK': {
+      min: 1501,
+      max: 1800,
+      subTiers: {
+        5: [1501, 1560],
+        4: [1561, 1620],
+        3: [1621, 1680],
+        2: [1681, 1740],
+        1: [1741, 1800]
+      }
+    },
+    'QUEEN': {
+      min: 1801,
+      max: 2100,
+      subTiers: {
+        5: [1801, 1860],
+        4: [1861, 1920],
+        3: [1921, 1980],
+        2: [1981, 2040],
+        1: [2041, 2100]
+      }
+    },
+    'KING': {
+      min: 2101,
+      max: 2700,
+      subTiers: {
+        5: [2101, 2220],
+        4: [2221, 2340],
+        3: [2341, 2460],
+        2: [2461, 2580],
+        1: [2581, 2700]
+      }
+    }
+  };
   
-  if (diffToNext < 0) {
-    subTier = 5;
-  } else if (diffToNext <= 80) {
-    subTier = 5;
-  } else if (diffToNext <= 160) {
-    subTier = 4;
-  } else if (diffToNext <= 240) {
-    subTier = 3;
-  } else if (diffToNext <= 320) {
-    subTier = 2;
-  } else {
-    subTier = 1;
+  const tierData = tierRanges[tier];
+  if (!tierData) return `${tier}`;
+  
+  // 현재 레이팅에 해당하는 서브티어 찾기
+  let currentSubTier = 5;
+  for (const [subTier, [min, max]] of Object.entries(tierData.subTiers)) {
+    if (rating >= min && rating <= max) {
+      currentSubTier = parseInt(subTier);
+      break;
+    }
   }
   
   const romanMap: { [key: string]: string } = {
@@ -97,7 +159,7 @@ const getTierWithSubTier = (rating: number, thresholds: Record<string, number> =
     '5': 'V'
   };
   
-  return `${tier} ${romanMap[subTier]}`;
+  return `${tier} ${romanMap[currentSubTier]}`;
 };
 
 const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({ 
@@ -106,7 +168,6 @@ const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({
   tierThresholds = DEFAULT_TIER_THRESHOLDS 
 }) => {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [hoveredPoint, setHoveredPoint] = useState<ChartDataPoint | null>(null);
   const [maxRating, setMaxRating] = useState(2400);
   const [minRating, setMinRating] = useState(0);
   const [lineSegments, setLineSegments] = useState<LineSegment[]>([]);
@@ -261,11 +322,7 @@ const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({
       
       <div className="w-full overflow-x-auto -mx-6 px-6">
         <ResponsiveContainer width="100%" height={450} minWidth={800}>
-          <LineChart data={chartData} margin={{ top: 20, right: 50, left: 50, bottom: 60 }} onMouseMove={(state: any) => {
-              if (state?.activePayload?.[0]?.payload) {
-                setHoveredPoint(state.activePayload[0].payload);
-              }
-            }} onMouseLeave={() => setHoveredPoint(null)}>
+          <LineChart data={chartData} margin={{ top: 20, right: 50, left: 50, bottom: 60 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
             <XAxis
               dataKey="dateStr"
@@ -281,7 +338,6 @@ const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({
               tick={{ fontSize: 12, fill: '#666' }}
               stroke="#d1d5db"
               width={60}
-              gridLineStroke="#f0f0f0"
             />
             <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#3b82f6', strokeWidth: 2, opacity: 0.3 }} />
             
@@ -353,107 +409,6 @@ const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({
             ))}
           </LineChart>
         </ResponsiveContainer>
-      </div>
-
-      {/* 통계 정보 */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-600 text-sm font-medium">현재 레이팅</p>
-            <span className="text-2xl">📊</span>
-          </div>
-          <p className="text-3xl font-bold text-blue-600">
-            {chartData[chartData.length - 1]?.rating || '-'}
-          </p>
-          <p className="text-xs text-gray-500 mt-2">{chartData[chartData.length - 1]?.dateStr}</p>
-        </div>
-        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-600 text-sm font-medium">최고 레이팅</p>
-            <span className="text-2xl">🏆</span>
-          </div>
-          <p className="text-3xl font-bold text-green-600">
-            {Math.max(...chartData.map(d => d.rating))}
-          </p>
-          <p className="text-xs text-gray-500 mt-2">역대 최고 기록</p>
-        </div>
-        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-600 text-sm font-medium">최저 레이팅</p>
-            <span className="text-2xl">📉</span>
-          </div>
-          <p className="text-3xl font-bold text-red-600">
-            {Math.min(...chartData.map(d => d.rating))}
-          </p>
-          <p className="text-xs text-gray-500 mt-2">역대 최저 기록</p>
-        </div>
-        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-600 text-sm font-medium">현재 티어</p>
-            <span className="text-2xl">👑</span>
-          </div>
-          <p className="text-3xl font-bold" style={{ color: getTierColor(chartData[chartData.length - 1]?.rating) }}>
-            {chartData[chartData.length - 1]?.tier || '-'}
-          </p>
-          <p className="text-xs text-gray-500 mt-2">진행 중</p>
-        </div>
-      </div>
-
-      {/* 호버 정보 */}
-      <div className="mt-6">
-        {hoveredPoint ? (
-          <div className="p-4 bg-blue-50 rounded-xl border-l-4 border-blue-500 animate-fadeIn">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">날짜</p>
-                <p className="text-lg font-bold text-gray-800">{hoveredPoint.dateStr}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">레이팅</p>
-                <p className="text-lg font-bold text-blue-600">{hoveredPoint.rating}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">티어</p>
-                <p className="text-lg font-bold" style={{ color: getTierColor(hoveredPoint.rating) }}>
-                  {hoveredPoint.tierWithSubTier}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">변화</p>
-                <p className={`text-lg font-bold ${hoveredPoint.rating - (hoveredPoint.previousRating || hoveredPoint.rating) > 0 ? 'text-green-600' : hoveredPoint.rating - (hoveredPoint.previousRating || hoveredPoint.rating) < 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                  {hoveredPoint.rating - (hoveredPoint.previousRating || hoveredPoint.rating) > 0 ? '+' : ''}{hoveredPoint.rating - (hoveredPoint.previousRating || hoveredPoint.rating)}
-                </p>
-              </div>
-            </div>
-            {hoveredPoint.isTierChange && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`inline-block px-3 py-1 rounded-full text-white text-sm font-semibold ${hoveredPoint.isPromoted ? 'bg-green-500' : 'bg-red-500'}`}>
-                    {hoveredPoint.isPromoted ? '✓ 승격' : '✗ 강등'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <p className="text-sm font-bold text-gray-800">
-                    <span style={{ backgroundColor: getTierColor(hoveredPoint.previousRating || 0), color: '#fff' }} className="px-2 py-1 rounded-full text-xs font-bold mr-1">
-                      {hoveredPoint.previousTierWithSubTier}
-                    </span>
-                    →
-                    <span style={{ backgroundColor: getTierColor(hoveredPoint.rating), color: '#fff' }} className="px-2 py-1 rounded-full text-xs font-bold ml-1">
-                      {hoveredPoint.tierWithSubTier}
-                    </span>
-                  </p>
-                </div>
-                <span className="text-xs text-gray-600">
-                  {hoveredPoint.isPromoted ? '축하합니다! 상위 티어로 승격했습니다.' : '다음 게임에서 더 잘해보세요!'}
-                </span>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 text-center text-gray-500 text-sm">
-            차트 위에 마우스를 올려 상세 정보를 확인하세요.
-          </div>
-        )}
       </div>
     </div>
   );
