@@ -1,6 +1,20 @@
 // API Client
 
-const API_BASE_URL = 'http://localhost:8080/api';
+// 개발 환경에서는 localhost:8080, 프로덕션에서는 Vercel 환경변수 사용
+const API_BASE_URL = import.meta.env.DEV 
+  ? 'http://localhost:8080/api' 
+  : (import.meta.env.VITE_API_BACKEND_URL || import.meta.env.VITE_BACKEND_URL || '/api');
+
+// 초기화 로그 - 모든 환경변수 출력
+console.log('='.repeat(60));
+console.log('[API Init] Environment Variables:');
+console.log('  Mode:', import.meta.env.MODE);
+console.log('  DEV:', import.meta.env.DEV);
+console.log('  PROD:', import.meta.env.PROD);
+console.log('  VITE_API_BACKEND_URL:', import.meta.env.VITE_API_BACKEND_URL);
+console.log('  VITE_BACKEND_URL:', import.meta.env.VITE_BACKEND_URL);
+console.log('  Final API_BASE_URL:', API_BASE_URL);
+console.log('='.repeat(60));
 
 /**
  * 기본 API 호출
@@ -16,10 +30,20 @@ export const api = async (endpoint: string, options: RequestInit = {}) => {
     timestamp: new Date().toISOString(),
   });
 
-  let response = await fetch(fullUrl, {
-    ...options,
-    credentials: 'include', // 쿠키 포함 (필수)
-  });
+  let response;
+  try {
+    response = await fetch(fullUrl, {
+      ...options,
+      credentials: 'include', // 쿠키 포함 (필수)
+    });
+  } catch (fetchError) {
+    console.error(`[API Fetch Error] ${fullUrl}`, {
+      errorType: fetchError instanceof Error ? fetchError.constructor.name : typeof fetchError,
+      errorMessage: fetchError instanceof Error ? fetchError.message : String(fetchError),
+      timestamp: new Date().toISOString(),
+    });
+    throw fetchError;
+  }
 
   console.log(`[API Response] ${fullUrl}`, {
     status: response.status,
