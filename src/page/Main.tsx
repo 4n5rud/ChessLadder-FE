@@ -10,6 +10,7 @@ import bishopImg from '../assets/images/tier/vishop.png';
 import rookImg from '../assets/images/tier/rook.png';
 import queenImg from '../assets/images/tier/queen.png';
 import kingImg from '../assets/images/tier/king.png';
+import lichessLogoImg from '../assets/images/logo/lichess-logo.png';
 
 interface TierData {
     name: string;
@@ -199,7 +200,7 @@ function Main() {
                     className="mx-auto flex items-center gap-3 bg-white text-black font-bold py-3 px-7 rounded-full shadow-lg hover:bg-[#e6e6e6] transition text-lg fade-in-bottom-section disabled:opacity-50 disabled:cursor-not-allowed" 
                     style={{animationDelay: '1.5s'}}
                 >
-                    <img src="/src/assets/images/logo/lichess-logo.png" alt="Lichess Logo" className="w-8 h-8" />
+                    <img src={lichessLogoImg} alt="Lichess Logo" className="w-8 h-8" />
                     {isLoading ? '로그인 중...' : 'Lichess 계정으로 로그인하기'}
                 </button>
 
@@ -293,27 +294,6 @@ function Main() {
                 </div>
             </div>
             
-            {/* 플레이 스타일 분석 섹션 */}
-            <div className="w-full bg-[#0a1f33]">
-                <div className="flex flex-col pt-20 pb-20 px-4 max-w-6xl mx-auto text-white">
-                    <h2 className="text-4xl font-bold mb-8">사용자의 플레이 스타일 분석</h2>
-                    
-                    <div className="flex flex-col md:flex-row gap-8 items-center">
-                        <div className="flex-1 flex justify-center px">
-                            <div className="bg-white/10 rounded-lg p-8 backdrop-blur-sm w-full h-64 flex items-center justify-center">
-                            </div>
-                        </div>
-                        
-                        <div className="flex-1">
-                            <h3 className="text-2xl font-bold mb-4">당신의 체스 실력을 분석하세요</h3>
-                            <p className="text-lg text-white/90 mb-6">
-                                설명 내용이 들어갈 영역입니다.
-                            </p>
-                        </div>
-                    </div>      
-                </div>
-            </div>
-
             {/* 커뮤니티 섹션 - Discord */}
             <div className="w-full bg-[#0a1f33]">
                 <div className="flex flex-col pt-5 pb-20 px-4 max-w-6xl mx-auto text-white">
@@ -337,7 +317,7 @@ function Main() {
                 <div className="flex flex-col pt-5 pb-20 px-4 max-w-6xl mx-auto text-white">
                     <h2 className="text-4xl font-bold mb-4">개발자에게 커피 한잔 사주기</h2>
                     <a 
-                        href="https://www.buymeacoffee.com/chessmate" 
+                        href="https://www.buymeacoffee.com/chessladder" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-3 bg-[#86ABD7] hover:bg-[#6a99c4] text-white font-bold py-3 px-8 rounded-full shadow-lg transition transform hover:scale-105 w-fit"

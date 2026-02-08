@@ -12,6 +12,7 @@ import { useRatingHistory } from "../api/queries";
 import RatingHistoryChart from "../components/RatingHistoryChart";
 import { TierSection } from "../components/TierSection";
 import { GameTypeButtons } from "../components/GameTypeButtons";
+import lichessLogoImg from "../assets/images/logo/lichess-logo.png";
 import "./Profile.css";
 
 const Profile = () => {
@@ -438,7 +439,7 @@ const Profile = () => {
                             </h1>
                             <div className="text-xs font-normal uppercase tracking-wider mb-6 flex gap-4">
                                 <p className="text-gray-500 opacity-60">
-                                    ChessMate 가입: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('ko-KR') : '-'}
+                                    ChessLadder 가입: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('ko-KR') : '-'}
                                 </p>
                                 <p className="text-gray-500 opacity-60">
                                     Lichess 가입: {profile?.lichessCreatedAt ? new Date(profile.lichessCreatedAt).toLocaleDateString('ko-KR') : '-'}
@@ -455,7 +456,7 @@ const Profile = () => {
                                         className="inline-flex items-center justify-center w-10 h-10 bg-white border-2 border-black rounded-lg hover:shadow-lg transition hover:scale-105"
                                     >
                                         <img
-                                            src={new URL("../assets/images/logo/lichess-logo.png", import.meta.url).href}
+                                            src={lichessLogoImg}
                                             alt="Lichess"
                                             className="w-6 h-6 object-contain"
                                         />

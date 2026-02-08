@@ -77,7 +77,7 @@ const Footer = () => {
 
                     {/* 하단 - 저작권 정보 */}
                     <div className="flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm">
-                        <p>&copy; 2026 ChessMate. All rights reserved.</p>
+                        <p>&copy; 2026 ChessLadder. All rights reserved.</p>
                         <p>Powered by Lichess API</p>
                     </div>
                 </div>
