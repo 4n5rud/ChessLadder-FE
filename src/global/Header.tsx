@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import type { UserPrincipal } from '../api/authService';
 import { logout, isLoggedIn, getCurrentUser } from '../api/authService';
+import knightLogo from '../assets/images/tier/knight.png';
 
 const Header = () => {
     const navigate = useNavigate();
@@ -58,7 +59,7 @@ const Header = () => {
     return (
         <header className="relative sticky border-b border-gray-300 pb-1 pt-1 pl-30 pr-30 mb-2 w-full bg-white flex items-center gap-2 h-14 min-h-0">
             <Link to="/" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition">
-                <img src="/assets/images/tier/knight.png" alt="ChessLadder Logo" width="32" height="32"/>
+                <img src={knightLogo} alt="ChessLadder Logo" width="32" height="32"/>
                 <h1 className="text-xl font-bold header-title text-[#2F639D]">ChessLadder</h1>
             </Link>
 
