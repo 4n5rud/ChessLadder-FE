@@ -1,6 +1,6 @@
 // Auth API
 
-const API_BASE_URL = 'http://localhost:8080/api';
+import { api } from './apiClient';
 
 /**
  * 사용자 정보 인터페이스
@@ -30,17 +30,7 @@ export interface ApiResponse<T> {
  */
 export const getCurrentUser = async (): Promise<UserPrincipal | null> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
-      method: 'GET',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to get current user');
-    }
-
-    const data = await response.json();
-    
+    const data = await api('/auth/me');
     // 백엔드 응답 형식에 따라 처리
     // { data: UserPrincipal } 또는 { success: true, data: UserPrincipal } 형식 지원
     return data.data || data;
@@ -68,16 +58,7 @@ export const isLoggedIn = async (): Promise<boolean> => {
  * 백엔드에서 쿠키 만료 처리
  */
 export const logout = async () => {
-  const response = await fetch(`${API_BASE_URL}/auth/logout`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    throw new Error('Logout failed');
-  }
-
-  return response.json();
+  return await api('/auth/logout', { method: 'POST' });
 };
 
 /**
@@ -86,14 +67,5 @@ export const logout = async () => {
  * 백엔드에서 새로운 쿠키 발급
  */
 export const refreshToken = async () => {
-  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    throw new Error('Token refresh failed');
-  }
-
-  return response.json();
+  return await api('/auth/refresh', { method: 'POST' });
 };
