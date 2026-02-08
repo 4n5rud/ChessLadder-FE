@@ -4,6 +4,12 @@ import Footer from '../global/Footer';
 import { Outlet } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getOAuthUrl } from '../api/oauthService';
+import pawnImg from '../assets/images/tier/pawn.png';
+import knightImg from '../assets/images/tier/knight.png';
+import bishopImg from '../assets/images/tier/vishop.png';
+import rookImg from '../assets/images/tier/rook.png';
+import queenImg from '../assets/images/tier/queen.png';
+import kingImg from '../assets/images/tier/king.png';
 
 interface TierData {
     name: string;
@@ -23,7 +29,7 @@ function Main() {
         {
             name: 'PAWN',
             range: '400~900',
-            icon: '/assets/images/tier/pawn.png',
+            icon: pawnImg,
             color: 'from-[#C0A060] to-[#A0805F]',
             levels: [
                 {level: 'V', min: 400, max: 500},
@@ -36,7 +42,7 @@ function Main() {
         {
             name: 'KNIGHT',
             range: '901~1200',
-            icon: '/assets/images/tier/knight.png',
+            icon: knightImg,
             color: 'from-[#7CA0D0] to-[#5C80B0]',
             levels: [
                 {level: 'V', min: 901, max: 960},
@@ -49,7 +55,7 @@ function Main() {
         {
             name: 'BISHOP',
             range: '1201~1500',
-            icon: '/assets/images/tier/vishop.png',
+            icon: bishopImg,
             color: 'from-[#BFA7D2] to-[#9F87B2]',
             levels: [
                 {level: 'V', min: 1201, max: 1260},
@@ -62,7 +68,7 @@ function Main() {
         {
             name: 'ROOK',
             range: '1501~1800',
-            icon: '/assets/images/tier/rook.png',
+            icon: rookImg,
             color: 'from-[#E6B7C2] to-[#C697A2]',
             levels: [
                 {level: 'V', min: 1501, max: 1560},
@@ -75,7 +81,7 @@ function Main() {
         {
             name: 'QUEEN',
             range: '1801~2100',
-            icon: '/assets/images/tier/queen.png',
+            icon: queenImg,
             color: 'from-[#F5D06F] to-[#D5B04F]',
             levels: [
                 {level: 'V', min: 1801, max: 1860},
@@ -88,7 +94,7 @@ function Main() {
         {
             name: 'KING',
             range: '2101~2700+',
-            icon: '/assets/images/tier/king.png',
+            icon: kingImg,
             color: 'from-[#F7E08C] to-[#D7C06C]',
             levels: [
                 {level: 'V', min: 2101, max: 2220},
@@ -166,12 +172,12 @@ function Main() {
 
                 <div className="flex flex-row items-end justify-center gap-6 mb-10">
                     {[
-                        {src: '/assets/images/tier/pawn.png', label: 'Pawn'},
-                        {src: '/assets/images/tier/knight.png', label: 'Knight'},
-                        {src: '/assets/images/tier/vishop.png', label: 'Bishop'},
-                        {src: '/assets/images/tier/rook.png', label: 'Rook'},
-                        {src: '/assets/images/tier/queen.png', label: 'Queen'},
-                        {src: '/assets/images/tier/king.png', label: 'King'},
+                        {src: pawnImg, label: 'Pawn'},
+                        {src: knightImg, label: 'Knight'},
+                        {src: bishopImg, label: 'Bishop'},
+                        {src: rookImg, label: 'Rook'},
+                        {src: queenImg, label: 'Queen'},
+                        {src: kingImg, label: 'King'},
                     ].map(({src, label}, index) => (
                         <div key={label} className="flex flex-col items-center group tier-item" style={{animationDelay: `${1 + index * 0.1}s`}}>
                             <div className="bg-white/80 rounded-xl shadow-lg aspect-square w-20 h-20 md:w-22 md:h-22 flex items-center justify-center transition-transform group-hover:-translate-y-2 group-hover:scale-105 border-2 border-[#86ABD7]">
