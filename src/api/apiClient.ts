@@ -3,7 +3,7 @@
 // 개발 환경에서는 localhost:8080, 프로덕션에서는 Vercel 환경변수 사용
 const API_BASE_URL = import.meta.env.DEV 
   ? 'http://localhost:8080/api' 
-  : (import.meta.env.VITE_API_BACKEND_URL || import.meta.env.VITE_BACKEND_URL || '/api');
+  : (import.meta.env.VITE_API_BASE_URL || '/api');
 
 // 초기화 로그 - 모든 환경변수 출력
 console.log('='.repeat(60));
@@ -11,8 +11,7 @@ console.log('[API Init] Environment Variables:');
 console.log('  Mode:', import.meta.env.MODE);
 console.log('  DEV:', import.meta.env.DEV);
 console.log('  PROD:', import.meta.env.PROD);
-console.log('  VITE_API_BACKEND_URL:', import.meta.env.VITE_API_BACKEND_URL);
-console.log('  VITE_BACKEND_URL:', import.meta.env.VITE_BACKEND_URL);
+console.log('  VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
 console.log('  Final API_BASE_URL:', API_BASE_URL);
 console.log('='.repeat(60));
 
