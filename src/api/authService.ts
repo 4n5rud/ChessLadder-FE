@@ -8,10 +8,26 @@ import { api } from './apiClient';
  */
 export interface UserPrincipal {
   id: string;
-  username: string;
-  email?: string;
-  profileImage?: string;
-  [key: string]: any; // 추가 필드 호환성
+  username: string; // "1" (Spring Security Principal ID)
+  user?: { // 상세 사용자 정보
+    id: number;
+    lichess_id: string;
+    username: string; // 실제 표시될 사용자 이름 (예: "mg0922")
+    description: string | null;
+    banner_image: string | null;
+    profile_image: string | null;
+    title: string | null;
+    created_at: string;
+    lichess_created_at: string;
+    last_login_at: string;
+    all_games: number;
+    rated_games: number;
+    wins: number;
+    losses: number;
+    draws: number;
+    total_seconds: number;
+  };
+  [key: string]: any;
 }
 
 /**

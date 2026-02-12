@@ -131,7 +131,7 @@ const Header = () => {
                                                 </div>
                                                 <div className="flex-1">
                                                     <p className="text-white font-bold text-lg drop-shadow">
-                                                        {user?.username || t('profile.user')}
+                                                        {user?.user?.username || user?.username || t('profile.user')}
                                                     </p>
                                                 </div>
                                             </div>
