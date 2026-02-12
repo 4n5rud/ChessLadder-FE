@@ -68,7 +68,7 @@ export const completeUpload = async (type: UserImageType): Promise<void> => {
 export const getImageUrl = async (type: UserImageType): Promise<string> => {
   const res = await api(`/image/image-url?type=${type}`, { method: 'GET' });
   
-  console.log('[ImageService] getImageUrl response:', { type, res });
+  console.log('[ImageService] getImageUrl full response:', res);
   
   const imageUrl = res.upload_url || res.data?.upload_url || res.imageUrl || res.data?.imageUrl;
   
@@ -77,6 +77,13 @@ export const getImageUrl = async (type: UserImageType): Promise<string> => {
     throw new Error(`이미지 URL을 받지 못했습니다. 응답: ${JSON.stringify(res)}`);
   }
   
-  console.log('[ImageService] Image URL extracted:', imageUrl);
-  return imageUrl;
+  console.log('[ImageService] Raw image URL:', imageUrl);
+  
+  // URL이 상대 경로인 경우 API 기반 URL과 결합
+  const finalUrl = imageUrl.startsWith('http') 
+    ? imageUrl 
+    : `${import.meta.env.VITE_API_BASE_URL}/${imageUrl}`;
+  
+  console.log('[ImageService] Final image URL:', finalUrl);
+  return finalUrl;
 };

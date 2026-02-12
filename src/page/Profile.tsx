@@ -171,11 +171,13 @@ const Profile = () => {
                 
                 // 프로필 정보 조회
                 const profileData = await getUserProfile();
+                console.log('[Profile] Received profileData:', profileData);
+                console.log('[Profile] Profile Keys:', Object.keys(profileData || {}));
                 setProfile(profileData);
-                setDescription(profileData.description);
+                setDescription(profileData?.description || '');
                 
                 // lichessCreatedAt부터 현재 년도까지의 년도 배열 생성
-                if (profileData.lichessCreatedAt) {
+                if (profileData?.lichessCreatedAt) {
                     const lichessYear = new Date(profileData.lichessCreatedAt).getFullYear();
                     const currentYear = new Date().getFullYear();
                     const years: number[] = [];
