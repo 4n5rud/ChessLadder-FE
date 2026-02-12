@@ -133,6 +133,7 @@ const translations: Translations = {
     'common.loading': '로딩 중...',
     'common.error': '오류',
     'common.success': '성공',
+    'common.comingSoon': '아직 준비중입니다.',
   },
   EN: {
     // Header
@@ -258,6 +259,7 @@ const translations: Translations = {
     'common.loading': 'Loading...',
     'common.error': 'Error',
     'common.success': 'Success',
+    'common.comingSoon': 'Coming soon.',
   },
 };
 

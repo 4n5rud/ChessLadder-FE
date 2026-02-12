@@ -2,15 +2,33 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { persistQueryClient } from '@tanstack/react-query-persist-client';
-import { LanguageProvider } from './context/LanguageContext';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import Main from './page/Main';
 import OAuthSuccess from './page/OAuthSuccess';
 import OAuthFail from './page/OAuthFail';
 import Profile from './page/Profile';
+import Header from './global/Header';
+import Footer from './global/Footer';
 
-function Page1() { return <div className="p-8 text-2xl">Page 1 Content</div>; }
-function Page2() { return <div className="p-8 text-2xl">Page 2 Content</div>; }
-function Page3() { return <div className="p-8 text-2xl">Page 3 Content</div>; }
+function ComingSoon() { 
+    const { t } = useLanguage();
+    return (
+        <div className="min-h-screen flex flex-col bg-white">
+            <Header />
+            <main className="flex-1 flex items-center justify-center p-8">
+                <div className="text-center">
+                    <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">
+                        {t('common.comingSoon')}
+                    </h2>
+                    <p className="text-gray-500 text-lg">
+                        We are working hard to bring you this feature.
+                    </p>
+                </div>
+            </main>
+            <Footer />
+        </div>
+    ); 
+}
 
 // QueryClient 설정 및 LocalStorage 캐싱
 const queryClient = new QueryClient({
@@ -43,9 +61,9 @@ function App() {
                         <Route path="/oauth/success" element={<OAuthSuccess />}/>
                         <Route path="/oauth/fail" element={<OAuthFail />}/>
                         <Route path="/profile" element={<Profile />}/>
-                        <Route path="/page1" element={<Page1 />}/>
-                        <Route path="/page2" element={<Page2 />}/>
-                        <Route path="/page3" element={<Page3 />}/>
+                        <Route path="/page1" element={<ComingSoon />}/>
+                        <Route path="/page2" element={<ComingSoon />}/>
+                        <Route path="/page3" element={<ComingSoon />}/>
                     </Routes>
                 </BrowserRouter>
             </QueryClientProvider>
