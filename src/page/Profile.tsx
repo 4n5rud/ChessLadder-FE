@@ -9,6 +9,7 @@ import type { UserImageType } from "../api/imageService";
 import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, forceRefreshStats } from "../api/userService";
 import type { ProfileResponse, DailyStreakDto, UserPerfResponse } from "../api/userService";
 import { useRatingHistory } from "../api/queries";
+import { useLanguage } from "../context/LanguageContext";
 import RatingHistoryChart from "../components/RatingHistoryChart";
 import { TierSection } from "../components/TierSection";
 import { GameTypeButtons } from "../components/GameTypeButtons";
@@ -16,6 +17,7 @@ import lichessLogoImg from "../assets/images/logo/lichess-logo.png";
 import "./Profile.css";
 
 const Profile = () => {
+    const { t, language } = useLanguage();
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -313,9 +315,10 @@ const Profile = () => {
             if (type === 'BANNER') setBannerImage(imageUrlWithTimestamp);
             if (type === 'PROFILE') setProfileImage(imageUrlWithTimestamp);
             
-            alert(`${type === 'BANNER' ? '배너' : '프로필'} 이미지가 업로드되었습니다.`);
+            const messageKey = type === 'BANNER' ? 'profile.imageBannerUploadSuccess' : 'profile.imageProfileUploadSuccess';
+            alert(t(messageKey));
         } catch (error) {
-            alert(`이미지 업로드 실패: ${error}`);
+            alert(`${t('profile.uploadFail')}: ${error}`);
         } finally {
             if (type === 'BANNER') setLoadingBanner(false);
             if (type === 'PROFILE') setLoadingProfile(false);
@@ -327,9 +330,9 @@ const Profile = () => {
         try {
             await updateUserDescription(description);
             setIsEditingDescription(false);
-            alert('자기소개가 저장되었습니다.');
+            alert(t('profile.saveSuccess'));
         } catch (error) {
-            alert('자기소개 저장에 실패했습니다.');
+            alert(t('profile.saveFail'));
         } finally {
             setSavingDescription(false);
         }
@@ -339,7 +342,7 @@ const Profile = () => {
         // 쿨타임 체크
         if (lastRefreshTime && Date.now() - lastRefreshTime < REFRESH_COOLDOWN) {
             const remaining = Math.ceil((REFRESH_COOLDOWN - (Date.now() - lastRefreshTime)) / 1000);
-            alert(`${remaining}초 후에 다시 시도해주세요.`);
+            alert(`${remaining}${t('profile.waitSeconds')}${t('profile.waitSeconds').includes('s') ? '' : ' ' + t('profile.waitSeconds')}`);
             return;
         }
 
@@ -355,10 +358,10 @@ const Profile = () => {
             
             setLastRefreshTime(Date.now());
             setRemainingTime(REFRESH_COOLDOWN);
-            alert('정보가 갱신되었습니다.');
+            alert(t('profile.refreshSuccess'));
         } catch (error) {
             console.error('강제 갱신 실패:', error);
-            alert('정보 갱신에 실패했습니다.');
+            alert(t('profile.refreshFail'));
         } finally {
             setRefreshing(false);
         }
@@ -376,7 +379,7 @@ const Profile = () => {
             
             {/* 배너 이미지 */}
             <div 
-                className="w-full relative group banner-section"
+                className="w-full relative group banner-section z-0"
                 style={bannerImage ? {
                     height: '380px',
                     backgroundImage: `url(${bannerImage})`,
@@ -405,7 +408,7 @@ const Profile = () => {
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                         </svg>
-                        {loadingBanner ? '업로드 중...' : '편집'}
+                        {loadingBanner ? t('profile.uploading') : t('profile.bannerImageEdit')}
                     </div>
                 </label>
             </div>
@@ -438,7 +441,7 @@ const Profile = () => {
                                         disabled={loadingProfile}
                                     />
                                     <div className={`px-3 py-1.5 bg-white/90 backdrop-blur-sm text-gray-700 font-bold text-xs rounded-lg transition shadow-md ${loadingProfile ? 'opacity-50' : 'opacity-0 group-hover:opacity-100'}`}>
-                                        {loadingProfile ? '중...' : '변경'}
+                                        {loadingProfile ? t('profile.uploading').substring(0, 2) : t('profile.profileImageEdit')}
                                     </div>
                                 </label>
                             </div>
@@ -451,10 +454,10 @@ const Profile = () => {
                             </h1>
                             <div className="text-xs font-normal uppercase tracking-wider mb-6 flex gap-4">
                                 <p className="text-gray-500 opacity-60">
-                                    ChessLadder 가입: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('ko-KR') : '-'}
+                                    {t('profile.chessMateJoinDate')}: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '-'}
                                 </p>
                                 <p className="text-gray-500 opacity-60">
-                                    Lichess 가입: {profile?.lichessCreatedAt ? new Date(profile.lichessCreatedAt).toLocaleDateString('ko-KR') : '-'}
+                                    {t('profile.lichessJoinDate')}: {profile?.lichessCreatedAt ? new Date(profile.lichessCreatedAt).toLocaleDateString() : '-'}
                                 </p>
                             </div>
 
@@ -478,9 +481,9 @@ const Profile = () => {
                                     onClick={handleForceRefresh}
                                     disabled={refreshing || remainingTime > 0}
                                     className="inline-flex items-center justify-center px-4 py-2 bg-white border-2 border-black rounded-lg hover:shadow-lg transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm"
-                                    title={remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}초 후에 사용 가능합니다` : 'Lichess에서 최신 정보를 가져옵니다'}
+                                    title={remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}${t('profile.availableAfter')}` : t('profile.fetchFromLichess')}
                                 >
-                                    {refreshing ? '갱신 중...' : remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}초 대기` : '데이터 갱신'}
+                                    {refreshing ? t('profile.refreshing') : remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}${t('profile.waitSeconds')}` : t('profile.dataRefresh')}
                                 </button>
                             </div>
                             
@@ -491,7 +494,7 @@ const Profile = () => {
                                         <textarea
                                             value={description}
                                             onChange={(e) => setDescription(e.target.value)}
-                                            placeholder="자기소개를 입력하세요"
+                                            placeholder={t('profile.enterDescription')}
                                             className="w-full p-3 border-2 rounded-lg text-sm focus:outline-none focus:ring-2 bg-white"
                                             style={{
                                                 borderColor: userPerf 
@@ -515,7 +518,7 @@ const Profile = () => {
                                                         : tierColorScheme['KING'].mainColor
                                                 }}
                                             >
-                                                {savingDescription ? '저장 중...' : '저장'}
+                                                {savingDescription ? t('profile.saving') : t('profile.save')}
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -524,7 +527,7 @@ const Profile = () => {
                                                 }}
                                                 className="px-4 py-2 bg-gray-200 text-gray-700 font-bold text-sm rounded-lg hover:bg-gray-300 transition"
                                             >
-                                                취소
+                                                {t('profile.cancel')}
                                             </button>
                                         </div>
                                     </div>
@@ -545,7 +548,7 @@ const Profile = () => {
                                                         : tierColorScheme['KING'].mainColor
                                                 }}
                                             >
-                                                {description || '자기소개가 없습니다.'}
+                                                {description || t('profile.noDescription')}
                                             </p>
                                         </div>
                                         <button
@@ -559,7 +562,7 @@ const Profile = () => {
                                                     : tierColorScheme['KING'].mainColor
                                             }}
                                         >
-                                            수정
+                                            {t('profile.edit')}
                                         </button>
                                     </div>
                                 )}
@@ -572,39 +575,39 @@ const Profile = () => {
             {/* 게임 통계 섹션 */}
             {profile && (
                 <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">게임 통계</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('profile.gameStatistics')}</h2>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">전체 게임</p>
+                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.totalGames')}</p>
                             <p className="text-4xl font-black text-gray-800">{profile.allGames}</p>
-                            <p className="text-xs text-gray-600 mt-2">게임</p>
+                            <p className="text-xs text-gray-600 mt-2">{t('profile.games')}</p>
                         </div>
                         <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">레이팅 게임</p>
+                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.ratedGames')}</p>
                             <p className="text-4xl font-black text-gray-800">{profile.ratedGames}</p>
-                            <p className="text-xs text-gray-600 mt-2">게임</p>
+                            <p className="text-xs text-gray-600 mt-2">{t('profile.games')}</p>
                         </div>
                         <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">승률</p>
+                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.winRate')}</p>
                             <p className="text-4xl font-black text-gray-800">
                                 {profile.allGames > 0 ? ((profile.wins / profile.allGames) * 100).toFixed(1) : '0.0'}%
                             </p>
-                            <p className="text-xs text-gray-600 mt-2">{profile.wins}승</p>
+                            <p className="text-xs text-gray-600 mt-2">{profile.wins}{language === 'KR' ? '승' : 'W'}</p>
                         </div>
                         <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">승리</p>
+                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.wins')}</p>
                             <p className="text-4xl font-black text-green-600">{profile.wins}</p>
-                            <p className="text-xs text-gray-600 mt-2">게임</p>
+                            <p className="text-xs text-gray-600 mt-2">{t('profile.games')}</p>
                         </div>
                         <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">패배</p>
+                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.losses')}</p>
                             <p className="text-4xl font-black text-red-600">{profile.losses}</p>
-                            <p className="text-xs text-gray-600 mt-2">게임</p>
+                            <p className="text-xs text-gray-600 mt-2">{t('profile.games')}</p>
                         </div>
                         <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">무승부</p>
+                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.draws')}</p>
                             <p className="text-4xl font-black text-gray-600">{profile.draws}</p>
-                            <p className="text-xs text-gray-600 mt-2">게임</p>
+                            <p className="text-xs text-gray-600 mt-2">{t('profile.games')}</p>
                         </div>
                     </div>
                 </div>
@@ -613,15 +616,15 @@ const Profile = () => {
             {/* 플레이 활동 섹션 - 게임타입 바로 하단 */}
             <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 text-animate">게임 활동 기록</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 text-animate">{t('profile.gameActivityRecord')}</h2>
                     <select
                         value={selectedYear}
                         onChange={(e) => setSelectedYear(Number(e.target.value))}
-                        className="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:border-blue-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition relative z-50"
+                        className="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:border-blue-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
                     >
                         {availableYears.map((year) => (
                             <option key={year} value={year}>
-                                {year}년
+                                {year}{language === 'KR' ? '년' : ''}
                             </option>
                         ))}
                     </select>
@@ -630,12 +633,12 @@ const Profile = () => {
                 <div className={`rounded-lg p-8 shadow-lg card-section card-hover overflow-x-auto ${
                     userPerf?.uncertain ? 'bg-gray-100 border-2 border-gray-300' : 'bg-blue-50 border-2 border-blue-200'
                 }`}>
-                    <p className="text-gray-700 text-sm font-bold uppercase tracking-wider mb-6 text-animate">{selectedYear}년 활동 현황</p>
+                    <p className="text-gray-700 text-sm font-bold uppercase tracking-wider mb-6 text-animate">{selectedYear}{language === 'KR' ? '년' : ''} {t('profile.activityStatus')}</p>
                     <div className="pb-6 min-w-full">
                         <div className="flex gap-0 mb-3 text-xs text-gray-600 font-bold uppercase w-full px-1">
-                            {['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'].map((month) => (
-                                <div key={month} className="flex-1 text-center">
-                                    {month}
+                            {['profile.monthJan', 'profile.monthFeb', 'profile.monthMar', 'profile.monthApr', 'profile.monthMay', 'profile.monthJun', 'profile.monthJul', 'profile.monthAug', 'profile.monthSep', 'profile.monthOct', 'profile.monthNov', 'profile.monthDec'].map((monthKey) => (
+                                <div key={monthKey} className="flex-1 text-center">
+                                    {t(monthKey)}
                                 </div>
                             ))}
                         </div>
@@ -755,28 +758,28 @@ const Profile = () => {
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg p-6 border-2 border-blue-400 shadow-md hover:shadow-lg transition transform hover:scale-105">
                                     <div className="text-center">
-                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">연속 플레이</p>
+                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.consecutiveDays')}</p>
                                         <p className="text-5xl font-black text-blue-700 leading-none mb-1">{maxStreak}</p>
                                         <p className="text-xs text-gray-600 font-medium">일</p>
                                     </div>
                                 </div>
                                 <div className="bg-gray-50 rounded-lg p-6 border border-gray-300">
                                     <div className="text-center">
-                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">활동 일 수</p>
+                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.activeDays')}</p>
                                         <p className="text-4xl font-black text-gray-800 leading-none mb-1">{activeDays}</p>
                                         <p className="text-xs text-gray-600 font-medium">일</p>
                                     </div>
                                 </div>
                                 <div className="bg-gray-50 rounded-lg p-6 border border-gray-300">
                                     <div className="text-center">
-                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">총 게임</p>
+                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.totalPlayGames')}</p>
                                         <p className="text-4xl font-black text-gray-800 leading-none mb-1">{totalGames}</p>
                                         <p className="text-xs text-gray-600 font-medium">게임</p>
                                     </div>
                                 </div>
                                 <div className="bg-gray-50 rounded-lg p-6 border border-gray-300">
                                     <div className="text-center">
-                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">승률</p>
+                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.winRate')}</p>
                                         <p className="text-4xl font-black text-gray-800 leading-none mb-1">{winRate}%</p>
                                         <p className="text-xs text-gray-600 font-medium">{totalWins}승 {totalLoses}패</p>
                                     </div>
@@ -806,18 +809,18 @@ const Profile = () => {
 
             {/* 레이팅 히스토리 섹션 */}
             <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 text-animate">레이팅 진행</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6 text-animate">{t('profile.ratingHistory')}</h2>
                 
                 <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-lg card-section card-hover">
                     {isLoadingRatingHistoryQuery ? (
                         <div className="flex items-center justify-center h-80">
-                            <p className="text-gray-500 text-sm">데이터를 불러오는 중입니다...</p>
+                            <p className="text-gray-500 text-sm">{t('profile.dataLoading')}</p>
                         </div>
                     ) : ratingHistory.length > 0 ? (
                         <RatingHistoryChart ratingHistory={ratingHistory} gameType={gameTypeDisplayNames[selectedGameType]} />
                     ) : (
                         <div className="flex items-center justify-center h-80">
-                            <p className="text-gray-500 text-sm">{gameTypeDisplayNames[selectedGameType]} 레이팅 데이터가 없습니다.</p>
+                            <p className="text-gray-500 text-sm">{gameTypeDisplayNames[selectedGameType]} {t('profile.noRatingData')}</p>
                         </div>
                     )}
                 </div>

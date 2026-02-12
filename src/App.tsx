@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { persistQueryClient } from '@tanstack/react-query-persist-client';
+import { LanguageProvider } from './context/LanguageContext';
 import Main from './page/Main';
 import OAuthSuccess from './page/OAuthSuccess';
 import OAuthFail from './page/OAuthFail';
@@ -34,19 +35,21 @@ persistQueryClient({
 
 function App() {
     return(
-        <QueryClientProvider client={queryClient}>
-            <BrowserRouter>
-                <Routes>
-                    <Route path="/" element={<Main />}/>
-                    <Route path="/oauth/success" element={<OAuthSuccess />}/>
-                    <Route path="/oauth/fail" element={<OAuthFail />}/>
-                    <Route path="/profile" element={<Profile />}/>
-                    <Route path="/page1" element={<Page1 />}/>
-                    <Route path="/page2" element={<Page2 />}/>
-                    <Route path="/page3" element={<Page3 />}/>
-                </Routes>
-            </BrowserRouter>
-        </QueryClientProvider>
+        <LanguageProvider>
+            <QueryClientProvider client={queryClient}>
+                <BrowserRouter>
+                    <Routes>
+                        <Route path="/" element={<Main />}/>
+                        <Route path="/oauth/success" element={<OAuthSuccess />}/>
+                        <Route path="/oauth/fail" element={<OAuthFail />}/>
+                        <Route path="/profile" element={<Profile />}/>
+                        <Route path="/page1" element={<Page1 />}/>
+                        <Route path="/page2" element={<Page2 />}/>
+                        <Route path="/page3" element={<Page3 />}/>
+                    </Routes>
+                </BrowserRouter>
+            </QueryClientProvider>
+        </LanguageProvider>
     )
 }
 

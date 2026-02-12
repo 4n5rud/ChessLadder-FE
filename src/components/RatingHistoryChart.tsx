@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import type { RatingHistoryEntry } from '../api/lichessService';
+import { useLanguage } from '../context/LanguageContext';
 
 interface RatingHistoryChartProps {
   ratingHistory: RatingHistoryEntry[];
@@ -167,6 +168,7 @@ const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({
   gameType = 'Rapid',
   tierThresholds = DEFAULT_TIER_THRESHOLDS 
 }) => {
+  const { t } = useLanguage();
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [maxRating, setMaxRating] = useState(2400);
   const [minRating, setMinRating] = useState(0);
@@ -267,7 +269,7 @@ const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({
   if (chartData.length === 0) {
     return (
       <div className="w-full h-96 flex items-center justify-center bg-gray-50 rounded-lg">
-        <p className="text-gray-500">레이팅 히스토리 데이터가 없습니다.</p>
+        <p className="text-gray-500">{t('profile.noRatingData')}</p>
       </div>
     );
   }
@@ -315,9 +317,9 @@ const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({
     <div className="w-full bg-white rounded-lg shadow-lg p-6 overflow-hidden border border-gray-100">
       <div className="mb-6">
         <h3 className="text-3xl font-bold text-gray-800 mb-2">
-          {gameType} 레이팅 히스토리
+          {gameType} {t('profile.ratingHistory')}
         </h3>
-        <p className="text-sm text-gray-500">게임 활동에 따른 레이팅 진행 상황</p>
+        <p className="text-sm text-gray-500">{t('profile.ratingProgression')}</p>
       </div>
       
       <div className="w-full overflow-x-auto -mx-6 px-6">

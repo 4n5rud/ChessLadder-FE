@@ -4,6 +4,7 @@ import Footer from '../global/Footer';
 import { Outlet } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getOAuthUrl } from '../api/oauthService';
+import { useLanguage } from '../context/LanguageContext';
 import pawnImg from '../assets/images/tier/pawn.png';
 import knightImg from '../assets/images/tier/knight.png';
 import bishopImg from '../assets/images/tier/vishop.png';
@@ -21,6 +22,7 @@ interface TierData {
 }
 
 function Main() {
+    const { t } = useLanguage();
     const [isLoading, setIsLoading] = useState(false);
     const [userCount, setUserCount] = useState<number>(0);
     const [selectedTier, setSelectedTier] = useState<string | null>('KNIGHT');
@@ -125,7 +127,7 @@ function Main() {
             window.location.href = oauthUrl;
         } catch (error) {
             console.error('OAuth URL 획득 실패:', error);
-            alert('로그인 시도에 실패했습니다. 다시 시도해주세요.');
+            alert(t('main.loginFailAlert'));
             setIsLoading(false);
         }
     };
@@ -160,7 +162,7 @@ function Main() {
                     <span className="text-9xl text-[#2F639D] fade-in-title">ChessLadder</span>
                 </h1>
                 <h2 className="text-4xl md:text-2xl text-[#86ABD7] font-bold mb-10 fade-in-subtitle">
-                    체스 레이팅의 새로운 기준
+                    {t('main.tagline')}
                 </h2>
 
                 <div className="flex flex-row items-end justify-center gap-6 mb-10">
@@ -193,11 +195,11 @@ function Main() {
                     style={{animationDelay: '1.5s'}}
                 >
                     <img src={lichessLogoImg} alt="Lichess Logo" className="w-8 h-8" />
-                    {isLoading ? '로그인 중...' : 'Lichess 계정으로 로그인하기'}
+                    {isLoading ? t('profile.loading') : t('main.loginWithLichess')}
                 </button>
 
                 <div className="fade-in-bottom-section" style={{animationDelay: '1.5s'}}>
-                    <p className="mt-6 text-sm text-black/80">Chess Mate는 Lichess API를 사용하여 체스 데이터를 안전하게 처리합니다.</p>
+                    <p className="mt-6 text-sm text-black/80">{t('main.apiDescription')}</p>
                 </div>
 
                 {/* 사용자 수 & 업데이트 뉴스 */}
@@ -205,15 +207,15 @@ function Main() {
                     {/* 사용자 수 */}
                     <div className="bg-white/80 rounded-xl shadow p-3">
                         <div className="text-center">
-                            <h2 className="text-xl font-bold mt-5">최근 등록된 유저 <span className="text-[#2F639D]">{userCount}+명</span></h2>
+                            <h2 className="text-xl font-bold mt-5">{t('main.recentUsers')} <span className="text-[#2F639D]">{userCount}+{t('main.users')}</span></h2>
                         </div>
                     </div>
                     
                     {/* 업데이트 뉴스 */}
                     <div className="bg-white/80 rounded-xl shadow p-3">
                         <div className="text-center">
-                            <h2 className="text-xl font-bold mb-2">최근 소식 <span className="text-[#2F639D]"></span></h2>
-                            <a href="#" className="inline-block mt-2 text-[#2F639D] font-semibold hover:underline text-sm">확인하러 가기 →</a>
+                            <h2 className="text-xl font-bold mb-2">{t('main.recentNews')} <span className="text-[#2F639D]"></span></h2>
+                            <a href="#" className="inline-block mt-2 text-[#2F639D] font-semibold hover:underline text-sm">{t('main.viewMore')}</a>
                         </div>
                     </div>
                 </div>
@@ -224,8 +226,8 @@ function Main() {
             {/* 티어 시스템 섹션 */}
             <div className="w-full" style={{background: 'linear-gradient(to bottom, transparent 0%, #0a1f33 10%, #0a1f33 100%)'}}>
                 <div className="flex flex-col pt-100 pb-20 px-4 max-w-6xl mx-auto text-white">
-                    <h2 className="text-4xl font-bold mb-4">ChessLadder 티어 시스템</h2>
-                    <p className="text-lg mb-8 text-white/90 font-semibold">ChessLadder는 기존의 지루한 레이팅 시스템에서 벗어난 6가지의 티어 시스템 을 제공해요</p>
+                    <h2 className="text-4xl font-bold mb-4">{t('main.tierSystem')}</h2>
+                    <p className="text-lg mb-8 text-white/90 font-semibold">{t('main.tierDescription')}</p>
                     
                     {/* Tier icons - Button Style */}
                     <div className="flex flex-row justify-between gap-4 mb-12 w-full flex-wrap">
@@ -266,8 +268,8 @@ function Main() {
                                     <table className="w-full text-left">
                                         <thead>
                                             <tr className="border-b border-white/30">
-                                                <th className="pb-2 font-semibold">단계</th>
-                                                <th className="pb-2 font-semibold">레이팅 범위</th>
+                                                <th className="pb-2 font-semibold">{t('main.stage')}</th>
+                                                <th className="pb-2 font-semibold">{t('main.ratingRange')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -289,7 +291,7 @@ function Main() {
             {/* 커뮤니티 섹션 - Discord */}
             <div className="w-full bg-[#0a1f33]">
                 <div className="flex flex-col pt-5 pb-20 px-4 max-w-6xl mx-auto text-white">
-                    <h2 className="text-4xl font-bold mb-4">디스코드 링크</h2>
+                    <h2 className="text-4xl font-bold mb-4">{t('main.discordLink')}</h2>
                     <a 
                         href="https://discord.gg/9NeVdmYewQ" 
                         target="_blank" 
@@ -299,7 +301,7 @@ function Main() {
                         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.211.375-.444.864-.607 1.25a18.27 18.27 0 0 0-5.487 0c-.163-.386-.395-.875-.607-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.975 14.975 0 0 0 1.293-2.1a.07.07 0 0 0-.038-.098a13.11 13.11 0 0 1-1.872-.892a.072.072 0 0 1-.007-.12a10.15 10.15 0 0 0 .372-.294a.074.074 0 0 1 .076-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .076.01c.12.098.246.198.373.294a.072.072 0 0 1-.006.12a12.98 12.98 0 0 1-1.873.892a.07.07 0 0 0-.037.099a14.992 14.992 0 0 0 1.293 2.1a.074.074 0 0 0 .084.028a19.963 19.963 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.057c.5-4.569-.838-8.54-3.549-12.267a.06.06 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-.965-2.157-2.156c0-1.193.966-2.157 2.157-2.157c1.193 0 2.157.964 2.157 2.157c0 1.19-.964 2.156-2.157 2.156zm7.975 0c-1.183 0-2.157-.965-2.157-2.156c0-1.193.966-2.157 2.157-2.157c1.193 0 2.157.964 2.157 2.157c0 1.19-.964 2.156-2.157 2.156z"/>
                         </svg>
-                        Discord 참여하기
+                        {t('main.joinDiscord')}
                     </a>
                 </div>
             </div>
@@ -307,7 +309,7 @@ function Main() {
             {/* 기부 섹션 */}
             <div className="w-full bg-[#0a1f33]">
                 <div className="flex flex-col pt-5 pb-20 px-4 max-w-6xl mx-auto text-white">
-                    <h2 className="text-4xl font-bold mb-4">개발자에게 커피 한잔 사주기</h2>
+                    <h2 className="text-4xl font-bold mb-4">{t('main.buyMeCoffee')}</h2>
                     <a 
                         href="https://www.buymeacoffee.com/chessladder" 
                         target="_blank" 

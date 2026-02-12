@@ -1,4 +1,5 @@
 import type { UserPerfResponse } from "../api/userService";
+import { useLanguage } from "../context/LanguageContext";
 
 interface TierSectionProps {
     userPerf: UserPerfResponse | null;
@@ -123,6 +124,7 @@ export const TierSection = ({
     promotionThresholds,
     convertSubTierToRoman
 }: TierSectionProps) => {
+    const { t } = useLanguage();
     const calculatePromotionProgress = (rating: number, currentTier: string) => {
         const tiers = ['PAWN', 'KNIGHT', 'BISHOP', 'ROOK', 'QUEEN', 'KING'];
         const currentTierIndex = tiers.indexOf(currentTier);
@@ -334,7 +336,7 @@ export const TierSection = ({
                         <>
                             <div className="mb-2 flex items-center justify-between">
                                 <div className="text-sm font-bold" style={{ color: '#999' }}>
-                                    티어 측정까지 레이팅게임 <span className="font-black">{remainingGamesToMeasure}</span> 게임 남음
+                                    {t('profile.tierMeasurementLeft')} {t('profile.ratingGamesUncertain')} <span className="font-black">{remainingGamesToMeasure}</span> {t('profile.gamesLeft')}
                                 </div>
                             </div>
                             <div className="flex items-center w-full">
