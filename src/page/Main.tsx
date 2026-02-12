@@ -311,7 +311,7 @@ function Main() {
                 <div className="flex flex-col pt-5 pb-20 px-4 max-w-6xl mx-auto text-white">
                     <h2 className="text-4xl font-bold mb-4">{t('main.buyMeCoffee')}</h2>
                     <a 
-                        href="https://www.buymeacoffee.com/chessladder" 
+                        href="https://buymeacoffee.com/4n5rud" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-3 bg-[#86ABD7] hover:bg-[#6a99c4] text-white font-bold py-3 px-8 rounded-full shadow-lg transition transform hover:scale-105 w-fit"
