@@ -33,12 +33,16 @@ export const getUploadUrl = async (
     { method: 'GET' }
   );
   
-  const uploadUrl = res.data?.uploadUrl;
+  console.log('[ImageService] getUploadUrl response:', { type, res });
+  
+  const uploadUrl = res.upload_url || res.data?.upload_url || res.data?.uploadUrl || res.uploadUrl;
   
   if (!uploadUrl) {
-    throw new Error('업로드 URL을 받지 못했습니다');
+    console.error('[ImageService] Failed to extract upload URL from response:', res);
+    throw new Error(`업로드 URL을 받지 못했습니다. 응답: ${JSON.stringify(res)}`);
   }
   
+  console.log('[ImageService] Upload URL extracted:', uploadUrl);
   return { uploadUrl, contentType };
 };
 
@@ -49,9 +53,10 @@ export const getUploadUrl = async (
  * @returns SuccessResponse<null>
  */
 export const completeUpload = async (type: UserImageType): Promise<void> => {
-  await api(`/image/upload-complete?type=${type}`, {
+  const res = await api(`/image/upload-complete?type=${type}`, {
     method: 'POST',
   });
+  console.log('[ImageService] completeUpload response:', { type, res });
 };
 
 /**
@@ -63,11 +68,15 @@ export const completeUpload = async (type: UserImageType): Promise<void> => {
 export const getImageUrl = async (type: UserImageType): Promise<string> => {
   const res = await api(`/image/image-url?type=${type}`, { method: 'GET' });
   
-  const imageUrl = res.data?.uploadUrl;
+  console.log('[ImageService] getImageUrl response:', { type, res });
+  
+  const imageUrl = res.upload_url || res.data?.upload_url || res.imageUrl || res.data?.imageUrl;
   
   if (!imageUrl) {
-    throw new Error('이미지 URL을 받지 못했습니다');
+    console.error('[ImageService] Failed to extract image URL from response:', res);
+    throw new Error(`이미지 URL을 받지 못했습니다. 응답: ${JSON.stringify(res)}`);
   }
   
+  console.log('[ImageService] Image URL extracted:', imageUrl);
   return imageUrl;
 };

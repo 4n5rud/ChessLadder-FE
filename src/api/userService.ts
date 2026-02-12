@@ -56,7 +56,8 @@ export interface StreakResponse {
  */
 export const getUserProfile = async (): Promise<ProfileResponse> => {
   const res = await api('/user/profile', { method: 'GET' });
-  return res.data;
+  console.log('[UserService] getUserProfile response:', res);
+  return res.data || res;
 };
 
 /**
@@ -83,7 +84,8 @@ export const updateUserDescription = async (description: string): Promise<void> 
  */
 export const getUserStreak = async (year: number): Promise<StreakResponse> => {
   const res = await api(`/stat/streak?year=${year}`, { method: 'GET' });
-  return res.data;
+  console.log('[UserService] getUserStreak response:', res);
+  return res.data || res;
 };
 /**
  * 색상별 승률 통계
@@ -111,7 +113,8 @@ export interface ColorStatsResponse {
  */
 export const getColorStats = async (gameType: string = 'RAPID'): Promise<ColorStatsResponse> => {
   const res = await api(`/stat/color?gameType=${gameType}`, { method: 'GET' });
-  return res.data;
+  console.log('[UserService] getColorStats response:', res);
+  return res.data || res;
 };
 
 /**
@@ -140,7 +143,8 @@ export interface FirstMoveResponse {
  */
 export const getFirstMoveStats = async (gameType: string = 'RAPID'): Promise<FirstMoveResponse> => {
   const res = await api(`/stat/first-move?gameType=${gameType}`, { method: 'GET' });
-  return res.data;
+  console.log('[UserService] getFirstMoveStats response:', res);
+  return res.data || res;
 };
 
 /**
@@ -180,6 +184,7 @@ export interface UserPerfResponse {
  */
 export const getUserPerf = async (gameType: string = 'RAPID'): Promise<UserPerfResponse> => {
   const res = await api(`/stat/perf?gameType=${gameType}`, { method: 'GET' });
+  console.log('[UserService] getUserPerf response:', res);
   
   // 백엔드에서 data가 null인 경우 (uncertain 상태) 기본값 반환
   if (res.success && res.data === null) {
@@ -206,7 +211,7 @@ export const getUserPerf = async (gameType: string = 'RAPID'): Promise<UserPerfR
     };
   }
   
-  return res.data;
+  return res.data || res;
 };
 
 /**
@@ -216,5 +221,6 @@ export const getUserPerf = async (gameType: string = 'RAPID'): Promise<UserPerfR
  */
 export const forceRefreshStats = async (): Promise<any> => {
   const res = await api('/stat/force-refresh', { method: 'PUT' });
-  return res.data;
+  console.log('[UserService] forceRefreshStats response:', res);
+  return res.data || res;
 };
