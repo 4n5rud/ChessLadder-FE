@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentUser, type UserPrincipal } from '../api/authService';
+import Header from '../global/Header';
+import Footer from '../global/Footer';
 
 /**
  * OAuth 로그인 성공 페이지
@@ -52,15 +54,35 @@ export default function OAuthSuccess() {
   }, [navigate]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#0a1f33] to-[#1a3a52]">
-      <div className="text-center">
-        <div className="mb-6">
-          <div className="w-16 h-16 mx-auto mb-4 border-4 border-[#86ABD7] border-t-[#2F639D] rounded-full animate-spin"></div>
+    <div className="relative min-h-screen bg-gradient-to-b from-[#0a1f33] to-[#0a1f33] overflow-x-hidden">
+      <Header />
+      
+      <main className="flex flex-col items-center justify-center min-h-[calc(100vh-14rem)] px-4 text-center">
+        <div className="max-w-2xl">
+          <div className="mb-8">
+            <div className="w-20 h-20 mx-auto mb-6 border-4 border-[#86ABD7] border-t-[#2F639D] rounded-full animate-spin"></div>
+          </div>
+          
+          <h1 className="text-5xl md:text-6xl font-extrabold text-white drop-shadow mb-6 tracking-tight">
+            <span className="text-[#2F639D]">로그인 중...</span>
+          </h1>
+          
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20">
+            <p className="text-[#86ABD7] text-2xl font-semibold mb-4">{status}</p>
+            {user && (
+              <div className="mt-6 pt-6 border-t border-white/20">
+                <p className="text-[#BFD7ED] text-lg">
+                  <span className="font-semibold">사용자:</span> {user.username}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <p className="text-[#86ABD7]/70 text-sm mt-8">곧 프로필 페이지로 이동됩니다...</p>
         </div>
-        <h1 className="text-3xl font-bold mb-4 text-white">로그인 중...</h1>
-        <p className="text-[#86ABD7] text-lg">{status}</p>
-        {user && <p className="text-[#86ABD7] text-sm mt-2">사용자: {user.username}</p>}
-      </div>
+      </main>
+      
+      <Footer />
     </div>
   );
 }

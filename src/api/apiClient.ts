@@ -13,6 +13,7 @@ console.log('  DEV:', import.meta.env.DEV);
 console.log('  PROD:', import.meta.env.PROD);
 console.log('  VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
 console.log('  Final API_BASE_URL:', API_BASE_URL);
+console.log('  Cookies:', document.cookie || '(empty)');
 console.log('='.repeat(60));
 
 /**
