@@ -110,8 +110,31 @@ export const updateUserDescription = async (description: string): Promise<void> 
  */
 export const getUserStreak = async (year: number): Promise<StreakResponse> => {
   const res = await api(`/stat/streak?year=${year}`, { method: 'GET' });
-  console.log('[UserService] getUserStreak response:', res);
-  return res.data || res;
+  console.log('[UserService] getUserStreak raw response:', res);
+  
+  const data = res.data || res;
+  
+  // 응답이 배열인 경우 직접 처리, 아니면 dailyStreakDto 필드 찾기
+  let dailyStreaks: DailyStreakDto[] = [];
+  
+  if (Array.isArray(data)) {
+    // 응답이 직접 배열인 경우
+    dailyStreaks = data;
+  } else if (data?.dailyStreakDto && Array.isArray(data.dailyStreakDto)) {
+    // camelCase: dailyStreakDto
+    dailyStreaks = data.dailyStreakDto;
+  } else if (data?.daily_streak_dto && Array.isArray(data.daily_streak_dto)) {
+    // snake_case: daily_streak_dto
+    dailyStreaks = data.daily_streak_dto;
+  }
+  
+  const response: StreakResponse = {
+    year: data.year || String(year),
+    dailyStreakDto: dailyStreaks,
+  };
+  
+  console.log('[UserService] getUserStreak converted response:', response);
+  return response;
 };
 /**
  * 색상별 승률 통계

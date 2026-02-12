@@ -253,14 +253,24 @@ const Profile = () => {
         const fetchStreak = async () => {
             try {
                 const streakData = await getUserStreak(selectedYear);
+                console.log('[Profile] streakData:', streakData);
+                
+                if (!streakData || !streakData.dailyStreakDto) {
+                    console.warn('[Profile] No streak data or dailyStreakDto is undefined');
+                    setStreakMap(new Map());
+                    return;
+                }
                 
                 const map = new Map<string, DailyStreakDto>();
-                streakData.dailyStreakDto.forEach(daily => {
-                    map.set(daily.date, daily);
-                });
+                if (Array.isArray(streakData.dailyStreakDto)) {
+                    streakData.dailyStreakDto.forEach(daily => {
+                        map.set(daily.date, daily);
+                    });
+                }
                 setStreakMap(map);
             } catch (error) {
                 console.error('Failed to fetch streak data:', error);
+                setStreakMap(new Map());
             }
         };
         
