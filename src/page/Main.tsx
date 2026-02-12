@@ -114,7 +114,7 @@ function Main() {
             const res = await getOAuthUrl();
             console.log('OAuth 응답:', res);
             
-            const oauthUrl = res.oauthUrl || res.data?.oauthUrl;
+            const oauthUrl = res.data?.oauth_url || res.oauth_url || res.oauthUrl;
             
             if (!oauthUrl) {
                 console.error('응답 전체:', JSON.stringify(res, null, 2));
@@ -134,16 +134,8 @@ function Main() {
     useEffect(() => {
         const fetchUserCount = async () => {
             try {
-                const response = await fetch('http://localhost:8080/api/user/count', {
-                    method: 'GET',
-                    credentials: 'include',
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP 오류: ${response.status}`);
-                }
-
-                const data = await response.json();
+                const { api } = await import('../api/apiClient');
+                const data = await api('/user/count');
                 console.log('사용자 수 API 응답:', data);
                 
                 const userCountValue = data.count !== undefined ? data.count : (data.data?.count || 0);
