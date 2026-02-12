@@ -56,8 +56,34 @@ export interface StreakResponse {
  */
 export const getUserProfile = async (): Promise<ProfileResponse> => {
   const res = await api('/user/profile', { method: 'GET' });
-  console.log('[UserService] getUserProfile response:', res);
-  return res.data || res;
+  console.log('[UserService] getUserProfile raw response:', res);
+  
+  // res.data 또는 res 선택
+  const data = res.data || res;
+  
+  // snake_case를 camelCase로 변환
+  const profile: ProfileResponse = {
+    id: data.id,
+    username: data.username,
+    lichessId: data.lichess_id || data.lichessId,
+    title: data.title,
+    description: data.description || '',
+    profileImage: data.profile_image || data.profileImage,
+    bannerImage: data.banner_image || data.bannerImage,
+    createdAt: data.created_at || data.createdAt,
+    lichessCreatedAt: data.lichess_created_at || data.lichessCreatedAt,
+    allGames: data.all_games || data.allGames || 0,
+    ratedGames: data.rated_games || data.ratedGames || 0,
+    wins: data.wins || 0,
+    losses: data.losses || 0,
+    draws: data.draws || 0,
+    totalSeconds: data.total_seconds || data.totalSeconds || 0,
+  };
+  
+  console.log('[UserService] getUserProfile converted profile:', profile);
+  console.log('[UserService] Profile stats - allGames:', profile.allGames, 'ratedGames:', profile.ratedGames);
+  
+  return profile;
 };
 
 /**
