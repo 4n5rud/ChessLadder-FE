@@ -221,7 +221,7 @@ export const updateUserDescription = async (description: string): Promise<Profil
  */
 export const getUserPerf = async (gameType: string = 'RAPID'): Promise<UserPerfResponse> => {
   try {
-    const res = await api(`/user/perf?gametype=${encodeURIComponent(gameType)}`);
+    const res = await api(`/stat/perf?gametype=${encodeURIComponent(gameType)}`);
     const data = res.data || res;
     return {
       id: data.id,
