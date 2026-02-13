@@ -147,7 +147,7 @@ const Profile = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [lastRefreshTime, setLastRefreshTime] = useState<number | null>(null);
     const [remainingTime, setRemainingTime] = useState(0);
-    const REFRESH_COOLDOWN = 5 * 60 * 1000; // 5분 (밀리초)
+    const REFRESH_COOLDOWN = 5 * 60 * 1000; // 5분 (300초) 제한
 
     // 남은 시간 업데이트 (1초마다)
     useEffect(() => {
