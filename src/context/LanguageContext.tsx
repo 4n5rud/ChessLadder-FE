@@ -134,6 +134,14 @@ const translations: Translations = {
     'common.error': '오류',
     'common.success': '성공',
     'common.comingSoon': '아직 준비중입니다.',
+    'common.ranking': '랭킹',
+    'common.rankingDescription': '모든 플레이어의 레이팅 순위를 확인하세요',
+    'common.yourRanking': '당신의 순위',
+    'common.newsDescription': '최신 소식 및 공지사항을 확인하세요',
+    'common.noData': '데이터가 없습니다',
+    'common.articles': '기사',
+    'ranking.loginPrompt': '로그인해서 내 랭킹을 확인해보세요!',
+    'ranking.unrated': '게임을 더 하여 레이팅을 얻어보세요!',
   },
   EN: {
     // Header
@@ -260,6 +268,14 @@ const translations: Translations = {
     'common.error': 'Error',
     'common.success': 'Success',
     'common.comingSoon': 'Coming soon.',
+    'common.ranking': 'Ranking',
+    'common.rankingDescription': 'See the rating rankings of all players',
+    'common.yourRanking': 'YOUR RANKING',
+    'common.newsDescription': 'Latest news and announcements',
+    'common.noData': 'No data available',
+    'common.articles': 'Articles',
+    'ranking.loginPrompt': 'Log in to check your ranking!',
+    'ranking.unrated': 'Play more games to get your rating!',
   },
 };
 

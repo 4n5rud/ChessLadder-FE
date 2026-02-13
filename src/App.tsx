@@ -7,6 +7,8 @@ import Main from './page/Main';
 import OAuthSuccess from './page/OAuthSuccess';
 import OAuthFail from './page/OAuthFail';
 import Profile from './page/Profile';
+import Ranking from './page/Ranking';
+import News from './page/News';
 import Header from './global/Header';
 import Footer from './global/Footer';
 
@@ -62,8 +64,8 @@ function App() {
                         <Route path="/oauth/fail" element={<OAuthFail />}/>
                         <Route path="/profile" element={<Profile />}/>
                         <Route path="/page1" element={<ComingSoon />}/>
-                        <Route path="/page2" element={<ComingSoon />}/>
-                        <Route path="/page3" element={<ComingSoon />}/>
+                        <Route path="/news" element={<News />}/>
+                        <Route path="/ranking" element={<Ranking />}/>
                     </Routes>
                 </BrowserRouter>
             </QueryClientProvider>

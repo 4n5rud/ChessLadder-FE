@@ -23,10 +23,14 @@ console.log('='.repeat(60));
  */
 export const api = async (endpoint: string, options: RequestInit = {}) => {
   const fullUrl = `${API_BASE_URL}${endpoint}`;
+  
+  // 타임아웃 설정 (10초)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
   console.log(`[API Request] ${options.method || 'GET'} ${fullUrl}`, {
     method: options.method || 'GET',
     url: fullUrl,
-    body: options.body,
     timestamp: new Date().toISOString(),
   });
 
@@ -34,26 +38,30 @@ export const api = async (endpoint: string, options: RequestInit = {}) => {
   try {
     response = await fetch(fullUrl, {
       ...options,
-      credentials: 'include', // 쿠키 포함 (필수)
+      signal: controller.signal,
+      credentials: 'include',
     });
-  } catch (fetchError) {
-    console.error(`[API Fetch Error] ${fullUrl}`, {
-      errorType: fetchError instanceof Error ? fetchError.constructor.name : typeof fetchError,
-      errorMessage: fetchError instanceof Error ? fetchError.message : String(fetchError),
-      timestamp: new Date().toISOString(),
-    });
+  } catch (fetchError: any) {
+    clearTimeout(timeoutId);
+    if (fetchError.name === 'AbortError') {
+      console.error(`[API Timeout] ${fullUrl} - 10초 초과`);
+      throw new Error('서버 응답 시간이 초과되었습니다. 서버 상태를 확인해주세요.');
+    }
+    console.error(`[API Fetch Error] ${fullUrl}`, fetchError);
     throw fetchError;
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   console.log(`[API Response] ${fullUrl}`, {
     status: response.status,
     statusText: response.statusText,
-    headers: Object.fromEntries(response.headers.entries()),
     timestamp: new Date().toISOString(),
   });
 
   // 401 Unauthorized - 토큰 만료 → 토큰 갱신 시도
-  if (response.status === 401) {
+  // 단, 로그인 관련 API(/oauth/oauth-url, /auth/me 등)는 무한 루프 방지를 위해 생략 가능
+  if (response.status === 401 && !endpoint.includes('/oauth/oauth-url')) {
     console.warn(`[API] Token expired (401) - attempting refresh for ${endpoint}`);
     try {
       const refreshUrl = `${API_BASE_URL}/auth/refresh`;

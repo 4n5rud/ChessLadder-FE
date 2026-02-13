@@ -1,9 +1,11 @@
 
 import Header from '../global/Header';
 import Footer from '../global/Footer';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getOAuthUrl } from '../api/oauthService';
+import { isLoggedIn } from '../api/authService';
+import { loadAllNews, type NewsItem } from '../api/newsService';
 import { useLanguage } from '../context/LanguageContext';
 import pawnImg from '../assets/images/tier/pawn.png';
 import knightImg from '../assets/images/tier/knight.png';
@@ -22,10 +24,13 @@ interface TierData {
 }
 
 function Main() {
+    const navigate = useNavigate();
     const { t } = useLanguage();
     const [isLoading, setIsLoading] = useState(false);
     const [userCount, setUserCount] = useState<number>(0);
     const [selectedTier, setSelectedTier] = useState<string | null>('KNIGHT');
+    const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+    const [recentNews, setRecentNews] = useState<NewsItem | null>(null);
 
     // 티어 데이터
     const tierData: TierData[] = [
@@ -111,26 +116,48 @@ function Main() {
 
     // 로그인 버튼 클릭 핸들러
     const handleLichessLogin = async () => {
+        if (isLoading) return;
+        
         try {
             setIsLoading(true);
+            console.log('[Login] OAuth URL 획득 시도...');
             const res = await getOAuthUrl();
-            console.log('OAuth 응답:', res);
+            console.log('[Login] OAuth 응답 수신:', res);
             
             const oauthUrl = res.data?.oauth_url || res.oauth_url || res.oauthUrl;
             
             if (!oauthUrl) {
-                console.error('응답 전체:', JSON.stringify(res, null, 2));
-                throw new Error(`OAuth URL을 찾을 수 없습니다. 응답: ${JSON.stringify(res)}`);
+                console.error('[Login] URL 누락 응답:', res);
+                throw new Error(t('main.loginFailAlert'));
             }
             
-            console.log('리다이렉트 URL:', oauthUrl);
-            window.location.href = oauthUrl;
-        } catch (error) {
-            console.error('OAuth URL 획득 실패:', error);
-            alert(t('main.loginFailAlert'));
+            console.log('[Login] 리다이렉트 실행:', oauthUrl);
+            
+            // 즉시 이동 시도
+            window.location.assign(oauthUrl);
+            
+            // 이동이 지연될 경우를 대비해 5초 후 로딩 해제 (안전장치)
+            setTimeout(() => setIsLoading(false), 5000);
+            
+        } catch (error: any) {
+            console.error('[Login] 로그인 프로세스 오류:', error);
+            alert(error.message || t('main.loginFailAlert'));
             setIsLoading(false);
         }
     };
+
+    // 로그인 상태 확인
+    useEffect(() => {
+        const checkLogin = async () => {
+            try {
+                const logged = await isLoggedIn();
+                setIsUserLoggedIn(logged);
+            } catch (error) {
+                console.error('로그인 상태 확인 실패:', error);
+            }
+        };
+        checkLogin();
+    }, []);
 
     // 사용자 수 조회
     useEffect(() => {
@@ -151,6 +178,22 @@ function Main() {
         };
 
         fetchUserCount();
+    }, []);
+
+    // 최근 뉴스 로드
+    useEffect(() => {
+        const fetchRecentNews = async () => {
+            try {
+                const news = await loadAllNews();
+                if (news.length > 0) {
+                    setRecentNews(news[0]);
+                }
+            } catch (err) {
+                console.error('최근 뉴스 로드 오류:', err);
+            }
+        };
+
+        fetchRecentNews();
     }, []);
     return(
         <div className="relative min-h-screen overflow-x-hidden">
@@ -190,12 +233,13 @@ function Main() {
                 {/* 로그인 버튼 */}
                 <button 
                     onClick={handleLichessLogin}
-                    disabled={isLoading}
+                    disabled={isLoading || isUserLoggedIn}
                     className="mx-auto flex items-center gap-3 bg-white text-black font-bold py-3 px-7 rounded-full shadow-lg hover:bg-[#e6e6e6] transition text-lg fade-in-bottom-section disabled:opacity-50 disabled:cursor-not-allowed" 
                     style={{animationDelay: '1.5s'}}
+                    title={isUserLoggedIn ? t('profile.alreadyLoggedIn') : ''}
                 >
                     <img src={lichessLogoImg} alt="Lichess Logo" className="w-8 h-8" />
-                    {isLoading ? t('profile.loading') : t('main.loginWithLichess')}
+                    {isLoading ? t('profile.loading') : (isUserLoggedIn ? t('profile.alreadyLoggedIn') : t('main.loginWithLichess'))}
                 </button>
 
                 <div className="fade-in-bottom-section" style={{animationDelay: '1.5s'}}>
@@ -203,19 +247,29 @@ function Main() {
                 </div>
 
                 {/* 사용자 수 & 업데이트 뉴스 */}
-                <div className="pt-20 grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-3xl mx-auto fade-in-bottom-section" style={{animationDelay: '1.5s'}}>
+                <div className="pt-20 flex flex-col items-center gap-8 w-full max-w-2xl mx-auto fade-in-bottom-section" style={{animationDelay: '1.5s'}}>
                     {/* 사용자 수 */}
-                    <div className="bg-white/80 rounded-xl shadow p-3">
+                    <div className="bg-white/80 rounded-xl shadow p-4 w-full max-w-sm">
                         <div className="text-center">
-                            <h2 className="text-xl font-bold mt-5">{t('main.recentUsers')} <span className="text-[#2F639D]">{userCount}+{t('main.users')}</span></h2>
+                            <h2 className="text-xl font-bold mt-3">{t('main.recentUsers')} <span className="text-[#2F639D]">{userCount}+{t('main.users')}</span></h2>
                         </div>
                     </div>
                     
                     {/* 업데이트 뉴스 */}
-                    <div className="bg-white/80 rounded-xl shadow p-3">
+                    <div 
+                        onClick={() => navigate('/news')}
+                        className="bg-white/80 rounded-xl shadow p-4 cursor-pointer hover:shadow-lg hover:bg-white transition w-full max-w-sm"
+                    >
                         <div className="text-center">
-                            <h2 className="text-xl font-bold mb-2">{t('main.recentNews')} <span className="text-[#2F639D]"></span></h2>
-                            <a href="#" className="inline-block mt-2 text-[#2F639D] font-semibold hover:underline text-sm">{t('main.viewMore')}</a>
+                            <h2 className="text-xl font-bold mb-3">{t('main.recentNews')}</h2>
+                            {recentNews ? (
+                                <div className="text-left">
+                                    <h3 className="text-sm font-semibold text-[#2F639D] mb-3">{recentNews.title}</h3>
+                                    <a className="inline-block text-[#2F639D] font-semibold hover:underline text-xs cursor-pointer">{t('main.viewMore')}</a>
+                                </div>
+                            ) : (
+                                <p className="text-xs text-gray-500">{t('common.noData')}</p>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1,273 +1,279 @@
-// 사용자 프로필 API - Swagger 명세 준수
+// 사용자 프로필 API - 깔끔한 구현
 import { api } from './apiClient';
 
-/**
- * 프로필 응답
- */
+/** 프로필 응답 (필요 시 확장) */
 export interface ProfileResponse {
-  // 기본 정보
   id: number;
   username: string;
-  lichessId?: string; // Lichess 사용자명
-  title?: string; // 사용자 칭호
-  description: string;
-
-  // 프로필 이미지
-  profileImage?: string;
-  bannerImage?: string;
-
-  // 날짜
-  createdAt?: string; // ChessMate 가입일 (ISO 8601 형식)
-  lichessCreatedAt?: string; // Lichess 가입일 (ISO 8601 형식)
-
-  // 게임 통계 (전체)
+  lichessId?: string;
+  title?: string;
+  description?: string | null;
+  profile_image?: string | null;
+  banner_image?: string | null;
+  lichessCreatedAt?: string | null;
+  createdAt?: string | null;
   allGames: number;
   ratedGames: number;
   wins: number;
   losses: number;
   draws: number;
-  totalSeconds: number;
 }
 
-/**
- * 일일 스트릭 정보
- */
-export interface DailyStreakDto {
-  date: string; // YYYY-MM-DD
-  win: number;
-  lose: number;
-  draw: number;
-  total: number;
-  lastRating: number; // 해당 날짜의 마지막 레이팅
-}
-
-/**
- * 스트릭 응답
- */
-export interface StreakResponse {
-  year: string;
-  dailyStreakDto: DailyStreakDto[];
-}
-
-/**
- * GET /api/user/profile
- * 사용자 프로필 정보 조회 (username, description, joinDate)
- * @returns Promise<ProfileResponse>
- */
-export const getUserProfile = async (): Promise<ProfileResponse> => {
-  const res = await api('/user/profile', { method: 'GET' });
-  console.log('[UserService] getUserProfile raw response:', res);
-  
-  // res.data 또는 res 선택
-  const data = res.data || res;
-  
-  // snake_case를 camelCase로 변환
-  const profile: ProfileResponse = {
-    id: data.id,
-    username: data.username,
-    lichessId: data.lichess_id || data.lichessId,
-    title: data.title,
-    description: data.description || '',
-    profileImage: data.profile_image || data.profileImage,
-    bannerImage: data.banner_image || data.bannerImage,
-    createdAt: data.created_at || data.createdAt,
-    lichessCreatedAt: data.lichess_created_at || data.lichessCreatedAt,
-    allGames: data.all_games || data.allGames || 0,
-    ratedGames: data.rated_games || data.ratedGames || 0,
-    wins: data.wins || 0,
-    losses: data.losses || 0,
-    draws: data.draws || 0,
-    totalSeconds: data.total_seconds || data.totalSeconds || 0,
-  };
-  
-  console.log('[UserService] getUserProfile converted profile:', profile);
-  console.log('[UserService] Profile stats - allGames:', profile.allGames, 'ratedGames:', profile.ratedGames);
-  
-  return profile;
-};
-
-/**
- * PUT /api/user/description
- * 사용자 자기소개 수정
- * @param description 자기소개 텍스트
- * @returns Promise<void>
- */
-export const updateUserDescription = async (description: string): Promise<void> => {
-  await api('/user/description', {
-    method: 'PUT',
-    body: JSON.stringify({ description }),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-};
-
-/**
- * GET /api/stat/streak?year=YYYY
- * 사용자 연간 스트릭 조회
- * @param year 조회할 년도 (예: 2026)
- * @returns Promise<StreakResponse>
- */
-export const getUserStreak = async (year: number): Promise<StreakResponse> => {
-  const res = await api(`/stat/streak?year=${year}`, { method: 'GET' });
-  console.log('[UserService] getUserStreak raw response:', res);
-  
-  const data = res.data || res;
-  
-  // 응답이 배열인 경우 직접 처리, 아니면 dailyStreakDto 필드 찾기
-  let dailyStreaks: DailyStreakDto[] = [];
-  
-  if (Array.isArray(data)) {
-    // 응답이 직접 배열인 경우
-    dailyStreaks = data;
-  } else if (data?.dailyStreakDto && Array.isArray(data.dailyStreakDto)) {
-    // camelCase: dailyStreakDto
-    dailyStreaks = data.dailyStreakDto;
-  } else if (data?.daily_streak_dto && Array.isArray(data.daily_streak_dto)) {
-    // snake_case: daily_streak_dto
-    dailyStreaks = data.daily_streak_dto;
-  }
-  
-  const response: StreakResponse = {
-    year: data.year || String(year),
-    dailyStreakDto: dailyStreaks,
-  };
-  
-  console.log('[UserService] getUserStreak converted response:', response);
-  return response;
-};
-/**
- * 색상별 승률 통계
- */
-export interface ColorStats {
-  color: string; // "BLACK" 또는 "WHITE"
-  winRate: number; // 승률 (퍼센트)
-  totalGames: number;
-  wins: number;
-}
-
-/**
- * 색상별 승률 통계 응답
- */
-export interface ColorStatsResponse {
-  gameType: string;
-  colorStats: ColorStats[];
-}
-
-/**
- * GET /api/stat/color?gameType=RAPID
- * 색상별(흑/백) 승률 통계 조회
- * @param gameType 게임 타입 (RAPID, BLITZ, CLASSICAL, BULLET)
- * @returns Promise<ColorStatsResponse>
- */
-export const getColorStats = async (gameType: string = 'RAPID'): Promise<ColorStatsResponse> => {
-  const res = await api(`/stat/color?gameType=${gameType}`, { method: 'GET' });
-  console.log('[UserService] getColorStats response:', res);
-  return res.data || res;
-};
-
-/**
- * 첫 무브 통계
- */
-export interface FirstMoveStats {
-  move: string; // "e4", "d4" 등
-  frequency: number; // 빈도 (퍼센트)
-  totalGames: number;
-  count: number;
-}
-
-/**
- * 첫 무브 통계 응답
- */
-export interface FirstMoveResponse {
-  gameType: string;
-  firstMoveStats: FirstMoveStats[];
-}
-
-/**
- * GET /api/stat/first-move?gameType=RAPID
- * 첫 무브 통계 조회
- * @param gameType 게임 타입 (RAPID, BLITZ, CLASSICAL, BULLET)
- * @returns Promise<FirstMoveResponse>
- */
-export const getFirstMoveStats = async (gameType: string = 'RAPID'): Promise<FirstMoveResponse> => {
-  const res = await api(`/stat/first-move?gameType=${gameType}`, { method: 'GET' });
-  console.log('[UserService] getFirstMoveStats response:', res);
-  return res.data || res;
-};
-
-/**
- * 게임 타입별 상세 퍼포먼스 정보
- */
-export interface UserPerfResponse {
-  // 기본 레이팅 정보
+/** 랭킹 사용자 정보 (프론트엔드에서 사용하는 형태) */
+export interface RankingUserResponse {
+  id: number;
+  username: string;
+  lichess_id?: string | null;
+  title?: string | null;
+  description?: string | null;
+  profile_image?: string | null;
+  banner_image?: string | null;
   rating: number;
-  gamesPlayed: number;
-  prov: boolean;
+  rank: number;
+  rated_games: number;
+}
 
-  // 게임 통계
-  all: number;              // 전체 게임 수
-  rated: number;            // 레이티드 게임 수
-  wins: number;             // 승리 횟수
-  losses: number;           // 패배 횟수
-  draws: number;            // 무승부 횟수
-  tour: number;             // 토너먼트 게임 수
-  berserk: number;          // 광폭 모드 사용 수
-  opAvg: number;            // 상대방 평균 레이팅
-  seconds: number;          // 총 게임 시간 (초)
-  disconnects: number;      // 연결 끊김 수
-
-  // 레이팅 관련
-  highestRating: number;    // 최고 레이팅
-  lowestRating: number;     // 최저 레이팅
-  maxStreak: number;        // 최대 연승
-  maxLossStreak: number;    // 최대 연패
-  uncertain: boolean;       // 티어 불확실성 (rated < 50이면 true)
+/** 랭킹 API 응답 형태 */
+export interface RankingApiResponse {
+  users: RankingUserResponse[];
+  total_count: number;
+  current_page: number;
+  page_size?: number;
+  total_pages: number;
+  is_logged_in_user: boolean;
+  is_unrated: boolean;
+  my_rank: number | null;
+  my_rating: number | null;
+  my_user_id: number | null;
 }
 
 /**
- * GET /api/stat/perf?gameType=RAPID
- * 사용자 게임 타입별 상세 퍼포먼스 정보 조회
- * @param gameType 게임 타입 (RAPID, BLITZ, CLASSICAL, BULLET)
- * @returns Promise<UserPerfResponse>
+ * 서버에서 랭킹을 가져옵니다.
+ * - 가능한 여러 응답 구조를 방어적으로 처리하여 프론트엔드 타입으로 정규화합니다.
  */
-export const getUserPerf = async (gameType: string = 'RAPID'): Promise<UserPerfResponse> => {
-  const res = await api(`/stat/perf?gameType=${gameType}`, { method: 'GET' });
-  console.log('[UserService] getUserPerf response:', res);
-  
-  // 백엔드에서 data가 null인 경우 (uncertain 상태) 기본값 반환
-  if (res.success && res.data === null) {
-    console.warn('⚠️ UserPerf 데이터 없음 - uncertain 상태:', res.message);
+export const getRanking = async (
+  _gameType: string,
+  _page = 0
+): Promise<RankingApiResponse> => {
+  try {
+    console.log('[UserService] Fetching ranking from API', { gameType: _gameType, page: _page });
+    const res = await api(`/rank/ranking?gameType=${encodeURIComponent(_gameType)}&page=${_page}`);
+    const data: any = res && typeof res === 'object' ? res.data || res : res;
+
+    // 다양한 필드 이름에 대응: ranking | users | ranking_users
+    const rankingArray: any[] = data.ranking || data.users || data.ranking_users || data.rankingList || [];
+
+    const users: RankingUserResponse[] = (rankingArray || []).map((u: any) => ({
+      id: u.id ?? u.user_id ?? 0,
+      username: u.username ?? u.name ?? '',
+      lichess_id: u.lichess_id ?? u.lichessId ?? null,
+      title: u.title ?? null,
+      description: u.description ?? null,
+      profile_image: u.profile ?? u.profile_image ?? u.profileImage ?? null,
+      banner_image: u.banner ?? u.banner_image ?? u.bannerImage ?? null,
+      rating: Number(u.rating ?? u.rate ?? 0) || 0,
+      rank: Number(u.rank ?? u.position ?? 0) || 0,
+      rated_games: Number(u.rated_games ?? u.ratedGames ?? 0) || 0,
+    }));
+
+    const response: RankingApiResponse = {
+      users,
+      total_count: Number(data.total_count ?? data.total ?? 0) || 0,
+      current_page: Number(data.current_page ?? data.page ?? 0) || 0,
+      page_size: data.page_size ? Number(data.page_size) : data.pageSize ? Number(data.pageSize) : undefined,
+      total_pages: Number(data.total_pages ?? data.totalPages ?? 0) || 0,
+      is_logged_in_user: Boolean(data.is_logged_in_user ?? data.isLoggedIn ?? false),
+      is_unrated: Boolean(data.is_unrated ?? data.isUnrated ?? false),
+      my_rank: data.my_rank ?? data.myRank ?? data.my_rank_info?.rank ?? null,
+      my_rating: data.my_rating ?? data.myRating ?? data.my_rank_info?.rating ?? null,
+      my_user_id: data.my_user_id ?? data.myUserId ?? null,
+    };
+
+    console.log('[UserService] getRanking response:', {
+      total: response.total_count,
+      page: response.current_page,
+      users: response.users.length,
+      my_rank: response.my_rank,
+    });
+
+    return response;
+  } catch (error) {
+    console.error('[UserService] getRanking error:', error);
     return {
-      rating: 0,
-      gamesPlayed: 0,
-      prov: true,
-      all: 0,
-      rated: 0,
-      wins: 0,
-      losses: 0,
-      draws: 0,
-      tour: 0,
-      berserk: 0,
-      opAvg: 0,
-      seconds: 0,
-      disconnects: 0,
-      highestRating: 0,
-      lowestRating: 0,
-      maxStreak: 0,
-      maxLossStreak: 0,
-      uncertain: true
+      users: [],
+      total_count: 0,
+      current_page: 0,
+      total_pages: 0,
+      is_logged_in_user: false,
+      is_unrated: false,
+      my_rank: null,
+      my_rating: null,
+      my_user_id: null,
     };
   }
-  
-  return res.data || res;
+};
+
+/** 일일 연속 게임 정보 */
+export interface DailyStreakDto {
+  date: string;
+  games?: number;
+  game?: number;
+  total: number;
+  win: number;
+  loss?: number;
+  lose: number;
+  losses?: number;
+  draw: number;
+  draws?: number;
+  lastRating?: number;
+  rating?: number;
+}
+
+/** 사용자 게임 타입별 성능 정보 */
+export interface UserPerfResponse {
+  id?: number;
+  name?: string;
+  username?: string;
+  rating: number;
+  ratedGames?: number;
+  rated_games?: number;
+  rated?: number;
+  provisional?: boolean;
+  prov?: boolean;
+  games?: number;
+  all?: number;
+  wins?: number;
+  losses?: number;
+  draws?: number;
+  tour?: number;
+  berserk?: number;
+  opAvg: number;
+  seconds: number;
+  disconnects?: number;
+  highestRating?: number;
+  lowestRating?: number;
+  maxStreak?: number;
+  maxLossStreak?: number;
+  uncertain?: boolean;
+  gamesPlayed?: number;
+}
+
+/**
+ * 사용자 프로필을 가져옵니다.
+ */
+export const getUserProfile = async (): Promise<ProfileResponse> => {
+  try {
+    const res = await api('/user/profile');
+    const data = res.data || res;
+    return {
+      id: data.id ?? 0,
+      username: data.username ?? '',
+      lichessId: data.lichessId ?? data.lichess_id ?? '',
+      title: data.title ?? undefined,
+      description: data.description ?? null,
+      profile_image: data.profile_image ?? data.profileImage ?? null,
+      banner_image: data.banner_image ?? data.bannerImage ?? null,
+      lichessCreatedAt: data.lichessCreatedAt ?? data.lichess_created_at ?? null,
+      createdAt: data.createdAt ?? data.created_at ?? null,
+      allGames: Number(data.allGames ?? data.all_games ?? 0) || 0,
+      ratedGames: Number(data.ratedGames ?? data.rated_games ?? 0) || 0,
+      wins: Number(data.wins ?? 0) || 0,
+      losses: Number(data.losses ?? data.loss ?? 0) || 0,
+      draws: Number(data.draws ?? data.draw ?? 0) || 0,
+    };
+  } catch (error) {
+    console.error('[UserService] getUserProfile error:', error);
+    throw error;
+  }
 };
 
 /**
- * 사용자 정보 강제 갱신
- * Lichess 데이터를 다시 동기화하고 티어 정보를 업데이트
- * @returns Promise<any>
+ * 사용자 설명을 업데이트합니다.
  */
+export const updateUserDescription = async (description: string): Promise<ProfileResponse> => {
+  try {
+    const res = await api('/user/description', { method: 'PUT', body: JSON.stringify({ description }) });
+    const data = res.data || res;
+    return {
+      id: data.id ?? 0,
+      username: data.username ?? '',
+      lichessId: data.lichessId ?? data.lichess_id ?? '',
+      title: data.title ?? undefined,
+      description: data.description ?? null,
+      profile_image: data.profile_image ?? data.profileImage ?? null,
+      banner_image: data.banner_image ?? data.bannerImage ?? null,
+      lichessCreatedAt: data.lichessCreatedAt ?? data.lichess_created_at ?? null,
+      createdAt: data.createdAt ?? data.created_at ?? null,
+      allGames: Number(data.allGames ?? data.all_games ?? 0) || 0,
+      ratedGames: Number(data.ratedGames ?? data.rated_games ?? 0) || 0,
+      wins: Number(data.wins ?? 0) || 0,
+      losses: Number(data.losses ?? data.loss ?? 0) || 0,
+      draws: Number(data.draws ?? data.draw ?? 0) || 0,
+    };
+  } catch (error) {
+    console.error('[UserService] updateUserDescription error:', error);
+    throw error;
+  }
+};
+
+/**
+ * 사용자 게임 타입별 성능 정보를 가져옵니다.
+ */
+export const getUserPerf = async (gameType: string = 'RAPID'): Promise<UserPerfResponse> => {
+  try {
+    const res = await api(`/user/perf/${encodeURIComponent(gameType)}`);
+    const data = res.data || res;
+    return {
+      id: data.id,
+      name: data.name,
+      username: data.username,
+      rating: Number(data.rating ?? 0) || 0,
+      ratedGames: Number(data.ratedGames ?? data.rated_games ?? data.rated ?? 0) || 0,
+      rated_games: Number(data.ratedGames ?? data.rated_games ?? data.rated ?? 0) || 0,
+      rated: Number(data.rated ?? data.ratedGames ?? data.rated_games ?? 0) || 0,
+      provisional: Boolean(data.provisional ?? data.prov),
+      prov: Boolean(data.provisional ?? data.prov),
+      games: Number(data.games ?? data.all ?? 0) || 0,
+      all: Number(data.all ?? data.games ?? 0) || 0,
+      wins: Number(data.wins ?? 0) || 0,
+      losses: Number(data.losses ?? 0) || 0,
+      draws: Number(data.draws ?? 0) || 0,
+      tour: Number(data.tour ?? 0) || 0,
+      berserk: Number(data.berserk ?? 0) || 0,
+      opAvg: Number(data.opAvg ?? 0) || 0,
+      seconds: Number(data.seconds ?? 0) || 0,
+      disconnects: Number(data.disconnects ?? 0) || 0,
+      highestRating: Number(data.highestRating ?? data.highest ?? 0) || 0,
+      lowestRating: Number(data.lowestRating ?? data.lowest ?? 0) || 0,
+      maxStreak: Number(data.maxStreak ?? 0) || 0,
+      maxLossStreak: Number(data.maxLossStreak ?? 0) || 0,
+      uncertain: Boolean(data.uncertain),
+      gamesPlayed: Number(data.gamesPlayed ?? data.all ?? data.games ?? 0) || 0,
+    };
+  } catch (error) {
+    console.error('[UserService] getUserPerf error:', error);
+    throw error;
+  }
+};
+
+/**
+ * 사용자의 일일 연속 게임 정보를 가져옵니다.
+ */
+export const getUserStreak = async (year?: number): Promise<any> => {
+  try {
+    let url = '/user/streak';
+    if (year) {
+      url += `?year=${year}`;
+    }
+    const res = await api(url);
+    const data = res.data || res;
+    return data;
+  } catch (error) {
+    console.error('[UserService] getUserStreak error:', error);
+    return { dailyStreakDto: [] };
+  }
+};
+
 export const forceRefreshStats = async (): Promise<any> => {
   const res = await api('/stat/force-refresh', { method: 'PUT' });
   console.log('[UserService] forceRefreshStats response:', res);

@@ -39,10 +39,10 @@ const Footer = () => {
                                     <Link to="/" className="text-gray-600 hover:text-[#0a1f33] transition">{t('header.home')}</Link>
                                 </li>
                                 <li>
-                                    <Link to="/page2" className="text-gray-600 hover:text-[#0a1f33] transition">{t('header.news')}</Link>
+                                    <Link to="/news" className="text-gray-600 hover:text-[#0a1f33] transition">{t('header.news')}</Link>
                                 </li>
                                 <li>
-                                    <Link to="/page3" className="text-gray-600 hover:text-[#0a1f33] transition">{t('header.ranking')}</Link>
+                                    <Link to="/ranking" className="text-gray-600 hover:text-[#0a1f33] transition">{t('header.ranking')}</Link>
                                 </li>
                             </ul>
                         </div>

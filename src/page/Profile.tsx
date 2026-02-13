@@ -265,7 +265,7 @@ const Profile = () => {
                 
                 const map = new Map<string, DailyStreakDto>();
                 if (Array.isArray(streakData.dailyStreakDto)) {
-                    streakData.dailyStreakDto.forEach(daily => {
+                    streakData.dailyStreakDto.forEach((daily: DailyStreakDto) => {
                         map.set(daily.date, daily);
                     });
                 }
@@ -590,7 +590,7 @@ const Profile = () => {
                         <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
                             <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.winRate')}</p>
                             <p className="text-4xl font-black text-gray-800">
-                                {profile.allGames > 0 ? ((profile.wins / profile.allGames) * 100).toFixed(1) : '0.0'}%
+                                {(profile?.allGames ?? 0) > 0 ? (((profile?.wins ?? 0) / (profile?.allGames ?? 1)) * 100).toFixed(1) : '0.0'}%
                             </p>
                             <p className="text-xs text-gray-600 mt-2">{profile.wins}{language === 'KR' ? '승' : 'W'}</p>
                         </div>
@@ -669,7 +669,7 @@ const Profile = () => {
                                                 
                                                 let activity = 0;
                                                 if (dailyData) {
-                                                    const total = dailyData.total;
+                                                    const total = dailyData.total ?? 0;
                                                     if (total === 0) activity = 0;
                                                     else if (total <= 2) activity = 1;
                                                     else if (total <= 5) activity = 2;
@@ -722,11 +722,11 @@ const Profile = () => {
                         let activeDays = 0;
 
                         streakMap.forEach((daily) => {
-                            totalGames += daily.total;
-                            totalWins += daily.win;
-                            totalLoses += daily.lose;
-                            totalDraws += daily.draw;
-                            if (daily.total > 0) activeDays++;
+                            totalGames += daily.total ?? 0;
+                            totalWins += daily.win ?? 0;
+                            totalLoses += daily.lose ?? 0;
+                            totalDraws += daily.draw ?? 0;
+                            if ((daily.total ?? 0) > 0) activeDays++;
                         });
 
                         // 연속 플레이 일수 계산

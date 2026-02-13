@@ -3,14 +3,17 @@ import { useState, useEffect } from 'react';
 import type { UserPrincipal } from '../api/authService';
 import { logout, isLoggedIn, getCurrentUser } from '../api/authService';
 import { getImageUrl } from '../api/imageService';
+import { getOAuthUrl } from '../api/oauthService';
 import { useLanguage, type Language } from '../context/LanguageContext';
 import knightLogo from '../assets/images/tier/knight.png';
+import lichessLogoImg from '../assets/images/logo/lichess-logo.png';
 
 const Header = () => {
     const navigate = useNavigate();
     const { t, language, setLanguage } = useLanguage();
     const [isLogged, setIsLogged] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoginLoading, setIsLoginLoading] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [user, setUser] = useState<UserPrincipal | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -65,6 +68,30 @@ const Header = () => {
         }
     };
 
+    const handleLichessLogin = async () => {
+        if (isLoginLoading) return;
+        
+        try {
+            setIsLoginLoading(true);
+            const res = await getOAuthUrl();
+            
+            const oauthUrl = res.data?.oauth_url || res.oauth_url || res.oauthUrl;
+            
+            if (!oauthUrl) {
+                throw new Error(t('main.loginFailAlert'));
+            }
+            
+            window.location.assign(oauthUrl);
+            
+            setTimeout(() => setIsLoginLoading(false), 5000);
+            
+        } catch (error: any) {
+            console.error('[Header Login] 로그인 프로세스 오류:', error);
+            alert(error.message || t('main.loginFailAlert'));
+            setIsLoginLoading(false);
+        }
+    };
+
     const handleProfileClick = () => {
         setIsMenuOpen(false);
         navigate('/profile');
@@ -88,8 +115,8 @@ const Header = () => {
 
             <div className="items-center flex gap-20 ml-auto text-[#2F639D] font-semibold transition text-l">
                 <Link to="/page1">{t('header.home')}</Link>
-                <Link to="/page2">{t('header.news')}</Link>
-                <Link to="/page3">{t('header.ranking')}</Link>
+                <Link to="/news">{t('header.news')}</Link>
+                <Link to="/ranking">{t('header.ranking')}</Link>
                 
                 {!isLoading && (
                     <div className="relative">
@@ -153,8 +180,19 @@ const Header = () => {
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="p-4 text-center border-b border-gray-100">
-                                        <p className="text-gray-500 text-sm">{t('main.loginRequired')}</p>
+                                    <div className="p-4 flex flex-col items-center gap-4">
+                                        <p className="text-gray-500 text-sm text-center">{t('main.loginRequired')}</p>
+                                        <button 
+                                            onClick={() => {
+                                                setIsMenuOpen(false);
+                                                handleLichessLogin();
+                                            }}
+                                            disabled={isLoginLoading}
+                                            className="flex items-center gap-2 bg-white text-black font-bold py-2 px-5 rounded-full shadow-md hover:bg-[#e6e6e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <img src={lichessLogoImg} alt="Lichess Logo" className="w-6 h-6" />
+                                            {isLoginLoading ? t('profile.loading') : t('main.loginWithLichess')}
+                                        </button>
                                     </div>
                                 )}
 
