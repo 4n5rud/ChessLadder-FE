@@ -342,7 +342,7 @@ const Profile = () => {
         // 쿨타임 체크
         if (lastRefreshTime && Date.now() - lastRefreshTime < REFRESH_COOLDOWN) {
             const remaining = Math.ceil((REFRESH_COOLDOWN - (Date.now() - lastRefreshTime)) / 1000);
-            alert(`${remaining}${t('profile.waitSeconds')}${t('profile.waitSeconds').includes('s') ? '' : ' ' + t('profile.waitSeconds')}`);
+            alert(`${remaining}초 동안 다시 갱신할 수 없습니다. (5분 제한)`);
             return;
         }
 
