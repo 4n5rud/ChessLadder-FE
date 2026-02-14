@@ -23,7 +23,6 @@ export default function News() {
           setSelectedNews(news[0]);
         }
       } catch (err) {
-        console.error("Failed to load news:", err);
         setError(t("common.error"));
       } finally {
         setLoading(false);

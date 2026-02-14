@@ -38,10 +38,8 @@ function generateManifest() {
       JSON.stringify(manifest, null, 2)
     );
 
-    console.log(`[news-manifest-plugin] Generated manifest with ${files.length} files:`, files);
     return manifest;
   } catch (error) {
-    console.error('[news-manifest-plugin] Error generating manifest:', error);
     return { files: [], updated: new Date().toISOString() };
   }
 }
@@ -52,14 +50,12 @@ export function newsManifestPlugin(): Plugin {
     
     // 개발 서버 시작 시 실행
     configResolved() {
-      console.log('[news-manifest-plugin] Dev server starting, generating manifest...');
       generateManifest();
     },
     
     // 개발 중 파일 감시 (모든 변경 감지: 생성, 수정, 삭제)
     async handleHotUpdate({ file, server }) {
       if (file.includes('public/news') && file.endsWith('.md')) {
-        console.log('[news-manifest-plugin] News file changed, regenerating manifest...');
         generateManifest();
         
         // 클라이언트에 업데이트 알림
@@ -73,7 +69,6 @@ export function newsManifestPlugin(): Plugin {
     
     // 빌드 시 manifest.json 생성
     generateBundle() {
-      console.log('[news-manifest-plugin] Build phase, ensuring manifest...');
       generateManifest();
       
       // manifest.json은 public/news에 있으므로 자동으로 dist로 복사됨

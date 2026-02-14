@@ -50,13 +50,23 @@ export const getUploadUrl = async (
  * POST /api/image/upload-complete
  * 클라이언트가 Cloudflare R2에 파일 업로드 후 서버에 완료 통보 (DB에 저장)
  * @param type PROFILE | BANNER
- * @returns SuccessResponse<null>
+ * @returns 이미지 URL이 포함된 응답
  */
-export const completeUpload = async (type: UserImageType): Promise<void> => {
+export const completeUpload = async (type: UserImageType): Promise<string> => {
   const res = await api(`/image/upload-complete?type=${type}`, {
     method: 'POST',
   });
   console.log('[ImageService] completeUpload response:', { type, res });
+  
+  // 응답에서 이미지 URL 추출
+  const imageUrl = res.data?.url || res.data?.image_url || res.url || res.image_url;
+  
+  if (!imageUrl) {
+    console.error('[ImageService] Failed to extract image URL from completeUpload response:', res);
+    throw new Error(`이미지 URL을 받지 못했습니다. 응답: ${JSON.stringify(res)}`);
+  }
+  
+  return imageUrl;
 };
 
 /**

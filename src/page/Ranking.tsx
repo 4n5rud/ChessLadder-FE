@@ -179,7 +179,6 @@ export default function Ranking() {
         setError(null);
 
         const response = await getRanking(selectedGameType, currentPage - 1);
-        console.log('[Ranking] API response:', response);
 
         // rank 0 = unrated 제외
         const filteredUsers = response.users.filter(user => user.rank > 0);
@@ -191,7 +190,6 @@ export default function Ranking() {
         setIsLoggedInUser(response.is_logged_in_user);
         setIsUnrated(response.is_unrated ?? false);
       } catch (err) {
-        console.error('[Ranking] Failed to fetch ranking:', err);
         setError(t('common.error'));
       } finally {
         setLoading(false);
@@ -216,7 +214,6 @@ export default function Ranking() {
       
       window.location.assign(oauthUrl);
     } catch (err) {
-      console.error('Failed to get OAuth URL:', err);
       alert(t('main.loginFailAlert'));
     }
   };
@@ -355,7 +352,7 @@ export default function Ranking() {
                             {user.username}
                           </p>
                           <p className="text-xs text-gray-500 truncate">
-                            {user.title || '-'}
+                            {user.description || '-'}
                           </p>
                         </div>
                       </div>
@@ -464,7 +461,7 @@ export default function Ranking() {
                                 {user.username}
                               </p>
                               <p className="text-xs text-gray-500 truncate">
-                                {user.title || '-'}
+                              {user.description || '-'}
                               </p>
                             </div>
                           </div>

@@ -24,7 +24,6 @@ export interface RankingUserResponse {
   id: number;
   username: string;
   lichess_id?: string | null;
-  title?: string | null;
   description?: string | null;
   profile_image?: string | null;
   banner_image?: string | null;
@@ -45,6 +44,9 @@ export interface RankingApiResponse {
   my_rank: number | null;
   my_rating: number | null;
   my_user_id: number | null;
+  my_username?: string | null;
+  my_banner?: string | null;
+  my_profile?: string | null;
 }
 
 /**
@@ -56,7 +58,6 @@ export const getRanking = async (
   _page = 0
 ): Promise<RankingApiResponse> => {
   try {
-    console.log('[UserService] Fetching ranking from API', { gameType: _gameType, page: _page });
     const res = await api(`/rank/ranking?gameType=${encodeURIComponent(_gameType)}&page=${_page}`);
     const data: any = res && typeof res === 'object' ? res.data || res : res;
 
@@ -64,13 +65,12 @@ export const getRanking = async (
     const rankingArray: any[] = data.ranking || data.users || data.ranking_users || data.rankingList || [];
 
     const users: RankingUserResponse[] = (rankingArray || []).map((u: any) => ({
-      id: u.id ?? u.user_id ?? 0,
+      id: u.userId ?? u.id ?? u.user_id ?? 0,
       username: u.username ?? u.name ?? '',
       lichess_id: u.lichess_id ?? u.lichessId ?? null,
-      title: u.title ?? null,
       description: u.description ?? null,
-      profile_image: u.profile ?? u.profile_image ?? u.profileImage ?? null,
-      banner_image: u.banner ?? u.banner_image ?? u.bannerImage ?? null,
+      profile_image: u.profileImage ?? u.profile ?? u.profile_image ?? null,
+      banner_image: u.bannerImage ?? u.banner ?? u.banner_image ?? null,
       rating: Number(u.rating ?? u.rate ?? 0) || 0,
       rank: Number(u.rank ?? u.position ?? 0) || 0,
       rated_games: Number(u.rated_games ?? u.ratedGames ?? 0) || 0,
@@ -87,18 +87,13 @@ export const getRanking = async (
       my_rank: data.my_rank_info?.rank ?? data.my_rank ?? data.myRank ?? null,
       my_rating: data.my_rank_info?.rating ?? data.my_rating ?? data.myRating ?? null,
       my_user_id: data.my_rank_info?.user_id ?? data.my_user_id ?? data.myUserId ?? null,
+      my_username: data.my_rank_info?.username ?? data.my_username ?? data.myUsername ?? null,
+      my_banner: data.my_rank_info?.banner ?? data.my_banner ?? data.myBanner ?? null,
+      my_profile: data.my_rank_info?.profile ?? data.my_profile ?? data.myProfile ?? null,
     };
-
-    console.log('[UserService] getRanking response:', {
-      total: response.total_count,
-      page: response.current_page,
-      users: response.users.length,
-      my_rank: response.my_rank,
-    });
 
     return response;
   } catch (error) {
-    console.error('[UserService] getRanking error:', error);
     return {
       users: [],
       total_count: 0,
@@ -211,7 +206,6 @@ export const updateUserDescription = async (description: string): Promise<Profil
       draws: Number(data.draws ?? data.draw ?? 0) || 0,
     };
   } catch (error) {
-    console.error('[UserService] updateUserDescription error:', error);
     throw error;
   }
 };
@@ -261,21 +255,17 @@ export const getUserPerf = async (gameType: string = 'RAPID'): Promise<UserPerfR
  */
 export const getUserStreak = async (year?: number): Promise<any> => {
   try {
-    let url = '/user/streak';
-    if (year) {
-      url += `?year=${year}`;
-    }
+    const targetYear = year || new Date().getFullYear();
+    const url = `/stat/streak?year=${targetYear}`;
     const res = await api(url);
     const data = res.data || res;
     return data;
   } catch (error) {
-    console.error('[UserService] getUserStreak error:', error);
     return { dailyStreakDto: [] };
   }
 };
 
 export const forceRefreshStats = async (): Promise<any> => {
   const res = await api('/stat/force-refresh', { method: 'PUT' });
-  console.log('[UserService] forceRefreshStats response:', res);
   return res.data || res;
 };

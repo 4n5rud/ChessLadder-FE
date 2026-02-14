@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { ReactElement } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getCurrentUser } from "../api/authService";
-import { getUploadUrl, completeUpload, getImageUrl } from "../api/imageService";
+import { getUploadUrl, completeUpload } from "../api/imageService";
 import type { UserImageType } from "../api/imageService";
 import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, forceRefreshStats } from "../api/userService";
 import type { ProfileResponse, DailyStreakDto, UserPerfResponse } from "../api/userService";
@@ -173,8 +173,7 @@ const Profile = () => {
                 
                 // 프로필 정보 조회
                 const profileData = await getUserProfile();
-                console.log('[Profile] Received profileData:', profileData);
-                console.log('[Profile] Profile Keys:', Object.keys(profileData || {}));
+                // 프로필 데이터 수신
                 setProfile(profileData);
                 setDescription(profileData?.description || '');
                 
@@ -190,17 +189,15 @@ const Profile = () => {
                     setSelectedYear(currentYear);
                 }
                 
-                // 프로필 이미지 조회
-                const profileUrl = await getImageUrl('PROFILE');
-                const profileUrlWithTimestamp = `${profileUrl}?t=${Date.now()}`;
-                setProfileImage(profileUrlWithTimestamp);
-                
-                // 배너 이미지 조회
-                const bannerUrl = await getImageUrl('BANNER');
-                const bannerUrlWithTimestamp = `${bannerUrl}?t=${Date.now()}`;
-                setBannerImage(bannerUrlWithTimestamp);
+                // 프로필과 배너 이미지를 profileData에서 직접 가져오기
+                if (profileData?.profile_image) {
+                    setProfileImage(`${profileData.profile_image}?t=${Date.now()}`);
+                }
+                if (profileData?.banner_image) {
+                    setBannerImage(`${profileData.banner_image}?t=${Date.now()}`);
+                }
             } catch (error) {
-                console.error('Failed to fetch user data:', error);
+                // 사용자 데이터 조회 실패
             }
         };
         fetchUserAndImages();
@@ -227,10 +224,10 @@ const Profile = () => {
             setLoadingPerf(true);
             try {
                 const perfData = await getUserPerf(selectedGameType);
-                console.log('📊 perf 데이터 받음:', perfData);
+                // perf 데이터 수신
                 setUserPerf(perfData);
             } catch (error) {
-                console.error('Failed to fetch perf data:', error);
+                // 성능 데이터 조회 실패
                 // 에러 시 기본 uncertain 상태
                 setUserPerf({
                     rating: 0,
@@ -255,10 +252,7 @@ const Profile = () => {
         const fetchStreak = async () => {
             try {
                 const streakData = await getUserStreak(selectedYear);
-                console.log('[Profile] streakData:', streakData);
-                
                 if (!streakData || !streakData.dailyStreakDto) {
-                    console.warn('[Profile] No streak data or dailyStreakDto is undefined');
                     setStreakMap(new Map());
                     return;
                 }
@@ -271,7 +265,7 @@ const Profile = () => {
                 }
                 setStreakMap(map);
             } catch (error) {
-                console.error('Failed to fetch streak data:', error);
+                // 스트릭 데이터 조회 실패
                 setStreakMap(new Map());
             }
         };
@@ -307,9 +301,7 @@ const Profile = () => {
                 throw new Error(`Upload failed: ${uploadResponse.status}`);
             }
             
-            await completeUpload(type);
-            
-            const imageUrl = await getImageUrl(type);
+            const imageUrl = await completeUpload(type);
             const imageUrlWithTimestamp = `${imageUrl}?t=${Date.now()}`;
             
             if (type === 'BANNER') setBannerImage(imageUrlWithTimestamp);
@@ -360,7 +352,7 @@ const Profile = () => {
             setRemainingTime(REFRESH_COOLDOWN);
             alert(t('profile.refreshSuccess'));
         } catch (error) {
-            console.error('강제 갱신 실패:', error);
+            // 강제 갱신 실패
             alert(t('profile.refreshFail'));
         } finally {
             setRefreshing(false);

@@ -127,7 +127,6 @@ function Main() {
             const oauthUrl = res.data?.oauth_url || res.oauth_url || res.oauthUrl;
             
             if (!oauthUrl) {
-                console.error('[Login] URL 누락 응답:', res);
                 throw new Error(t('main.loginFailAlert'));
             }
             
@@ -140,7 +139,6 @@ function Main() {
             setTimeout(() => setIsLoading(false), 5000);
             
         } catch (error: any) {
-            console.error('[Login] 로그인 프로세스 오류:', error);
             alert(error.message || t('main.loginFailAlert'));
             setIsLoading(false);
         }
@@ -172,7 +170,7 @@ function Main() {
                 
                 setUserCount(userCountValue);
             } catch (err) {
-                console.error('사용자 수 조회 오류:', err);
+                // 사용자 수 조회 실패
                 setUserCount(0);
             }
         };

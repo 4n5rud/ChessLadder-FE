@@ -24,12 +24,10 @@ export default function OAuthSuccess() {
           throw new Error('사용자 정보를 가져올 수 없습니다.');
         }
         
-        console.log('로그인 성공:', userData);
-        
         //즉시 홈으로 이동
         navigate('/', { replace: true });
       } catch (error) {
-        console.error('로그인 확인 실패:', error);
+        // 로그인 확인 실패
         
         // 즉시 실패 페이지로 이동
         navigate('/oauth/fail', { replace: true });

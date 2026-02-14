@@ -49,10 +49,8 @@ export const getCurrentUser = async (): Promise<UserPrincipal | null> => {
     const data = await api('/auth/me');
     // 백엔드 응답 형식에 따라 처리
     // { data: UserPrincipal } 또는 { success: true, data: UserPrincipal } 형식 지원
-    console.log('[AuthService] getCurrentUser response:', data);
     return data.data || data;
   } catch (error) {
-    console.error('Error getting current user:', error);
     return null;
   }
 };

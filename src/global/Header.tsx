@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import type { UserPrincipal } from '../api/authService';
 import { logout, isLoggedIn, getCurrentUser } from '../api/authService';
-import { getImageUrl } from '../api/imageService';
+import { getUserProfile } from '../api/userService';
 import { getOAuthUrl } from '../api/oauthService';
 import { useLanguage, type Language } from '../context/LanguageContext';
 import knightLogo from '../assets/images/tier/knight.png';
@@ -29,17 +29,17 @@ const Header = () => {
                     const userData = await getCurrentUser();
                     setUser(userData);
                     
-                    // 프로필과 배너 이미지 가져오기
+                    // 프로필을 조회하면서 이미지 가져오기
                     try {
-                        const profileUrl = await getImageUrl('PROFILE');
-                        const profileUrlWithTimestamp = `${profileUrl}?t=${Date.now()}`;
-                        setProfileImage(profileUrlWithTimestamp);
-                        
-                        const bannerUrl = await getImageUrl('BANNER');
-                        const bannerUrlWithTimestamp = `${bannerUrl}?t=${Date.now()}`;
-                        setBannerImage(bannerUrlWithTimestamp);
+                        const profileData = await getUserProfile();
+                        if (profileData?.profile_image) {
+                            setProfileImage(`${profileData.profile_image}?t=${Date.now()}`);
+                        }
+                        if (profileData?.banner_image) {
+                            setBannerImage(`${profileData.banner_image}?t=${Date.now()}`);
+                        }
                     } catch (error) {
-                        console.warn('[Header] Failed to load images:', error);
+                        // 프로필 이미지 로드 실패 (사용자 입장에서 로그 숨김)
                     }
                 }
             } catch {
@@ -60,9 +60,8 @@ const Header = () => {
             setIsLogged(false);
             setUser(null);
             setIsMenuOpen(false);
-            navigate('/');
+            window.location.href = '/';
         } catch (error) {
-            console.error('로그아웃 실패:', error);
             alert('로그아웃 중 오류가 발생했습니다.');
             setIsLoading(false);
         }
@@ -86,7 +85,6 @@ const Header = () => {
             setTimeout(() => setIsLoginLoading(false), 5000);
             
         } catch (error: any) {
-            console.error('[Header Login] 로그인 프로세스 오류:', error);
             alert(error.message || t('main.loginFailAlert'));
             setIsLoginLoading(false);
         }
@@ -97,7 +95,29 @@ const Header = () => {
         navigate('/profile');
     };
 
-    const handleMenuToggle = () => {
+    const handleMenuToggle = async () => {
+        if (!isMenuOpen && isLogged) {
+            // 메뉴를 열 때 최신 사용자 정보 다시 가져오기
+            try {
+                const currentUserData = await getCurrentUser();
+                setUser(currentUserData);
+                
+                // 프로필을 조회하면서 이미지 가져오기
+                try {
+                    const profileData = await getUserProfile();
+                    if (profileData?.profile_image) {
+                        setProfileImage(`${profileData.profile_image}?t=${Date.now()}`);
+                    }
+                    if (profileData?.banner_image) {
+                        setBannerImage(`${profileData.banner_image}?t=${Date.now()}`);
+                    }
+                } catch (error) {
+                    // 프로필 이미지 로드 실패 (사용자 입장에서 로그 숨김)
+                }
+            } catch (error) {
+                // 사용자 정보 갱신 실패 (사용자 입장에서 로그 숨김)
+            }
+        }
         setIsMenuOpen(!isMenuOpen);
     };
 
@@ -147,14 +167,20 @@ const Header = () => {
                                             <div className="absolute inset-0 bg-black/40 pointer-events-none"></div>
                                             <div className="relative p-4 flex items-center gap-3 h-full">
                                                 <div className="flex-shrink-0">
-                                                    <img 
-                                                        src={profileImage || ''} 
-                                                        alt="Profile" 
-                                                        className="w-16 h-16 rounded-full border-2 border-white object-cover"
-                                                        onError={(e) => {
-                                                            (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ccc" width="100" height="100"/%3E%3Ctext x="50" y="50" font-size="60" fill="%23999" text-anchor="middle" dy=".3em"%3E%3F%3C/text%3E%3C/svg%3E';
-                                                        }}
-                                                    />
+                                                    {profileImage ? (
+                                                        <img 
+                                                            src={profileImage} 
+                                                            alt="Profile" 
+                                                            className="w-16 h-16 rounded-full border-2 border-white object-cover"
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ccc" width="100" height="100"/%3E%3Ctext x="50" y="50" font-size="60" fill="%23999" text-anchor="middle" dy=".3em"%3E%3F%3C/text%3E%3C/svg%3E';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="w-16 h-16 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center">
+                                                            <span className="text-gray-600">?</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="flex-1">
                                                     <p className="text-white font-bold text-lg drop-shadow">
