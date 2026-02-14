@@ -121,6 +121,7 @@ export interface DailyStreakDto {
   draw: number;
   draws?: number;
   lastRating?: number;
+  last_rating?: number;
   rating?: number;
 }
 
@@ -261,7 +262,7 @@ export const getUserStreak = async (year?: number): Promise<any> => {
     const data = res.data || res;
     return data;
   } catch (error) {
-    return { dailyStreakDto: [] };
+    return { daily_streak_dto: [] };
   }
 };
 

@@ -252,14 +252,14 @@ const Profile = () => {
         const fetchStreak = async () => {
             try {
                 const streakData = await getUserStreak(selectedYear);
-                if (!streakData || !streakData.dailyStreakDto) {
+                if (!streakData || !streakData.daily_streak_dto) {
                     setStreakMap(new Map());
                     return;
                 }
                 
                 const map = new Map<string, DailyStreakDto>();
-                if (Array.isArray(streakData.dailyStreakDto)) {
-                    streakData.dailyStreakDto.forEach((daily: DailyStreakDto) => {
+                if (Array.isArray(streakData.daily_streak_dto)) {
+                    streakData.daily_streak_dto.forEach((daily: DailyStreakDto) => {
                         map.set(daily.date, daily);
                     });
                 }
@@ -687,7 +687,7 @@ const Profile = () => {
                                                     <div
                                                         key={dateStr}
                                                         className={`w-4 h-4 rounded-sm border ${colors[activity]} cursor-help transition hover:ring-2 hover:ring-offset-1 ${userPerf?.uncertain ? 'hover:ring-gray-400' : 'hover:ring-blue-400'}`}
-                                                        title={dailyData ? `${dateStr} • ${dailyData.total}게임: ${dailyData.win}승 ${dailyData.lose}패 ${dailyData.draw}무\n마지막 레이팅: ${dailyData.lastRating}` : '데이터 없음'}
+                                                        title={dailyData ? `${dateStr} • ${dailyData.total}게임: ${dailyData.win}승 ${dailyData.lose}패 ${dailyData.draw}무\n마지막 레이팅: ${dailyData.last_rating ?? dailyData.lastRating ?? '-'}` : '데이터 없음'}
                                                     />
                                                 );
                                             })}
