@@ -82,11 +82,11 @@ export const getRanking = async (
       current_page: Number(data.current_page ?? data.page ?? 0) || 0,
       page_size: data.page_size ? Number(data.page_size) : data.pageSize ? Number(data.pageSize) : undefined,
       total_pages: Number(data.total_pages ?? data.totalPages ?? 0) || 0,
-      is_logged_in_user: Boolean(data.is_logged_in_user ?? data.isLoggedIn ?? false),
-      is_unrated: Boolean(data.is_unrated ?? data.isUnrated ?? false),
-      my_rank: data.my_rank ?? data.myRank ?? data.my_rank_info?.rank ?? null,
-      my_rating: data.my_rating ?? data.myRating ?? data.my_rank_info?.rating ?? null,
-      my_user_id: data.my_user_id ?? data.myUserId ?? null,
+      is_logged_in_user: Boolean(data.my_rank_info?.logged_in_user ?? data.is_logged_in_user ?? data.isLoggedIn ?? false),
+      is_unrated: Boolean(data.my_rank_info?.unrated ?? data.is_unrated ?? data.isUnrated ?? false),
+      my_rank: data.my_rank_info?.rank ?? data.my_rank ?? data.myRank ?? null,
+      my_rating: data.my_rank_info?.rating ?? data.my_rating ?? data.myRating ?? null,
+      my_user_id: data.my_rank_info?.user_id ?? data.my_user_id ?? data.myUserId ?? null,
     };
 
     console.log('[UserService] getRanking response:', {

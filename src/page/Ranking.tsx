@@ -207,10 +207,17 @@ export default function Ranking() {
 
   const handleLogin = async () => {
     try {
-      const oauthUrl = await getOAuthUrl();
-      window.location.href = oauthUrl;
+      const res = await getOAuthUrl();
+      const oauthUrl = res.data?.oauth_url || res.oauth_url || res.oauthUrl;
+      
+      if (!oauthUrl) {
+        throw new Error(t('main.loginFailAlert'));
+      }
+      
+      window.location.assign(oauthUrl);
     } catch (err) {
       console.error('Failed to get OAuth URL:', err);
+      alert(t('main.loginFailAlert'));
     }
   };
 
