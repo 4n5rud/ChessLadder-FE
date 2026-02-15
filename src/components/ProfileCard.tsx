@@ -1,7 +1,6 @@
 import React from 'react';
 import type { ProfileResponse, UserPerfResponse, DailyStreakDto } from '../api/userService';
 import RatingHistoryChart from './RatingHistoryChart';
-import { useLanguage } from '../context/LanguageContext';
 
 // 티어 이미지 임포트
 import pawnImg from '../assets/images/tier/pawn.png';
@@ -18,7 +17,6 @@ interface ProfileCardProps {
     ratingHistory: any[];
     streakMap: Map<string, DailyStreakDto>;
     selectedYear: number;
-    tierColorScheme: any;
     promotionThresholds: any;
     convertSubTierToRoman: (subTier: string) => string;
     cardRef: React.RefObject<HTMLDivElement | null>;
@@ -30,7 +28,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
     ratingHistory,
     streakMap,
     selectedYear,
-    tierColorScheme,
     promotionThresholds,
     convertSubTierToRoman,
     cardRef
