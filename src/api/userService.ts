@@ -185,10 +185,15 @@ export const getUserProfile = async (): Promise<ProfileResponse> => {
 
 /**
  * 사용자 설명을 업데이트합니다.
+ * 요청: { "description": "..." } (snake_case)
  */
 export const updateUserDescription = async (description: string): Promise<ProfileResponse> => {
   try {
-    const res = await api('/user/description', { method: 'PUT', body: JSON.stringify({ description }) });
+    // JSON 형식으로 snake_case 필드명 사용
+    const res = await api('/user/description', { 
+      method: 'PUT', 
+      body: JSON.stringify({ description })
+    });
     const data = res.data || res;
     return {
       id: data.id ?? 0,
