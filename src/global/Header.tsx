@@ -139,23 +139,8 @@ const Header = () => {
                 <Link to="/ranking" className="hover:text-[#1f4170] transition">{t('header.ranking')}</Link>
             </div>
             
-            {/* 모바일 메뉴 버튼 */}
-            <div className="md:hidden ml-auto flex items-center">
-                {!isLoading && (
-                    <button 
-                        onClick={handleMenuToggle}
-                        className="px-3 py-2 text-[#2F639D] hover:text-[#1f4170] transition"
-                        title={t('header.menu')}
-                    >
-                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
-                        </svg>
-                    </button>
-                )}
-            </div>
-
-            {/* 데스크탑 메뉴 버튼 */}
-            <div className="hidden md:block">
+            {/* 메뉴 버튼 (모바일과 데스크톱 공용) */}
+            <div className="ml-auto flex items-center">
                 {!isLoading && (
                     <div className="relative">
                         <button 
@@ -170,7 +155,32 @@ const Header = () => {
                         
                         {/* 드롭다운 메뉴 */}
                         {isMenuOpen && (
-                            <div className="fixed top-14 right-6 w-80 rounded-lg shadow-xl border border-gray-200 z-[9999] overflow-hidden bg-white">
+                            <div className="fixed top-14 right-4 md:right-6 w-72 md:w-80 rounded-lg shadow-xl border border-gray-200 z-[9999] overflow-hidden bg-white">
+                                {/* 모바일에서만 네비게이션 표시 */}
+                                <div className="md:hidden py-2 border-b border-gray-100">
+                                    <Link 
+                                        to="/page1" 
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                    >
+                                        {t('header.home')}
+                                    </Link>
+                                    <Link 
+                                        to="/news" 
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                    >
+                                        {t('header.news')}
+                                    </Link>
+                                    <Link 
+                                        to="/ranking" 
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                    >
+                                        {t('header.ranking')}
+                                    </Link>
+                                </div>
+
                                 {isLogged ? (
                                     <>
                                         {/* 배너 배경 오버레이 (로그인 상태일 때만) */}

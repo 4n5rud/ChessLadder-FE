@@ -278,9 +278,9 @@ export default function Ranking() {
 
           {/* 로그인되지 않은 사용자 */}
           {!loading && !error && !isLoggedInUser && (
-            <div className="flex gap-8 mb-12">
+            <div className="flex flex-col md:flex-row gap-8 mb-12">
               {/* 왼쪽: 로그인 메시지 */}
-              <div className="w-80 flex-shrink-0">
+              <div className="w-full md:w-80 flex-shrink-0">
                 <div className="p-6 bg-gradient-to-br from-[#2F639D] to-[#1e3a5f] border-2 border-[#2F639D] rounded-2xl text-white sticky top-24 text-center">
                   <h2 className="text-xl font-black mb-6">
                     {t('common.yourRanking') || 'YOUR RANKING'}
@@ -391,9 +391,9 @@ export default function Ranking() {
               {/* 하이브리드 레이아웃 (왼쪽: My Ranking, 오른쪽: 컴팩트 리스트) */}
               {isUnrated ? (
                 /* 언레이팅 상태 */
-                <div className="flex gap-8 mb-12">
+                <div className="flex flex-col md:flex-row gap-8 mb-12">
                   {/* 왼쪽: My Ranking (언레이팅) */}
-                  <div className="w-80 flex-shrink-0">
+                  <div className="w-full md:w-80 flex-shrink-0">
                     <div className="p-6 bg-gradient-to-br from-amber-400 to-amber-500 border-2 border-amber-400 rounded-2xl text-white sticky top-24 text-center">
                       <h2 className="text-xl font-black mb-6">
                         {t('common.yourRanking') || 'YOUR RANKING'}
@@ -492,9 +492,9 @@ export default function Ranking() {
                   </div>
                 </div>
               ) : myRank !== null && myRating !== null ? (
-                <div className="flex gap-8 mb-12">
+                <div className="flex flex-col md:flex-row gap-8 mb-12">
                   {/* 왼쪽: My Ranking (고정) */}
-                  <div className="w-80 flex-shrink-0">
+                  <div className="w-full md:w-80 flex-shrink-0">
                     <div className="p-6 bg-gradient-to-br from-[#2F639D] to-[#1e3a5f] border-2 border-[#2F639D] rounded-2xl text-white sticky top-24">
                       <h2 className="text-xl font-black mb-6">
                         {t('common.yourRanking') || 'YOUR RANKING'}
