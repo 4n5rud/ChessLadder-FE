@@ -17,9 +17,10 @@ interface ProfileCardProps {
     ratingHistory: any[];
     streakMap: Map<string, DailyStreakDto>;
     selectedYear: number;
+    gameType: string;
     promotionThresholds: any;
     convertSubTierToRoman: (subTier: string) => string;
-    cardRef: React.RefObject<HTMLDivElement | null>;
+    cardRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 const ProfileCard: React.FC<ProfileCardProps> = ({
@@ -28,6 +29,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
     ratingHistory,
     streakMap,
     selectedYear,
+    gameType,
     promotionThresholds,
     convertSubTierToRoman,
     cardRef
@@ -173,7 +175,9 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                                 {romanSubTier}
                             </div>
                             <div className="flex flex-col items-center">
-                                <span className="text-[10px] font-black opacity-40 uppercase tracking-[0.3em] mb-1" style={{ color: colors.text }}>{currentTier}</span>
+                                <span className="text-[10px] font-black opacity-40 uppercase tracking-[0.3em] mb-1 px-4 py-1 rounded-full bg-black/5" style={{ color: colors.text }}>
+                                    {gameType} • {currentTier}
+                                </span>
                                 <div className="flex items-baseline gap-1">
                                     <span className="text-3xl font-black" style={{ color: colors.text }}>{userPerf.rating}</span>
                                     <span className="text-[10px] font-black opacity-50 uppercase tracking-wider" style={{ color: colors.text }}>RATING</span>
@@ -334,7 +338,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                 </div>
                 <div className="flex flex-col items-end">
                     <span className="text-[10px] font-black text-gray-400 tracking-[0.2em] mb-0.5">VERIFIED DATA</span>
-                    <span className="text-[9px] font-bold text-gray-300 tracking-tighter uppercase">Generated at chessmate.kr</span>
+                    <span className="text-[9px] font-bold text-gray-300 tracking-tighter uppercase">Generated at ChessLadder.org</span>
                 </div>
             </div>
         </div>

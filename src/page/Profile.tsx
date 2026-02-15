@@ -168,7 +168,7 @@ const Profile = () => {
                 }
             });
             const link = document.createElement('a');
-            link.download = `chess-mate-${profile?.username || 'user'}-card.png`;
+            link.download = `chess-ladder-${profile?.username || 'user'}-card.png`;
             link.href = dataUrl;
             link.click();
         } catch (err) {
@@ -203,6 +203,18 @@ const Profile = () => {
                 
                 // 프로필 정보 조회
                 const profileData = await getUserProfile();
+
+                // 이미지 강제 갱신을 위해 타임스탬프 추가
+                if (profileData) {
+                    const timestamp = Date.now();
+                    if (profileData.profile_image) {
+                        profileData.profile_image = `${profileData.profile_image}?t=${timestamp}`;
+                    }
+                    if (profileData.banner_image) {
+                        profileData.banner_image = `${profileData.banner_image}?t=${timestamp}`;
+                    }
+                }
+
                 // 프로필 데이터 수신
                 setProfile(profileData);
                 setDescription(profileData?.description || '');
@@ -221,10 +233,10 @@ const Profile = () => {
                 
                 // 프로필과 배너 이미지를 profileData에서 직접 가져오기
                 if (profileData?.profile_image) {
-                    setProfileImage(`${profileData.profile_image}?t=${Date.now()}`);
+                    setProfileImage(profileData.profile_image);
                 }
                 if (profileData?.banner_image) {
-                    setBannerImage(`${profileData.banner_image}?t=${Date.now()}`);
+                    setBannerImage(profileData.banner_image);
                 }
             } catch (error) {
                 // 사용자 데이터 조회 실패
@@ -333,13 +345,25 @@ const Profile = () => {
             
             // 업로드 완료 후 프로필 데이터 재조회
             const updatedProfile = await getUserProfile();
+            
+            // 이미지 강제 갱신을 위해 타임스탬프 추가
+            if (updatedProfile) {
+                const timestamp = Date.now();
+                if (updatedProfile.profile_image) {
+                    updatedProfile.profile_image = `${updatedProfile.profile_image}?t=${timestamp}`;
+                }
+                if (updatedProfile.banner_image) {
+                    updatedProfile.banner_image = `${updatedProfile.banner_image}?t=${timestamp}`;
+                }
+            }
+
             setProfile(updatedProfile);
             
             if (updatedProfile?.profile_image) {
-                setProfileImage(`${updatedProfile.profile_image}?t=${Date.now()}`);
+                setProfileImage(updatedProfile.profile_image);
             }
             if (updatedProfile?.banner_image) {
-                setBannerImage(`${updatedProfile.banner_image}?t=${Date.now()}`);
+                setBannerImage(updatedProfile.banner_image);
             }
             
             const messageKey = type === 'BANNER' ? 'profile.imageBannerUploadSuccess' : 'profile.imageProfileUploadSuccess';
@@ -359,6 +383,18 @@ const Profile = () => {
             
             // 자기소개 업데이트 후 프로필 데이터 재조회
             const updatedProfile = await getUserProfile();
+            
+            // 이미지 타임스탬프 유지 또는 갱신
+            if (updatedProfile) {
+                const timestamp = Date.now();
+                if (updatedProfile.profile_image) {
+                    updatedProfile.profile_image = `${updatedProfile.profile_image}?t=${timestamp}`;
+                }
+                if (updatedProfile.banner_image) {
+                    updatedProfile.banner_image = `${updatedProfile.banner_image}?t=${timestamp}`;
+                }
+            }
+
             setProfile(updatedProfile);
             setDescription(updatedProfile?.description || '');
             
@@ -544,6 +580,23 @@ const Profile = () => {
                                     </div>
                                 </div>
 
+                                {/* 추출용 숨겨진 카드 (미리보기가 닫혀있어도 추출 제어 가능하게) */}
+                                <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden' }}>
+                                    {profile && userPerf && (
+                                        <ProfileCard 
+                                            profile={profile}
+                                            userPerf={userPerf}
+                                            ratingHistory={ratingHistory}
+                                            streakMap={streakMap}
+                                            selectedYear={selectedYear}
+                                            gameType={selectedGameType}
+                                            promotionThresholds={promotionThresholds}
+                                            convertSubTierToRoman={convertSubTierToRoman}
+                                            cardRef={cardRef}
+                                        />
+                                    )}
+                                </div>
+
                                 {/* 드롭다운 형식의 미리보기 섹션 */}
                                 {showPreview && (
                                     <div 
@@ -571,9 +624,10 @@ const Profile = () => {
                                                             ratingHistory={ratingHistory}
                                                             streakMap={streakMap}
                                                             selectedYear={selectedYear}
+                                                            gameType={selectedGameType}
                                                             promotionThresholds={promotionThresholds}
                                                             convertSubTierToRoman={convertSubTierToRoman}
-                                                            cardRef={cardRef}
+                                                            // 미리보기 용이므로 Ref는 연결하지 않음 (추출은 숨겨진 카드로 수행)
                                                         />
                                                     )}
                                                 </div>
