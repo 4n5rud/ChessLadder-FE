@@ -312,7 +312,7 @@ export default function Ranking() {
                     <div
                       key={user.id}
                       onClick={() => handleUserClick(user.id)}
-                      className="group cursor-pointer bg-white rounded-xl border-2 border-gray-200 p-4 flex items-center gap-4 hover:shadow-md transition-all relative overflow-hidden"
+                      className="group cursor-pointer bg-white rounded-xl border-2 border-gray-200 p-4 flex items-start gap-4 hover:shadow-md transition-all relative overflow-hidden"
                       style={{ borderColor: tierColor.borderColor }}
                     >
                       {/* 배너 배경 */}
@@ -324,34 +324,34 @@ export default function Ranking() {
                       )}
                       
                       {/* 등수 */}
-                      <div className="flex-shrink-0 w-12 text-center relative z-10">
+                      <div className="flex-shrink-0 w-12 text-center relative z-10 pt-1">
                         <p className="text-lg font-black" style={{ color: tierColor.mainColor }}>
                           #{user.rank}
                         </p>
                       </div>
 
                       {/* 프로필 */}
-                      <div className="flex items-center gap-3 flex-grow relative z-10">
+                      <div className="flex items-start gap-3 flex-grow relative z-10">
                         {user.profile_image ? (
                           <img
                             src={user.profile_image}
                             alt={user.username}
-                            className="w-12 h-12 rounded-full object-cover border-2 flex-shrink-0"
+                            className="w-12 h-12 rounded-full object-cover border-2 flex-shrink-0 mt-0.5"
                             style={{ borderColor: tierColor.mainColor }}
                           />
                         ) : (
                           <div 
-                            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 mt-0.5"
                             style={{ backgroundColor: tierColor.mainColor }}
                           >
                             {user.username.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <div className="min-w-0 flex-grow">
-                          <p className="font-bold text-gray-900 text-sm truncate">
+                        <div className="flex-grow">
+                          <p className="font-bold text-gray-900 text-sm break-words">
                             {user.username}
                           </p>
-                          <p className="text-xs text-gray-500 truncate">
+                          <p className="text-xs text-gray-500 break-words">
                             {user.description || '-'}
                           </p>
                         </div>

@@ -206,7 +206,7 @@ function Main() {
                     {t('main.tagline')}
                 </h2>
 
-                <div className="flex flex-wrap items-end justify-center gap-3 md:gap-6 mb-10 max-w-2xl mx-auto">
+                <div className="flex items-end gap-3 md:gap-6 mb-10 overflow-x-auto px-4 py-2">
                     {[
                         {src: pawnImg, label: 'Pawn'},
                         {src: knightImg, label: 'Knight'},
@@ -215,7 +215,7 @@ function Main() {
                         {src: queenImg, label: 'Queen'},
                         {src: kingImg, label: 'King'},
                     ].map(({src, label}, index) => (
-                        <div key={label} className="flex flex-col items-center group tier-item" style={{animationDelay: `${1 + index * 0.1}s`}}>
+                        <div key={label} className="flex flex-col items-center group tier-item flex-shrink-0" style={{animationDelay: `${1 + index * 0.1}s`}}>
                             <div className="bg-white/80 rounded-xl shadow-lg aspect-square w-16 h-16 md:w-22 md:h-22 flex items-center justify-center transition-transform group-hover:-translate-y-2 group-hover:scale-105 border-2 border-[#86ABD7]">
                                 <img
                                     src={src}
