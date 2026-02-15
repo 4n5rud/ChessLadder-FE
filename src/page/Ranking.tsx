@@ -358,7 +358,7 @@ export default function Ranking() {
                       </div>
 
                       {/* 티어 & 레이팅 섹션 */}
-                      <div className="flex-shrink-0 bg-white border-2 border-black rounded-lg p-2 flex items-end gap-2 relative z-10">
+                      <div className="flex-shrink-0 bg-white border-2 border-black rounded-lg p-2 flex items-center gap-2 relative z-10">
                         {/* 메인 티어 이미지 & 서브 티어 */}
                         <div className="flex flex-col items-center gap-0.5">
                           <img src={tierImage} alt={tierInfo.tier} className="w-10 h-10 object-contain" />
@@ -368,11 +368,11 @@ export default function Ranking() {
                         </div>
                         
                         {/* 레이팅 */}
-                        <div className="text-right">
-                          <p className="text-xs font-black text-black">
+                        <div className="text-right flex flex-col items-end justify-center">
+                          <p className="text-sm font-black text-black leading-none">
                             {user.rating}
                           </p>
-                          <p className="text-xs font-semibold text-black">
+                          <p className="text-xs font-semibold text-gray-600 leading-none">
                             Rating
                           </p>
                         </div>
@@ -467,7 +467,7 @@ export default function Ranking() {
                           </div>
 
                           {/* 티어 & 레이팅 섹션 */}
-                          <div className="flex-shrink-0 bg-white border-2 border-black rounded-lg p-2 flex items-end gap-2 relative z-10">
+                          <div className="flex-shrink-0 bg-white border-2 border-black rounded-lg p-2 flex items-center gap-2 relative z-10">
                             {/* 메인 티어 이미지 & 서브 티어 */}
                             <div className="flex flex-col items-center gap-0.5">
                               <img src={tierImage} alt={tierInfo.tier} className="w-10 h-10 object-contain" />
@@ -477,11 +477,11 @@ export default function Ranking() {
                             </div>
                             
                             {/* 레이팅 */}
-                            <div className="text-right">
-                              <p className="text-xs font-black text-black">
+                            <div className="text-right flex flex-col items-end justify-center">
+                              <p className="text-sm font-black text-black leading-none">
                                 {user.rating}
                               </p>
-                              <p className="text-xs font-semibold text-black">
+                              <p className="text-xs font-semibold text-gray-600 leading-none">
                                 Rating
                               </p>
                             </div>
