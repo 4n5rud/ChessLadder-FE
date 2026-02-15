@@ -450,9 +450,10 @@ const Profile = () => {
         }}>
             <Header />
             
-            {/* 배너 이미지 */}
-            <div 
-                className="w-full relative group banner-section z-0"
+            <div style={{ zoom: 0.8 }}>
+                {/* 배너 이미지 */}
+                <div 
+                    className="w-full relative group banner-section z-0"
                 style={bannerImage ? {
                     height: '380px',
                     backgroundImage: `url(${bannerImage})`,
@@ -584,22 +585,7 @@ const Profile = () => {
                                     </div>
                                 </div>
 
-                                {/* 추출용 숨겨진 카드 (미리보기가 닫혀있어도 추출 제어 가능하게) */}
-                                <div style={{ position: 'fixed', left: '-9999px', top: '-9999px', pointerEvents: 'none', opacity: 0 }}>
-                                    {profile && userPerf && (
-                                        <ProfileCard 
-                                            profile={profile}
-                                            userPerf={userPerf}
-                                            ratingHistory={ratingHistory}
-                                            streakMap={streakMap}
-                                            selectedYear={selectedYear}
-                                            gameType={selectedGameType}
-                                            promotionThresholds={promotionThresholds}
-                                            convertSubTierToRoman={convertSubTierToRoman}
-                                            cardRef={cardRef}
-                                        />
-                                    )}
-                                </div>
+                                {/* 추출용 숨겨진 카드 (미리보기가 닫혀있어도 추출 제어 가능하게) - 이동됨 */}
 
                                 {/* 드롭다운 형식의 미리보기 섹션 */}
                                 {showPreview && (
@@ -983,6 +969,24 @@ const Profile = () => {
                         </div>
                     )}
                 </div>
+            </div>
+            </div>
+
+            {/* Hidden export card placed outside the zoom wrapper so it renders at 1:1 for html-to-image */}
+            <div style={{ position: 'fixed', left: '-9999px', top: 0, pointerEvents: 'none', opacity: 1 }}>
+                {profile && userPerf && (
+                    <ProfileCard
+                        profile={profile}
+                        userPerf={userPerf}
+                        ratingHistory={ratingHistory}
+                        streakMap={streakMap}
+                        selectedYear={selectedYear}
+                        gameType={selectedGameType}
+                        promotionThresholds={promotionThresholds}
+                        convertSubTierToRoman={convertSubTierToRoman}
+                        cardRef={cardRef}
+                    />
+                )}
             </div>
 
             <Footer/>
