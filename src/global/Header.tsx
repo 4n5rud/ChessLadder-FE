@@ -141,147 +141,155 @@ const Header = () => {
             
             {/* 메뉴 버튼 (모바일과 데스크톱 공용) */}
             <div className="ml-auto flex items-center">
-                {!isLoading && (
-                    <div className="relative">
-                        <button 
-                            onClick={handleMenuToggle}
-                            className="px-3 py-2 text-[#2F639D] hover:text-[#1f4170] transition"
-                            title={t('header.menu')}
-                        >
-                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
-                            </svg>
-                        </button>
-                        
-                        {/* 드롭다운 메뉴 */}
-                        {isMenuOpen && (
-                            <div className="fixed top-14 right-4 md:right-6 w-72 md:w-80 rounded-lg shadow-xl border border-gray-200 z-[9999] overflow-hidden bg-white">
-                                {isLogged ? (
-                                    <>
-                                        {/* 배너 배경 오버레이 (로그인 상태일 때만) */}
-                                        <div 
-                                            className="relative h-32 bg-gray-100"
-                                            style={{
-                                                backgroundImage: bannerImage ? `url(${bannerImage})` : 'none',
-                                                backgroundSize: 'cover',
-                                                backgroundPosition: 'center',
-                                            }}
-                                        >
-                                            <div className="absolute inset-0 bg-black/40 pointer-events-none"></div>
-                                            <div className="relative p-4 flex items-center gap-3 h-full">
-                                                <div className="flex-shrink-0">
-                                                    {profileImage ? (
-                                                        <img 
-                                                            src={profileImage} 
-                                                            alt="Profile" 
-                                                            className="w-16 h-16 rounded-full border-2 border-white object-cover"
-                                                            onError={(e) => {
-                                                                (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ccc" width="100" height="100"/%3E%3Ctext x="50" y="50" font-size="60" fill="%23999" text-anchor="middle" dy=".3em"%3E%3F%3C/text%3E%3C/svg%3E';
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <div className="w-16 h-16 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center">
-                                                            <span className="text-gray-600">?</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-white font-bold text-lg drop-shadow">
-                                                        {user?.user?.username || user?.username || t('profile.user')}
-                                                    </p>
+                <div className="relative">
+                    <button 
+                        onClick={handleMenuToggle}
+                        className="px-3 py-2 text-[#2F639D] hover:text-[#1f4170] transition"
+                        title={t('header.menu')}
+                        disabled={isLoading}
+                    >
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
+                        </svg>
+                    </button>
+                    
+                    {/* 드롭다운 메뉴 */}
+                    {isMenuOpen && (
+                        <div className="fixed top-14 right-4 md:right-6 w-72 md:w-80 rounded-lg shadow-xl border border-gray-200 z-[9999] overflow-hidden bg-white">
+                            {isLoading ? (
+                                <div className="p-4 flex flex-col items-center justify-center min-h-40">
+                                    <div className="w-10 h-10 border-4 border-[#2F639D] border-t-transparent rounded-full animate-spin"></div>
+                                    <p className="text-gray-500 mt-3 text-sm">{t('common.loading')}</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {isLogged ? (
+                                        <>
+                                            {/* 배너 배경 오버레이 (로그인 상태일 때만) */}
+                                            <div 
+                                                className="relative h-32 bg-gray-100"
+                                                style={{
+                                                    backgroundImage: bannerImage ? `url(${bannerImage})` : 'none',
+                                                    backgroundSize: 'cover',
+                                                    backgroundPosition: 'center',
+                                                }}
+                                            >
+                                                <div className="absolute inset-0 bg-black/40 pointer-events-none"></div>
+                                                <div className="relative p-4 flex items-center gap-3 h-full">
+                                                    <div className="flex-shrink-0">
+                                                        {profileImage ? (
+                                                            <img 
+                                                                src={profileImage} 
+                                                                alt="Profile" 
+                                                                className="w-16 h-16 rounded-full border-2 border-white object-cover"
+                                                                onError={(e) => {
+                                                                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ccc" width="100" height="100"/%3E%3Ctext x="50" y="50" font-size="60" fill="%23999" text-anchor="middle" dy=".3em"%3E%3F%3C/text%3E%3C/svg%3E';
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <div className="w-16 h-16 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center">
+                                                                <span className="text-gray-600">?</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-white font-bold text-lg drop-shadow">
+                                                            {user?.user?.username || user?.username || t('profile.user')}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        
-                                        <div className="py-2 border-b border-gray-100">
-                                            <button
-                                                onClick={handleProfileClick}
-                                                className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                            
+                                            <div className="py-2 border-b border-gray-100">
+                                                <button
+                                                    onClick={handleProfileClick}
+                                                    className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                                >
+                                                    {t('header.myProfile')}
+                                                </button>
+                                                <button
+                                                    onClick={handleLogout}
+                                                    className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                                >
+                                                    {t('header.logout')}
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="p-4 flex flex-col items-center gap-4 border-b border-gray-100">
+                                            <p className="text-gray-500 text-sm text-center">{t('main.loginRequired')}</p>
+                                            <button 
+                                                onClick={() => {
+                                                    setIsMenuOpen(false);
+                                                    handleLichessLogin();
+                                                }}
+                                                disabled={isLoginLoading}
+                                                className="flex items-center gap-2 bg-white text-black font-bold py-2 px-5 rounded-full shadow-md hover:bg-[#e6e6e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                {t('header.myProfile')}
+                                                <img src={lichessLogoImg} alt="Lichess Logo" className="w-6 h-6" />
+                                                {isLoginLoading ? t('profile.loading') : t('main.loginWithLichess')}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* 네비게이션 (항상 표시) */}
+                                    <div className="py-2 border-b border-gray-100">
+                                        <Link 
+                                            to="/page1" 
+                                            onClick={() => setIsMenuOpen(false)}
+                                            className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                        >
+                                            {t('header.home')}
+                                        </Link>
+                                        <Link 
+                                            to="/news" 
+                                            onClick={() => setIsMenuOpen(false)}
+                                            className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                        >
+                                            {t('header.news')}
+                                        </Link>
+                                        <Link 
+                                            to="/ranking" 
+                                            onClick={() => setIsMenuOpen(false)}
+                                            className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                        >
+                                            {t('header.ranking')}
+                                        </Link>
+                                    </div>
+
+                                    {/* 언어 선택 (항상 표시) */}
+                                    <div className="p-4 bg-gray-50">
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                                            {t('header.changeLanguage')}
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleLanguageChange('KR')}
+                                                className={`flex-1 py-2.5 text-center text-sm font-bold rounded-lg transition ${
+                                                    language === 'KR' 
+                                                        ? 'bg-[#2F639D] text-white shadow-md' 
+                                                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                                                }`}
+                                            >
+                                                한국어
                                             </button>
                                             <button
-                                                onClick={handleLogout}
-                                                className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                                onClick={() => handleLanguageChange('EN')}
+                                                className={`flex-1 py-2.5 text-center text-sm font-bold rounded-lg transition ${
+                                                    language === 'EN' 
+                                                        ? 'bg-[#2F639D] text-white shadow-md' 
+                                                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                                                }`}
                                             >
-                                                {t('header.logout')}
+                                                English
                                             </button>
                                         </div>
-                                    </>
-                                ) : (
-                                    <div className="p-4 flex flex-col items-center gap-4 border-b border-gray-100">
-                                        <p className="text-gray-500 text-sm text-center">{t('main.loginRequired')}</p>
-                                        <button 
-                                            onClick={() => {
-                                                setIsMenuOpen(false);
-                                                handleLichessLogin();
-                                            }}
-                                            disabled={isLoginLoading}
-                                            className="flex items-center gap-2 bg-white text-black font-bold py-2 px-5 rounded-full shadow-md hover:bg-[#e6e6e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            <img src={lichessLogoImg} alt="Lichess Logo" className="w-6 h-6" />
-                                            {isLoginLoading ? t('profile.loading') : t('main.loginWithLichess')}
-                                        </button>
                                     </div>
-                                )}
-
-                                {/* 네비게이션 (항상 표시) */}
-                                <div className="py-2 border-b border-gray-100">
-                                    <Link 
-                                        to="/page1" 
-                                        onClick={() => setIsMenuOpen(false)}
-                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
-                                    >
-                                        {t('header.home')}
-                                    </Link>
-                                    <Link 
-                                        to="/news" 
-                                        onClick={() => setIsMenuOpen(false)}
-                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
-                                    >
-                                        {t('header.news')}
-                                    </Link>
-                                    <Link 
-                                        to="/ranking" 
-                                        onClick={() => setIsMenuOpen(false)}
-                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
-                                    >
-                                        {t('header.ranking')}
-                                    </Link>
-                                </div>
-
-                                {/* 언어 선택 (항상 표시) */}
-                                <div className="p-4 bg-gray-50">
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                                        {t('header.changeLanguage')}
-                                    </p>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handleLanguageChange('KR')}
-                                            className={`flex-1 py-2.5 text-center text-sm font-bold rounded-lg transition ${
-                                                language === 'KR' 
-                                                    ? 'bg-[#2F639D] text-white shadow-md' 
-                                                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                                            }`}
-                                        >
-                                            한국어
-                                        </button>
-                                        <button
-                                            onClick={() => handleLanguageChange('EN')}
-                                            className={`flex-1 py-2.5 text-center text-sm font-bold rounded-lg transition ${
-                                                language === 'EN' 
-                                                    ? 'bg-[#2F639D] text-white shadow-md' 
-                                                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                                            }`}
-                                        >
-                                            English
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </header>
     )
