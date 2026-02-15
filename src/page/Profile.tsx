@@ -162,7 +162,6 @@ const Profile = () => {
             await new Promise(resolve => setTimeout(resolve, 800));
             const dataUrl = await toPng(cardRef.current, { 
                 cacheBust: true,
-                backgroundColor: '#ffffff',
                 pixelRatio: 2,
                 style: {
                     transform: 'scale(1)',
