@@ -159,12 +159,16 @@ const Profile = () => {
         setIsExporting(true);
         try {
             // 레이더나 다른 요소가 렌더링될 시간을 줌
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 800));
             const dataUrl = await toPng(cardRef.current, { 
                 cacheBust: true,
+                backgroundColor: '#ffffff',
+                pixelRatio: 2,
                 style: {
                     transform: 'scale(1)',
-                    transformOrigin: 'top left'
+                    transformOrigin: 'top left',
+                    opacity: '1',
+                    visibility: 'visible'
                 }
             });
             const link = document.createElement('a');
@@ -581,7 +585,7 @@ const Profile = () => {
                                 </div>
 
                                 {/* 추출용 숨겨진 카드 (미리보기가 닫혀있어도 추출 제어 가능하게) */}
-                                <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden' }}>
+                                <div style={{ position: 'fixed', left: '-9999px', top: '-9999px', pointerEvents: 'none', opacity: 0 }}>
                                     {profile && userPerf && (
                                         <ProfileCard 
                                             profile={profile}

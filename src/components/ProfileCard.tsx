@@ -11,6 +11,12 @@ import queenImg from '../assets/images/tier/queen.png';
 import kingImg from '../assets/images/tier/king.png';
 import unratedImg from '../assets/images/tier/unrated.png';
 
+// 게임 타입 아이콘 임포트
+import blitzIcon from '../assets/images/logo/game/blitz.webp';
+import bulletIcon from '../assets/images/logo/game/bullet.webp';
+import rapidIcon from '../assets/images/logo/game/rapid.webp';
+import classicalIcon from '../assets/images/logo/game/classical.webp';
+
 interface ProfileCardProps {
     profile: ProfileResponse;
     userPerf: UserPerfResponse;
@@ -81,6 +87,15 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         }
     };
 
+    const getGameIcon = (type: string) => {
+        const lowerType = type.toLowerCase();
+        if (lowerType === 'blitz') return blitzIcon;
+        if (lowerType === 'bullet') return bulletIcon;
+        if (lowerType === 'rapid') return rapidIcon;
+        if (lowerType === 'classical') return classicalIcon;
+        return null;
+    };
+
     const getSubTier = (rating: number): string => {
         // Simple sub-tier calculation logic similar to TierSection.tsx
         const tier = getTier(rating);
@@ -107,16 +122,20 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
             style={{ fontFamily: "'Inter', sans-serif" }}
         >
             {/* 1. Header: Modern Tier Themed Banner */}
-            <div className="relative h-56 w-full overflow-hidden">
-                <div 
-                    className="absolute inset-0 transition-transform duration-700 hover:scale-110"
-                    style={{
-                        backgroundImage: profile.banner_image ? `url(${profile.banner_image})` : 'none',
-                        backgroundColor: profile.banner_image ? 'transparent' : colors.primary,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center'
-                    }}
-                />
+            <div className="relative h-56 w-full overflow-hidden bg-gray-200">
+                {profile.banner_image ? (
+                    <img 
+                        src={profile.banner_image} 
+                        alt="Banner" 
+                        crossOrigin="anonymous"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-110"
+                    />
+                ) : (
+                    <div 
+                        className="absolute inset-0"
+                        style={{ backgroundColor: colors.primary }}
+                    />
+                )}
                 {/* Gradient overlay using theme primary color */}
                 <div 
                     className="absolute inset-0 bg-gradient-to-t opacity-90"
@@ -128,6 +147,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                         <img 
                             src={profile.profile_image || 'https://via.placeholder.com/120'} 
                             alt="Profile" 
+                            crossOrigin="anonymous"
                             className="w-28 h-28 rounded-[32px] border-[6px] bg-white object-cover shadow-2xl"
                             style={{ borderColor: 'white' }}
                         />
@@ -175,7 +195,10 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                                 {romanSubTier}
                             </div>
                             <div className="flex flex-col items-center">
-                                <span className="text-[10px] font-black opacity-40 uppercase tracking-[0.3em] mb-1 px-4 py-1 rounded-full bg-black/5" style={{ color: colors.text }}>
+                                <span className="flex items-center gap-1.5 text-[10px] font-black opacity-40 uppercase tracking-[0.2em] mb-1 px-3 py-1 rounded-full bg-black/5" style={{ color: colors.text }}>
+                                    {getGameIcon(gameType) && (
+                                        <img src={getGameIcon(gameType)!} alt={gameType} className="w-3.5 h-3.5 object-contain opacity-80" />
+                                    )}
                                     {gameType} • {currentTier}
                                 </span>
                                 <div className="flex items-baseline gap-1">
