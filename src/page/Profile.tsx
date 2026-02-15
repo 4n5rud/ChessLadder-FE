@@ -26,6 +26,7 @@ const Profile = () => {
     const [loadingBanner, setLoadingBanner] = useState(false);
     const [loadingProfile, setLoadingProfile] = useState(false);
     const [savingDescription, setSavingDescription] = useState(false);
+    const [generatingCard, setGeneratingCard] = useState(false);
     
     // 게임 타입 관련 상태
     const [selectedGameType, setSelectedGameType] = useState<string>('RAPID');
@@ -370,6 +371,150 @@ const Profile = () => {
         }
     };
 
+    const generateProfileCard = async () => {
+        if (!profile || !userPerf) {
+            alert('프로필 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
+        setGeneratingCard(true);
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 500;
+            canvas.height = 500;
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+                alert('Canvas를 생성할 수 없습니다.');
+                return;
+            }
+
+            // 배경 그라데이션
+            const gradient = ctx.createLinearGradient(0, 0, 500, 500);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 500, 500);
+
+            // 상단 흰색 영역
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 500, 120);
+
+            // ChessMate 로고/제목 텍스트
+            ctx.font = 'bold 28px Arial, sans-serif';
+            ctx.fillStyle = '#667eea';
+            ctx.textAlign = 'left';
+            ctx.fillText('ChessMate', 20, 40);
+
+            ctx.font = '14px Arial, sans-serif';
+            ctx.fillStyle = '#999';
+            ctx.fillText('chess.mate.profile', 20, 65);
+
+            // 프로필 사진 (원형)
+            const profileImgSize = 120;
+            const profileX = 250 - profileImgSize / 2;
+            const profileY = 150;
+
+            // 원형 마스크
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(250, profileY + profileImgSize / 2, profileImgSize / 2, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.clip();
+
+            // 프로필 이미지 로드 및 그리기
+            if (profileImage) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.src = profileImage;
+                
+                await new Promise((resolve, _) => {
+                    img.onload = () => {
+                        ctx.drawImage(img, profileX, profileY, profileImgSize, profileImgSize);
+                        resolve(null);
+                    };
+                    img.onerror = () => {
+                        // 이미지 로드 실패 시 기본 아이콘 색상으로 채우기
+                        ctx.fillStyle = '#e0e0e0';
+                        ctx.fillRect(profileX, profileY, profileImgSize, profileImgSize);
+                        resolve(null);
+                    };
+                });
+            } else {
+                ctx.fillStyle = '#e0e0e0';
+                ctx.fillRect(profileX, profileY, profileImgSize, profileImgSize);
+            }
+
+            ctx.restore();
+
+            // 사용자명과 정보
+            ctx.font = 'bold 24px Arial, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText(profile.username || 'Unknown Player', 250, 320);
+
+            // 레이팅 박스
+            const ratingBox = {
+                width: 200,
+                height: 60,
+                x: 150,
+                y: 360
+            };
+
+            // 반투명 백그라운드
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.fillRect(ratingBox.x, ratingBox.y, ratingBox.width, ratingBox.height);
+
+            // 테두리
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(ratingBox.x, ratingBox.y, ratingBox.width, ratingBox.height);
+
+            // 레이팅 텍스트
+            ctx.font = '14px Arial, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText('Rating', 250, 380);
+
+            ctx.font = 'bold 32px Arial, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText((userPerf?.rating || 1200).toString(), 250, 410);
+
+            // 티어 정보
+            ctx.font = '12px Arial, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText(getTierFromRating(userPerf?.rating || 1200), 250, 470);
+
+            // 게임 타입
+            ctx.fillText(selectedGameType, 250, 490);
+
+            // 캔버스를 이미지로 변환 및 다운로드
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    alert('이미지 생성에 실패했습니다.');
+                    return;
+                }
+
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `ChessMate_${profile.username}_${new Date().getTime()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                alert('프로필 카드가 다운로드되었습니다!');
+            }, 'image/png');
+        } catch (error) {
+            alert('프로필 카드 생성 중 오류가 발생했습니다.');
+        } finally {
+            setGeneratingCard(false);
+        }
+    };
+
     return (
         <div className="profile-page" style={{
             backgroundColor: userPerf
@@ -487,6 +632,29 @@ const Profile = () => {
                                     title={remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}${t('profile.availableAfter')}` : t('profile.fetchFromLichess')}
                                 >
                                     {refreshing ? t('profile.refreshing') : remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}${t('profile.waitSeconds')}` : t('profile.dataRefresh')}
+                                </button>
+                                <button
+                                    onClick={generateProfileCard}
+                                    disabled={generatingCard || !profile || !userPerf}
+                                    className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-2 border-purple-600 rounded-lg hover:shadow-lg transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm"
+                                    title="프로필 카드를 이미지로 생성하고 다운로드합니다"
+                                >
+                                    {generatingCard ? (
+                                        <>
+                                            <svg className="w-4 h-4 mr-2 animate-spin" fill="currentColor" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" fill="none" strokeWidth="4" stroke="currentColor" />
+                                                <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                            </svg>
+                                            생성 중...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                                            </svg>
+                                            카드 다운로드
+                                        </>
+                                    )}
                                 </button>
                             </div>
                             
