@@ -5,7 +5,6 @@ import { useLanguage } from '../context/LanguageContext';
 
 interface RatingHistoryChartProps {
   ratingHistory: RatingHistoryEntry[];
-  gameType?: string;
   tierThresholds?: Record<string, number>;
   isCard?: boolean;
 }
@@ -19,12 +18,6 @@ interface ChartDataPoint extends RatingHistoryEntry {
   previousTierWithSubTier?: string;
   isTierChange?: boolean;
   isPromoted?: boolean;
-}
-
-interface LineSegment {
-  data: ChartDataPoint[];
-  color: string;
-  startIndex: number;
 }
 
 const DEFAULT_TIER_THRESHOLDS: Record<string, number> = {
@@ -166,7 +159,6 @@ const getTierWithSubTier = (rating: number, thresholds: Record<string, number> =
 
 const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({ 
   ratingHistory, 
-  gameType = 'Rapid',
   tierThresholds = DEFAULT_TIER_THRESHOLDS,
   isCard = false
 }) => {

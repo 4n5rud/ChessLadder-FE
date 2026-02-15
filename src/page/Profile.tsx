@@ -571,7 +571,6 @@ const Profile = () => {
                                                             ratingHistory={ratingHistory}
                                                             streakMap={streakMap}
                                                             selectedYear={selectedYear}
-                                                            tierColorScheme={tierColorScheme}
                                                             promotionThresholds={promotionThresholds}
                                                             convertSubTierToRoman={convertSubTierToRoman}
                                                             cardRef={cardRef}
@@ -917,7 +916,6 @@ const Profile = () => {
                         <div className="h-[450px]">
                             <RatingHistoryChart 
                                 ratingHistory={ratingHistory} 
-                                gameType={gameTypeDisplayNames[selectedGameType]} 
                                 tierThresholds={promotionThresholds}
                             />
                         </div>
