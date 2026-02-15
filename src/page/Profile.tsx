@@ -449,10 +449,9 @@ const Profile = () => {
         }}>
             <Header />
             
-            <div style={{ zoom: 0.8 }}>
-                {/* 배너 이미지 */}
-                <div 
-                    className="w-full relative group banner-section z-0"
+            {/* 배너 이미지 */}
+            <div 
+                className="w-full relative group banner-section z-0"
                 style={bannerImage ? {
                     height: '380px',
                     backgroundImage: `url(${bannerImage})`,
@@ -968,7 +967,6 @@ const Profile = () => {
                         </div>
                     )}
                 </div>
-            </div>
             </div>
 
             {/* Hidden export card placed outside the zoom wrapper so it renders at 1:1 for html-to-image */}

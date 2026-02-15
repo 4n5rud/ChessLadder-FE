@@ -1,3 +1,8 @@
+/* Global zoom for all pages */
+html {
+	zoom: 0.8;
+}
+
 /* Fade-in animation for Chess Mate title */
 .fade-in-title {
 	opacity: 0;
