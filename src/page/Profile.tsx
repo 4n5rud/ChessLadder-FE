@@ -1,8 +1,9 @@
 import Header from "../global/Header";
 import Footer from "../global/Footer";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { ReactElement } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toPng } from 'html-to-image';
 import { getCurrentUser } from "../api/authService";
 import { getUploadUrl } from "../api/imageService";
 import type { UserImageType } from "../api/imageService";
@@ -12,15 +13,9 @@ import { useRatingHistory } from "../api/queries";
 import { useLanguage } from "../context/LanguageContext";
 import RatingHistoryChart from "../components/RatingHistoryChart";
 import { TierSection } from "../components/TierSection";
+import ProfileCard from "../components/ProfileCard";
 import { GameTypeButtons } from "../components/GameTypeButtons";
 import lichessLogoImg from "../assets/images/logo/lichess-logo.png";
-import pawnImg from "../assets/images/tier/pawn.png";
-import knightImg from "../assets/images/tier/knight.png";
-import bishopImg from "../assets/images/tier/vishop.png";
-import rookImg from "../assets/images/tier/rook.png";
-import queenImg from "../assets/images/tier/queen.png";
-import kingImg from "../assets/images/tier/king.png";
-import unratedImg from "../assets/images/tier/unrated.png";
 import "./Profile.css";
 
 const Profile = () => {
@@ -33,7 +28,6 @@ const Profile = () => {
     const [loadingBanner, setLoadingBanner] = useState(false);
     const [loadingProfile, setLoadingProfile] = useState(false);
     const [savingDescription, setSavingDescription] = useState(false);
-    const [generatingCard, setGeneratingCard] = useState(false);
     
     // 게임 타입 관련 상태
     const [selectedGameType, setSelectedGameType] = useState<string>('RAPID');
@@ -141,21 +135,50 @@ const Profile = () => {
     const [ratingHistory, setRatingHistory] = useState<any[]>([]);
     
     // 티어 관련 상태
-    const [userPerf, setUserPerf] = useState<UserPerfResponse>({
-        rating: 0,
-        gamesPlayed: 0,
-        prov: true,
-        all: 0, rated: 0, wins: 0, losses: 0, draws: 0,
-        tour: 0, berserk: 0, opAvg: 0, seconds: 0, disconnects: 0,
-        highestRating: 0, lowestRating: 0,
-        maxStreak: 0, maxLossStreak: 0,
-        uncertain: true
-    });
+    const [userPerf, setUserPerf] = useState<UserPerfResponse | null>(null);
     const [loadingPerf, setLoadingPerf] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [lastRefreshTime, setLastRefreshTime] = useState<number | null>(null);
     const [remainingTime, setRemainingTime] = useState(0);
     const REFRESH_COOLDOWN = 5 * 60 * 1000; // 5분 (300초) 제한
+
+    const cardRef = useRef<HTMLDivElement>(null);
+    const previewRef = useRef<HTMLDivElement>(null);
+    const [isExporting, setIsExporting] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
+
+    // 미리보기가 열릴 때 스크롤
+    useEffect(() => {
+        if (showPreview && previewRef.current) {
+            previewRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [showPreview]);
+
+    const handleExportCard = async () => {
+        if (!cardRef.current) return;
+        setIsExporting(true);
+        try {
+            // 레이더나 다른 요소가 렌더링될 시간을 줌
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const dataUrl = await toPng(cardRef.current, { 
+                cacheBust: true,
+                includeGraphics: true,
+                style: {
+                    transform: 'scale(1)',
+                    transformOrigin: 'top left'
+                }
+            });
+            const link = document.createElement('a');
+            link.download = `chess-mate-${profile?.username || 'user'}-card.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (err) {
+            console.error('Export failed', err);
+            alert('카드 추출 중 오류가 발생했습니다.');
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     // 남은 시간 업데이트 (1초마다)
     useEffect(() => {
@@ -378,256 +401,6 @@ const Profile = () => {
         }
     };
 
-    const generateProfileCard = async () => {
-        if (!profile || !userPerf) {
-            alert('프로필 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-            return;
-        }
-
-        setGeneratingCard(true);
-        try {
-            const tierImageMap: { [key: string]: string } = {
-                'PAWN': pawnImg,
-                'KNIGHT': knightImg,
-                'BISHOP': bishopImg,
-                'ROOK': rookImg,
-                'QUEEN': queenImg,
-                'KING': kingImg
-            };
-
-            // placeholder URL 제외하고 실제 이미지만 사용
-            const validProfileImage = profileImage && !profileImage.includes('placeholder') ? profileImage : null;
-
-            const canvas = document.createElement('canvas');
-            canvas.width = 400;
-            canvas.height = 700;
-            const ctx = canvas.getContext('2d');
-            
-            if (!ctx) {
-                alert('Canvas를 생성할 수 없습니다.');
-                return;
-            }
-
-            // 배경
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // 상단 헤더 (그라데이션)
-            const headerGradient = ctx.createLinearGradient(0, 0, 400, 150);
-            headerGradient.addColorStop(0, '#667eea');
-            headerGradient.addColorStop(1, '#764ba2');
-            ctx.fillStyle = headerGradient;
-            ctx.fillRect(0, 0, 400, 150);
-
-            // 반올림 모서리 효과 (상단)
-            ctx.clearRect(0, 145, 400, 10);
-            ctx.fillStyle = headerGradient;
-            for (let i = 0; i < 5; i++) {
-                ctx.fillRect(0, 145 + i, 400, 1);
-            }
-            // 프로필 사진 로드 및 그리기
-            if (validProfileImage) {
-                const profileImg = new Image();
-                profileImg.src = validProfileImage;
-                
-                await new Promise<void>((resolve) => {
-                    profileImg.onload = () => {
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.arc(200, 120, 55, 0, Math.PI * 2);
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fill();
-                        ctx.clip();
-                        ctx.drawImage(profileImg, 145, 65 , 110, 110);
-                        ctx.restore();
-                        resolve();
-                    };
-                    profileImg.onerror = () => {
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.arc(200, 120, 55, 0, Math.PI * 2);
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fill();
-                        ctx.clip();
-                        ctx.fillStyle = '#e0e0e0';
-                        ctx.fillRect(145, 65, 110, 110);
-                        ctx.restore();
-                        resolve();
-                    };
-                    // 타임아웃 설정
-                    setTimeout(() => resolve(), 3000);
-                });
-            } else {
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(200, 120, 55, 0, Math.PI * 2);
-                ctx.fillStyle = '#ffffff';
-                ctx.fill();
-                ctx.clip();
-                ctx.fillStyle = '#e0e0e0';
-                ctx.fillRect(145, 65, 110, 110);
-                ctx.restore();
-            }
-
-            // 사용자명
-            ctx.font = 'bold 28px Arial, sans-serif';
-            ctx.fillStyle = '#000000';
-            ctx.textAlign = 'center';
-            ctx.fillText(profile.username || 'Unknown', 200, 210);
-
-            // Lichess ID
-            if (profile.lichessId) {
-                ctx.font = '13px Arial, sans-serif';
-                ctx.fillStyle = '#999999';
-                ctx.fillText(`@${profile.lichessId}`, 200, 235);
-            }
-
-            // 티어 섹션 배경
-            ctx.fillStyle = '#f8f9fa';
-            ctx.fillRect(20, 260, 360, 100);
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(20, 260, 360, 100);
-
-            // 티어 이미지
-            const tier = getTierFromRating(userPerf?.rating || 1200);
-            const tierImg = new Image();
-            tierImg.src = tierImageMap[tier] || unratedImg;
-
-            await new Promise<void>((resolve) => {
-                tierImg.onload = () => {
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(70, 310, 30, 0, Math.PI * 2);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fill();
-                    ctx.clip();
-                    ctx.drawImage(tierImg, 40, 280, 60, 60);
-                    ctx.restore();
-                    resolve();
-                };
-                tierImg.onerror = () => {
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(70, 310, 30, 0, Math.PI * 2);
-                    ctx.fillStyle = '#f0f0f0';
-                    ctx.fill();
-                    ctx.restore();
-                    resolve();
-                };
-                setTimeout(() => resolve(), 2000);
-            });
-
-            // 레이팅
-            ctx.font = 'bold 32px Arial, sans-serif';
-            ctx.fillStyle = '#667eea';
-            ctx.textAlign = 'left';
-            ctx.fillText((userPerf?.rating || 1200).toString(), 130, 320);
-
-            ctx.font = '12px Arial, sans-serif';
-            ctx.fillStyle = '#999999';
-            ctx.fillText(selectedGameType || 'RAPID', 130, 345);
-
-            // 게임 통계 섹션
-            ctx.fillStyle = '#f8f9fa';
-            ctx.fillRect(20, 375, 360, 140);
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(20, 375, 360, 140);
-
-            const stats = [
-                { label: 'Games', value: profile.allGames || 0 },
-                { label: 'Wins', value: profile.wins || 0}
-            ];
-
-            const stats2 = [
-                { label: 'Losses', value: profile.losses || 0 },
-                { label: 'Draws', value: profile.draws || 0 }
-            ];
-
-            // 위쪽 행
-            ctx.font = '14px Arial, sans-serif';
-            ctx.fillStyle = '#333333';
-            ctx.textAlign = 'center';
-            ctx.fillText(stats[0].value.toString(), 85, 405);
-            ctx.font = '11px Arial, sans-serif';
-            ctx.fillStyle = '#999999';
-            ctx.fillText(stats[0].label, 85, 422);
-
-            ctx.font = '14px Arial, sans-serif';
-            ctx.fillStyle = '#333333';
-            ctx.fillText(stats[1].value.toString(), 200, 405);
-            ctx.font = '11px Arial, sans-serif';
-            ctx.fillStyle = '#999999';
-            ctx.fillText(stats[1].label, 200, 422);
-
-            ctx.font = '14px Arial, sans-serif';
-            ctx.fillStyle = '#333333';
-            ctx.textAlign = 'center';
-            ctx.fillText(stats2[0].value.toString(), 315, 405);
-            ctx.font = '11px Arial, sans-serif';
-            ctx.fillStyle = '#999999';
-            ctx.fillText(stats2[0].label, 315, 422);
-
-            // 아래쪽 행
-            ctx.font = '14px Arial, sans-serif';
-            ctx.fillStyle = '#333333';
-            ctx.fillText(stats2[1].value.toString(), 85, 485);
-            ctx.font = '11px Arial, sans-serif';
-            ctx.fillStyle = '#999999';
-            ctx.fillText(stats2[1].label, 85, 502);
-
-            const winRate = profile.allGames > 0 ? ((profile.wins || 0) / profile.allGames * 100).toFixed(1) : 0;
-            ctx.font = '14px Arial, sans-serif';
-            ctx.fillStyle = '#333333';
-            ctx.fillText(winRate.toString() + '%', 200, 485);
-            ctx.font = '11px Arial, sans-serif';
-            ctx.fillStyle = '#999999';
-            ctx.fillText('Win Rate', 200, 502);
-
-            // Streak
-            const currentYear = new Date().getFullYear();
-            const currentYearStreak = streakMap.get(currentYear.toString()) || 0;
-            ctx.font = '14px Arial, sans-serif';
-            ctx.fillStyle = '#ff6b6b';
-            ctx.fillText(currentYearStreak.toString(), 315, 485);
-            ctx.font = '11px Arial, sans-serif';
-            ctx.fillStyle = '#999999';
-            ctx.fillText('Streak', 315, 502);
-
-            // 워터마크
-            ctx.font = '10px Arial, sans-serif';
-            ctx.fillStyle = '#dddddd';
-            ctx.textAlign = 'center';
-            ctx.fillText('ChessLadder Player Card', 200, 680);
-
-            // 다운로드
-            canvas.toBlob((blob) => {
-                if (!blob) {
-                    alert('이미지 생성에 실패했습니다.');
-                    return;
-                }
-
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `ChessLadder_${profile.username || 'profile'}_${Date.now()}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-
-                alert('프로필 카드가 다운로드되었습니다!');
-            }, 'image/png');
-
-        } catch (error) {
-            console.error('프로필 카드 생성 오류:', error);
-            alert('프로필 카드 생성 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
-        } finally {
-            setGeneratingCard(false);
-        }
-    };
-
     return (
         <div className="profile-page" style={{
             backgroundColor: userPerf
@@ -715,7 +488,7 @@ const Profile = () => {
                             </h1>
                             <div className="text-xs font-normal uppercase tracking-wider mb-6 flex gap-4">
                                 <p className="text-gray-500 opacity-60">
-                                    {t('profile.chessMateJoinDate')}: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '-'}
+                                    {language === 'KR' ? '체스래더 가입일' : 'ChessLadder Joined'}: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '-'}
                                 </p>
                                 <p className="text-gray-500 opacity-60">
                                     {t('profile.lichessJoinDate')}: {profile?.lichessCreatedAt ? new Date(profile.lichessCreatedAt).toLocaleDateString() : '-'}
@@ -723,52 +496,93 @@ const Profile = () => {
                             </div>
 
                             {/* Lichess 프로필 이동 버튼 + 강제 갱신 버튼 */}
-                            <div className="mb-6 flex gap-2">
-                                {profile?.lichessId && (
-                                    <a
-                                        href={`https://lichess.org/@/${profile.lichessId}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center w-10 h-10 bg-white border-2 border-black rounded-lg hover:shadow-lg transition hover:scale-105"
-                                    >
-                                        <img
-                                            src={lichessLogoImg}
-                                            alt="Lichess"
-                                            className="w-6 h-6 object-contain"
-                                        />
-                                    </a>
-                                )}
-                                <button
-                                    onClick={handleForceRefresh}
-                                    disabled={refreshing || remainingTime > 0}
-                                    className="inline-flex items-center justify-center px-4 py-2 bg-white border-2 border-black rounded-lg hover:shadow-lg transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm"
-                                    title={remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}${t('profile.availableAfter')}` : t('profile.fetchFromLichess')}
-                                >
-                                    {refreshing ? t('profile.refreshing') : remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}${t('profile.waitSeconds')}` : t('profile.dataRefresh')}
-                                </button>
-                                <button
-                                    onClick={generateProfileCard}
-                                    disabled={generatingCard || !profile || !userPerf}
-                                    className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-2 border-purple-600 rounded-lg hover:shadow-lg transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm"
-                                    title="프로필 카드를 이미지로 생성하고 다운로드합니다"
-                                >
-                                    {generatingCard ? (
-                                        <>
-                                            <svg className="w-4 h-4 mr-2 animate-spin" fill="currentColor" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" fill="none" strokeWidth="4" stroke="currentColor" />
-                                                <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                            </svg>
-                                            생성 중...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                                            </svg>
-                                            카드 다운로드
-                                        </>
+                            <div className="mb-6 flex flex-col items-start gap-4">
+                                <div className="flex gap-2">
+                                    {profile?.lichessId && (
+                                        <a
+                                            href={`https://lichess.org/@/${profile.lichessId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center justify-center w-10 h-10 bg-white border-2 border-black rounded-lg hover:shadow-lg transition hover:scale-105"
+                                        >
+                                            <img
+                                                src={lichessLogoImg}
+                                                alt="Lichess"
+                                                className="w-6 h-6 object-contain"
+                                            />
+                                        </a>
                                     )}
-                                </button>
+                                    <button
+                                        onClick={handleForceRefresh}
+                                        disabled={refreshing || remainingTime > 0}
+                                        className="inline-flex items-center justify-center px-4 py-2 bg-white border-2 border-black rounded-lg hover:shadow-lg transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm"
+                                        title={remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}${t('profile.availableAfter')}` : t('profile.fetchFromLichess')}
+                                    >
+                                        {refreshing ? t('profile.refreshing') : remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}${t('profile.waitSeconds')}` : t('profile.dataRefresh')}
+                                    </button>
+                                    <div className="flex relative">
+                                        <button
+                                            onClick={handleExportCard}
+                                            disabled={isExporting || !profile || !userPerf}
+                                            className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-2 border-transparent rounded-l-lg hover:shadow-lg transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm"
+                                        >
+                                            {isExporting ? '...' : (language === 'KR' ? '프로필 카드 추출' : 'Export Profile Card')}
+                                        </button>
+                                        <button
+                                            onClick={() => setShowPreview(!showPreview)}
+                                            className={`inline-flex items-center justify-center w-10 py-2 border-2 border-transparent rounded-r-lg transition hover:shadow-lg ${showPreview ? 'bg-indigo-700 text-white' : 'bg-indigo-500 text-white'}`}
+                                            title={language === 'KR' ? '미리보기 토글' : 'Toggle Preview'}
+                                        >
+                                            <svg 
+                                                className={`w-4 h-4 transition-transform duration-300 ${showPreview ? 'rotate-180' : ''}`} 
+                                                fill="none" 
+                                                stroke="currentColor" 
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 드롭다운 형식의 미리보기 섹션 */}
+                                {showPreview && (
+                                    <div 
+                                        ref={previewRef}
+                                        className="w-full max-w-[750px] bg-white rounded-[32px] p-8 border-2 border-gray-100 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300 z-50 overflow-hidden"
+                                    >
+                                        <div className="flex flex-col gap-6">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <h2 className="text-xl font-black text-gray-900 mb-1">{language === 'KR' ? '프로필 카드 미리보기' : 'Profile Card Preview'}</h2>
+                                                    <p className="text-xs text-gray-500 font-medium">
+                                                        {language === 'KR' 
+                                                            ? `현재 선택된 [${selectedGameType.toUpperCase()}] 타입 기준 미리보기입니다.` 
+                                                            : `Preview for the currently selected [${selectedGameType.toUpperCase()}] type.`}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-center bg-gray-50/50 p-8 rounded-[24px] border border-gray-200 overflow-x-auto shadow-inner">
+                                                <div className="w-[700px] h-[750px] scale-[0.85] origin-top flex-shrink-0">
+                                                    {profile && userPerf && (
+                                                        <ProfileCard 
+                                                            profile={profile}
+                                                            userPerf={userPerf}
+                                                            ratingHistory={ratingHistory}
+                                                            streakMap={streakMap}
+                                                            selectedYear={selectedYear}
+                                                            tierColorScheme={tierColorScheme}
+                                                            promotionThresholds={promotionThresholds}
+                                                            convertSubTierToRoman={convertSubTierToRoman}
+                                                            cardRef={cardRef}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             
                             {/* 자기소개 섹션 */}
@@ -1101,7 +915,13 @@ const Profile = () => {
                             <p className="text-gray-500 text-sm">{t('profile.dataLoading')}</p>
                         </div>
                     ) : ratingHistory.length > 0 ? (
-                        <RatingHistoryChart ratingHistory={ratingHistory} gameType={gameTypeDisplayNames[selectedGameType]} />
+                        <div className="h-[450px]">
+                            <RatingHistoryChart 
+                                ratingHistory={ratingHistory} 
+                                gameType={gameTypeDisplayNames[selectedGameType]} 
+                                tierThresholds={promotionThresholds}
+                            />
+                        </div>
                     ) : (
                         <div className="flex items-center justify-center h-80">
                             <p className="text-gray-500 text-sm">{gameTypeDisplayNames[selectedGameType]} {t('profile.noRatingData')}</p>
@@ -1113,6 +933,6 @@ const Profile = () => {
             <Footer/>
         </div>
     );
-}   
+};   
 
 export default Profile;

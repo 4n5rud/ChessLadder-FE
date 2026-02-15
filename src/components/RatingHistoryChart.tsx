@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import type { RatingHistoryEntry } from '../api/lichessService';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -7,6 +7,7 @@ interface RatingHistoryChartProps {
   ratingHistory: RatingHistoryEntry[];
   gameType?: string;
   tierThresholds?: Record<string, number>;
+  isCard?: boolean;
 }
 
 interface ChartDataPoint extends RatingHistoryEntry {
@@ -41,18 +42,18 @@ const getTierColor = (rating: number, thresholds: Record<string, number> = DEFAU
   for (const [tier, minRating] of tiers) {
     if (rating >= minRating) {
       switch (tier) {
-        case 'PAWN': return '#aecdb1';
-        case 'KNIGHT': return '#87abd6';
-        case 'BISHOP': return '#ae97d7';
-        case 'ROOK': return '#e7ada8';
-        case 'QUEEN': return '#edae6c';
-        case 'KING': return '#edae6c';
-        default: return '#2F639D';
+        case 'PAWN': return '#22c55e'; // Green
+        case 'KNIGHT': return '#3b82f6'; // Blue
+        case 'BISHOP': return '#a855f7'; // Purple
+        case 'ROOK': return '#ef4444'; // Red
+        case 'QUEEN': return '#f59e0b'; // Amber
+        case 'KING': return '#f59e0b'; // Amber
+        default: return '#3b82f6';
       }
     }
   }
   
-  return '#aecdb1';
+  return '#22c55e';
 };
 
 const getRatingTier = (rating: number, thresholds: Record<string, number> = DEFAULT_TIER_THRESHOLDS): string => {
@@ -166,13 +167,13 @@ const getTierWithSubTier = (rating: number, thresholds: Record<string, number> =
 const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({ 
   ratingHistory, 
   gameType = 'Rapid',
-  tierThresholds = DEFAULT_TIER_THRESHOLDS 
+  tierThresholds = DEFAULT_TIER_THRESHOLDS,
+  isCard = false
 }) => {
   const { t } = useLanguage();
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [maxRating, setMaxRating] = useState(2400);
   const [minRating, setMinRating] = useState(0);
-  const [lineSegments, setLineSegments] = useState<LineSegment[]>([]);
 
   useEffect(() => {
     if (!ratingHistory || ratingHistory.length === 0) {
@@ -223,36 +224,6 @@ const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({
       };
     });
 
-    // 티어별 라인 세그먼트 생성
-    const segments: LineSegment[] = [];
-    let currentSegment: ChartDataPoint[] = [];
-    let currentTier = data[0]?.tier;
-
-    data.forEach((point, index) => {
-      if (point.tier !== currentTier && index > 0) {
-        if (currentSegment.length > 0) {
-          segments.push({
-            data: currentSegment,
-            color: getTierColor(currentSegment[0].rating, tierThresholds),
-            startIndex: index - currentSegment.length
-          });
-        }
-        currentSegment = [point];
-        currentTier = point.tier;
-      } else {
-        currentSegment.push(point);
-      }
-    });
-
-    if (currentSegment.length > 0) {
-      segments.push({
-        data: currentSegment,
-        color: getTierColor(currentSegment[0].rating, tierThresholds),
-        startIndex: data.length - currentSegment.length
-      });
-    }
-
-    setLineSegments(segments);
     setChartData(data);
 
     // 최대/최소 레이팅 계산
@@ -261,15 +232,15 @@ const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({
       const max = Math.max(...ratings);
       const min = Math.min(...ratings);
       
-      setMaxRating(Math.ceil((max + 200) / 100) * 100);
-      setMinRating(Math.floor((min - 200) / 100) * 100);
+      setMaxRating(Math.ceil((max + 100) / 50) * 50);
+      setMinRating(Math.floor((min - 100) / 50) * 50);
     }
   }, [ratingHistory, tierThresholds]);
 
   if (chartData.length === 0) {
     return (
-      <div className="w-full h-96 flex items-center justify-center bg-gray-50 rounded-lg">
-        <p className="text-gray-500">{t('profile.noRatingData')}</p>
+      <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded-lg">
+        <p className="text-gray-400 text-xs font-bold">{t('profile.noRatingData')}</p>
       </div>
     );
   }
@@ -280,138 +251,93 @@ const RatingHistoryChart: React.FC<RatingHistoryChartProps> = ({
       const data = payload[0].payload as ChartDataPoint;
       const ratingChange = data.rating - (data.previousRating || data.rating);
       const changeColor = ratingChange > 0 ? '#22c55e' : ratingChange < 0 ? '#ef4444' : '#666666';
-      const changeIcon = ratingChange > 0 ? '↑' : ratingChange < 0 ? '↓' : '→';
       const tierColor = getTierColor(data.rating, tierThresholds);
 
       return (
-        <div className="bg-white p-4 rounded-lg shadow-xl border-2 border-blue-200">
-          <p className="text-sm font-bold text-gray-800">{data.dateStr}</p>
-          <p className="text-lg font-bold text-blue-600 my-1">{data.rating}</p>
-          <div className="flex items-center gap-2">
-            <span style={{ color: changeColor }} className="font-bold text-lg">
-              {changeIcon} {ratingChange > 0 ? '+' : ''}{ratingChange}
-            </span>
-            <span style={{ backgroundColor: tierColor, color: '#fff' }} className="text-xs font-bold px-2 py-1 rounded">
-              {data.tierWithSubTier}
+        <div className="bg-white/95 backdrop-blur-sm p-3 rounded-2xl shadow-2xl border border-gray-100">
+          <p className="text-[10px] font-black text-gray-400 mb-1">{data.dateStr}</p>
+          <div className="flex items-baseline gap-2">
+            <p className="text-xl font-black text-gray-800">{data.rating}</p>
+            <span style={{ color: changeColor }} className="text-xs font-black">
+              {ratingChange >= 0 ? '+' : ''}{ratingChange}
             </span>
           </div>
-          {data.isTierChange && (
-            <div className="mt-2 pt-2 border-t border-gray-200">
-              <div className="mb-1">
-                <span className={`text-xs font-bold px-2 py-1 rounded-full text-white ${data.isPromoted ? 'bg-green-500' : 'bg-red-500'}`}>
-                  {data.isPromoted ? '✓ 승격' : '✗ 강등'}
-                </span>
-              </div>
-              <p className="text-xs font-bold text-gray-800">
-                {data.previousTierWithSubTier} → {data.tierWithSubTier}
-              </p>
-            </div>
-          )}
+          <p className="text-[10px] font-black mt-1 px-2 py-0.5 rounded-full inline-block text-white" style={{ backgroundColor: tierColor }}>
+            {data.tierWithSubTier}
+          </p>
         </div>
       );
     }
     return null;
   };
 
+  const chartColor = getTierColor(chartData[chartData.length - 1].rating, tierThresholds);
+
   return (
-    <div className="w-full bg-white rounded-lg shadow-lg p-6 overflow-hidden border border-gray-100">
-      <div className="mb-6">
-        <h3 className="text-3xl font-bold text-gray-800 mb-2">
-          {gameType} {t('profile.ratingHistory')}
-        </h3>
-        <p className="text-sm text-gray-500">{t('profile.ratingProgression')}</p>
-      </div>
-      
-      <div className="w-full overflow-x-auto -mx-6 px-6">
-        <ResponsiveContainer width="100%" height={450} minWidth={800}>
-          <LineChart data={chartData} margin={{ top: 20, right: 50, left: 50, bottom: 60 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
-            <XAxis
-              dataKey="dateStr"
-              tick={{ fontSize: 12, fill: '#666' }}
-              interval={Math.floor(chartData.length / 6)}
-              stroke="#d1d5db"
-              angle={-45}
-              textAnchor="end"
-              height={80}
-            />
-            <YAxis
-              domain={[minRating, maxRating]}
-              tick={{ fontSize: 12, fill: '#666' }}
-              stroke="#d1d5db"
-              width={60}
-            />
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#3b82f6', strokeWidth: 2, opacity: 0.3 }} />
-            
-            {/* 티어 구분선 */}
-            {Object.entries(tierThresholds).map(([tier, rating]) => (
+    <div className={`w-full h-full overflow-hidden ${!isCard ? 'p-4 bg-gray-50/30 rounded-[32px]' : ''}`}>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={{ top: 20, right: 30, left: -10, bottom: 10 }}>
+          <defs>
+            <linearGradient id="colorRating" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={chartColor} stopOpacity={0.4}/>
+              <stop offset="95%" stopColor={chartColor} stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid 
+            strokeDasharray="4 4" 
+            vertical={false} 
+            stroke="#E5E7EB" 
+            opacity={0.6}
+          />
+          <XAxis 
+            dataKey="dateStr" 
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 11, fontWeight: 600, fill: '#9CA3AF' }}
+            minTickGap={30}
+            dy={10}
+            hide={isCard}
+          />
+          <YAxis 
+            domain={[minRating, maxRating]} 
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 11, fontWeight: 700, fill: '#9CA3AF' }}
+            dx={-10}
+          />
+          <Tooltip 
+            content={<CustomTooltip />} 
+            cursor={{ stroke: chartColor, strokeWidth: 2, strokeDasharray: '5 5' }} 
+          />
+          
+          {/* 티어 기준선 표시 (카드 모드가 아닐 때만) */}
+          {!isCard && Object.entries(tierThresholds).map(([tier, threshold]) => (
+            threshold >= minRating && threshold <= maxRating && (
               <ReferenceLine
                 key={tier}
-                y={rating}
-                stroke={getTierColor(rating, tierThresholds)}
-                strokeDasharray="5 5"
-                opacity={0.2}
-                label={{
-                  value: `${tier} (${rating})`,
-                  position: 'right',
-                  fill: getTierColor(rating, tierThresholds),
-                  offset: 10,
-                  fontSize: 11,
-                  fontWeight: 'bold',
-                  opacity: 0.6
-                }}
+                y={threshold}
+                stroke={getTierColor(threshold, tierThresholds)}
+                strokeDasharray="3 3"
+                strokeWidth={1}
+                opacity={0.3}
               />
-            ))}
-            
-            {/* 티어별 라인 세그먼트 */}
-            {lineSegments.map((segment, idx) => (
-              <Line
-                key={`segment-${idx}`}
-                data={segment.data}
-                type="monotone"
-                dataKey="rating"
-                stroke={segment.color}
-                strokeWidth={3}
-                dot={(props: any) => {
-                  const { cx, cy, payload } = props;
-                  if (!payload) return null;
-                  
-                  // 모든 점을 표시하되, 티어 변경 지점은 특별히 강조
-                  const data = payload as ChartDataPoint;
-                  
-                  if (data.isTierChange) {
-                    // 승격: 초록색, 강등: 빨간색
-                    const changeColor = data.isPromoted ? '#22c55e' : '#ef4444';
-                    return (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={8}
-                        fill={changeColor}
-                        stroke="#fff"
-                        strokeWidth={2.5}
-                      />
-                    );
-                  } else {
-                    // 일반 점: 게임이 있던 날은 명확하게 표시
-                    return (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={4}
-                        fill={segment.color}
-                        stroke="#fff"
-                        strokeWidth={1.5}
-                      />
-                    );
-                  }
-                }}
-                isAnimationActive={false}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+            )
+          ))}
+
+          <Area 
+            type="monotone" 
+            dataKey="rating" 
+            stroke={chartColor} 
+            strokeWidth={4}
+            fillOpacity={1} 
+            fill="url(#colorRating)" 
+            isAnimationActive={!isCard}
+            animationDuration={1500}
+            dot={!isCard ? { r: 4, strokeWidth: 2, fill: 'white', stroke: chartColor } : false}
+            activeDot={{ r: 8, strokeWidth: 0, fill: chartColor }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 };
