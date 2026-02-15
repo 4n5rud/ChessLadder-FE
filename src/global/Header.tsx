@@ -127,16 +127,16 @@ const Header = () => {
     };
 
     return (
-        <header className="relative sticky top-0 border-b border-gray-300 pb-1 pt-1 pl-30 pr-30 w-full bg-white flex items-center gap-2 h-14 min-h-0 z-50">
-            <Link to="/" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition">
+        <header className="relative sticky top-0 border-b border-gray-300 pb-1 pt-1 px-4 md:px-8 lg:px-30 w-full bg-white flex items-center gap-2 md:gap-8 h-14 min-h-0 z-50">
+            <Link to="/" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition flex-shrink-0">
                 <img src={knightLogo} alt="ChessLadder Logo" width="32" height="32"/>
-                <h1 className="text-xl font-bold header-title text-[#2F639D]">ChessLadder</h1>
+                <h1 className="text-lg md:text-xl font-bold header-title text-[#2F639D] whitespace-nowrap">ChessLadder</h1>
             </Link>
 
-            <div className="items-center flex gap-20 ml-auto text-[#2F639D] font-semibold transition text-l">
-                <Link to="/page1">{t('header.home')}</Link>
-                <Link to="/news">{t('header.news')}</Link>
-                <Link to="/ranking">{t('header.ranking')}</Link>
+            <div className="items-center flex-shrink-0 hidden md:flex gap-6 lg:gap-20 ml-auto text-[#2F639D] font-semibold transition text-sm md:text-base">
+                <Link to="/page1" className="hover:text-[#1f4170] transition">{t('header.home')}</Link>
+                <Link to="/news" className="hover:text-[#1f4170] transition">{t('header.news')}</Link>
+                <Link to="/ranking" className="hover:text-[#1f4170] transition">{t('header.ranking')}</Link>
                 
                 {!isLoading && (
                     <div className="relative">

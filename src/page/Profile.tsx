@@ -453,12 +453,12 @@ const Profile = () => {
             <div 
                 className="w-full relative group banner-section z-0"
                 style={bannerImage ? {
-                    height: '380px',
+                    height: window.innerWidth < 768 ? '200px' : '380px',
                     backgroundImage: `url(${bannerImage})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
                 } : {
-                    height: '380px',
+                    height: window.innerWidth < 768 ? '200px' : '380px',
                     backgroundColor: userPerf 
                         ? userPerf.uncertain 
                             ? '#e5e7eb'
@@ -468,7 +468,7 @@ const Profile = () => {
                     backgroundPosition: 'center'
                 }}
             >
-                <label className="absolute bottom-4 right-6 cursor-pointer">
+                <label className="absolute bottom-2 right-3 md:bottom-4 md:right-6 cursor-pointer">
                     <input
                         type="file"
                         accept="image/*"
@@ -476,7 +476,7 @@ const Profile = () => {
                         className="hidden"
                         disabled={loadingBanner}
                     />
-                    <div className={`px-4 py-2 bg-white/90 backdrop-blur-sm text-gray-700 font-bold rounded-lg text-sm transition hover:bg-white/100 shadow-lg flex items-center gap-2 ${loadingBanner ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <div className={`px-3 py-2 md:px-4 md:py-2 bg-white/90 backdrop-blur-sm text-gray-700 font-bold rounded-lg text-xs md:text-sm transition hover:bg-white/100 shadow-lg flex items-center gap-2 ${loadingBanner ? 'opacity-50 pointer-events-none' : ''}`}>
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                         </svg>
@@ -486,16 +486,16 @@ const Profile = () => {
             </div>
 
             {/* 프로필 섹션 */}
-            <div className="max-w-6xl mx-auto px-6 -mt-20 relative z-10 mb-8">
-                <div className="bg-white border-2 border-gray-200 rounded-2xl p-8 shadow-lg card-section card-hover">
-                    <div className="flex gap-8 items-start">
+            <div className="max-w-6xl mx-auto px-3 md:px-6 -mt-10 md:-mt-20 relative z-10 mb-8">
+                <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 md:p-8 shadow-lg card-section card-hover">
+                    <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-start md:items-start">
                         {/* 프로필 이미지 */}
-                        <div className="flex flex-col items-center gap-4 flex-shrink-0">
+                        <div className="flex flex-col items-center gap-4 flex-shrink-0 w-full md:w-auto">
                             <div className="relative group">
                                 <img
                                     src={profileImage || 'https://via.placeholder.com/140'}
                                     alt="프로필 사진"
-                                    className="w-36 h-36 rounded-2xl border-4 object-cover shadow-lg profile-image profile-image-hover"
+                                    className="w-24 h-24 md:w-36 md:h-36 rounded-2xl border-4 object-cover shadow-lg profile-image profile-image-hover"
                                     style={{
                                         borderColor: userPerf 
                                             ? userPerf.uncertain
