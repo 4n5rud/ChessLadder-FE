@@ -140,7 +140,7 @@ const Header = () => {
             </div>
             
             {/* 메뉴 버튼 (모바일과 데스크톱 공용) */}
-            <div className="flex items-center">
+            <div className="ml-auto flex items-center">
                 <div className="relative">
                     <button 
                         onClick={handleMenuToggle}

@@ -242,14 +242,14 @@ export const TierSection = ({
     };
 
     return (
-        <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
-            <div className="bg-white border-2 border-gray-300 rounded-xl p-8 card-section card-hover shadow-lg">
-                {/* 티어 이미지 + 현재 티어 정보 + 최고/최저 레이팅 (수평) */}
-                <div className="flex items-center gap-8 mb-8">
+        <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
+            <div className="bg-white border-2 border-gray-300 rounded-xl p-4 md:p-8 card-section card-hover shadow-lg">
+                {/* 티어 이미지 + 현재 티어 정보 + 최고/최저 레이팅 (모바일: 수직, PC: 수평) */}
+                <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8 mb-8">
                     {/* 티어 이미지 */}
                     <div 
-                        className={`flex-shrink-0 rounded-xl flex items-center justify-center shadow-lg ${
-                            isUncertain ? 'w-48 h-48' : 'w-40 h-40'
+                        className={`flex-shrink-0 rounded-xl flex items-center justify-center shadow-lg mx-auto md:mx-0 ${
+                            isUncertain ? 'w-40 h-40 md:w-48 md:h-48' : 'w-32 h-32 md:w-40 md:h-40'
                         }`}
                         style={{ backgroundColor: isUncertain ? '#d1d5db' : tierColorScheme[mainTier]?.mainColor }}
                     >
@@ -257,7 +257,7 @@ export const TierSection = ({
                             src={tierImageSrc}
                             alt={mainTier}
                             className={`object-contain ${
-                                isUncertain ? 'w-40 h-40' : 'w-32 h-32'
+                                isUncertain ? 'w-32 h-32 md:w-40 md:h-40' : 'w-24 h-24 md:w-32 md:h-32'
                             }`}
                             onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = 'none';
@@ -266,15 +266,15 @@ export const TierSection = ({
                     </div>
 
                     {/* 현재 티어 정보 (중앙) */}
-                    <div className="flex-1">
+                    <div className="flex-1 text-center md:text-left">
                         {isUncertain ? (
                             // Uncertain 상태일 때
                             <>
-                                <div className="flex items-baseline gap-3 mb-4">
-                                    <p className="text-6xl font-black" style={{ color: '#999' }}>
+                                <div className="flex flex-col md:flex-row md:items-baseline gap-2 md:gap-3 mb-4 justify-center md:justify-start">
+                                    <p className="text-4xl md:text-6xl font-black" style={{ color: '#999' }}>
                                         UNRATED
                                     </p>
-                                    <p className="text-3xl font-bold" style={{ color: '#999' }}>
+                                    <p className="text-2xl md:text-3xl font-bold" style={{ color: '#999' }}>
                                         ?
                                     </p>
                                 </div>
@@ -285,11 +285,11 @@ export const TierSection = ({
                         ) : (
                             // 정상 상태일 때
                             <>
-                                <div className="flex items-baseline gap-3 mb-4">
-                                    <p className="text-6xl font-black" style={{ color: isUncertain ? '#999' : tierColorScheme[mainTier]?.darkText }}>
+                                <div className="flex flex-col md:flex-row md:items-baseline gap-2 md:gap-3 mb-4 justify-center md:justify-start">
+                                    <p className="text-4xl md:text-6xl font-black" style={{ color: isUncertain ? '#999' : tierColorScheme[mainTier]?.darkText }}>
                                         {mainTier.charAt(0) + mainTier.slice(1).toLowerCase()}
                                     </p>
-                                    <p className="text-3xl font-bold" style={{ color: isUncertain ? '#999' : tierColorScheme[mainTier]?.darkText, opacity: 0.7 }}>
+                                    <p className="text-2xl md:text-3xl font-bold" style={{ color: isUncertain ? '#999' : tierColorScheme[mainTier]?.darkText, opacity: 0.7 }}>
                                         {tierWithSubTier.split(' ')[1]}
                                     </p>
                                 </div>
@@ -302,9 +302,9 @@ export const TierSection = ({
                         )}
                     </div>
 
-                    {/* 최고/최저 레이팅 (오른쪽) */}
+                    {/* 최고/최저 레이팅 (오른쪽 - 데스크톱에서만 표시) */}
                     {!isUncertain && (
-                        <div className="flex-shrink-0 flex gap-4">
+                        <div className="hidden md:flex flex-shrink-0 gap-4">
                             {/* 최고 레이팅 */}
                             <div className="text-center">
                                 <div className="text-xs font-bold text-blue-600 uppercase mb-2">최고</div>
