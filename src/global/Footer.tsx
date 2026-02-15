@@ -6,18 +6,18 @@ const Footer = () => {
     return (
         <footer className="w-full bg-white text-[#0a1f33]">
             {/* 공사장 테이프 베타 배너 */}
-            <div className="w-full bg-yellow-300 border-t-4 border-b-4 border-yellow-400 py-3 overflow-hidden">
-                <div className="max-w-6xl mx-auto px-4">
-                    <div className="flex items-center gap-3 justify-center">
-                        <div className="flex gap-1">
+            <div className="w-full bg-yellow-300 border-t-4 border-b-4 border-yellow-400 py-2 md:py-3 overflow-hidden">
+                <div className="max-w-6xl mx-auto px-3 md:px-4">
+                    <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3 justify-center">
+                        <div className="hidden md:flex gap-1">
                             <div className="w-4 h-4 bg-yellow-400 rotate-45"></div>
                             <div className="w-4 h-4 bg-black rotate-45"></div>
                             <div className="w-4 h-4 bg-yellow-400 rotate-45"></div>
                             <div className="w-4 h-4 bg-black rotate-45"></div>
                         </div>
-                        <span className="font-black text-lg text-black">{t('footer.betaTest')}</span>
-                        <span className="text-sm font-bold text-black">{t('footer.reportIssue')} <a href="https://discord.com/invite/5rZ8YfjgzN" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-70">{t('footer.discord')}</a> {t('footer.reportSuffix')}</span>
-                        <div className="flex gap-1">
+                        <span className="font-black text-base md:text-lg text-black">{t('footer.betaTest')}</span>
+                        <span className="text-xs md:text-sm font-bold text-black text-center">{t('footer.reportIssue')} <a href="https://discord.com/invite/5rZ8YfjgzN" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-70">{t('footer.discord')}</a> {t('footer.reportSuffix')}</span>
+                        <div className="hidden md:flex gap-1">
                             <div className="w-4 h-4 bg-black rotate-45"></div>
                             <div className="w-4 h-4 bg-yellow-400 rotate-45"></div>
                             <div className="w-4 h-4 bg-black rotate-45"></div>
@@ -27,8 +27,8 @@ const Footer = () => {
                 </div>
             </div>
 
-            <div className="py-12">
-                <div className="max-w-6xl mx-auto px-4">
+            <div className="py-8 md:py-12">
+                <div className="max-w-6xl mx-auto px-3 md:px-4">
                     {/* 상단 - 링크 그룹 */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                         {/* 빠른 링크 */}
