@@ -16,7 +16,7 @@ const Footer = () => {
                             <div className="w-4 h-4 bg-black rotate-45"></div>
                         </div>
                         <span className="font-black text-lg text-black">{t('footer.betaTest')}</span>
-                        <span className="text-sm font-bold text-black">{t('footer.reportIssue')} <a href="https://discord.gg/9NeVdmYewQ" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-70">{t('footer.discord')}</a> {t('footer.reportSuffix')}</span>
+                        <span className="text-sm font-bold text-black">{t('footer.reportIssue')} <a href="https://discord.com/invite/5rZ8YfjgzN" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-70">{t('footer.discord')}</a> {t('footer.reportSuffix')}</span>
                         <div className="flex gap-1">
                             <div className="w-4 h-4 bg-black rotate-45"></div>
                             <div className="w-4 h-4 bg-yellow-400 rotate-45"></div>
@@ -52,7 +52,7 @@ const Footer = () => {
                             <h3 className="text-lg font-bold mb-4">{t('footer.community')}</h3>
                             <ul className="space-y-2">
                                 <li>
-                                    <a href="https://discord.gg/9NeVdmYewQ" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#0a1f33] transition">Discord</a>
+                                    <a href="https://discord.com/invite/5rZ8YfjgzN" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#0a1f33] transition">Discord</a>
                                 </li>
                                 <li>
                                     <a href="mailto:contact@chessmatelink.com" className="text-gray-600 hover:text-[#0a1f33] transition">{t('footer.contact')}</a>
