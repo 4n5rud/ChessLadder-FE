@@ -156,31 +156,6 @@ const Header = () => {
                         {/* 드롭다운 메뉴 */}
                         {isMenuOpen && (
                             <div className="fixed top-14 right-4 md:right-6 w-72 md:w-80 rounded-lg shadow-xl border border-gray-200 z-[9999] overflow-hidden bg-white">
-                                {/* 모바일에서만 네비게이션 표시 */}
-                                <div className="md:hidden py-2 border-b border-gray-100">
-                                    <Link 
-                                        to="/page1" 
-                                        onClick={() => setIsMenuOpen(false)}
-                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
-                                    >
-                                        {t('header.home')}
-                                    </Link>
-                                    <Link 
-                                        to="/news" 
-                                        onClick={() => setIsMenuOpen(false)}
-                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
-                                    >
-                                        {t('header.news')}
-                                    </Link>
-                                    <Link 
-                                        to="/ranking" 
-                                        onClick={() => setIsMenuOpen(false)}
-                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
-                                    >
-                                        {t('header.ranking')}
-                                    </Link>
-                                </div>
-
                                 {isLogged ? (
                                     <>
                                         {/* 배너 배경 오버레이 (로그인 상태일 때만) */}
@@ -218,10 +193,10 @@ const Header = () => {
                                             </div>
                                         </div>
                                         
-                                        <div className="py-2">
+                                        <div className="py-2 border-b border-gray-100">
                                             <button
                                                 onClick={handleProfileClick}
-                                                className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition border-b border-gray-100 font-medium"
+                                                className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
                                             >
                                                 {t('header.myProfile')}
                                             </button>
@@ -234,7 +209,7 @@ const Header = () => {
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="p-4 flex flex-col items-center gap-4">
+                                    <div className="p-4 flex flex-col items-center gap-4 border-b border-gray-100">
                                         <p className="text-gray-500 text-sm text-center">{t('main.loginRequired')}</p>
                                         <button 
                                             onClick={() => {
@@ -250,8 +225,33 @@ const Header = () => {
                                     </div>
                                 )}
 
+                                {/* 네비게이션 (항상 표시) */}
+                                <div className="py-2 border-b border-gray-100">
+                                    <Link 
+                                        to="/page1" 
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                    >
+                                        {t('header.home')}
+                                    </Link>
+                                    <Link 
+                                        to="/news" 
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                    >
+                                        {t('header.news')}
+                                    </Link>
+                                    <Link 
+                                        to="/ranking" 
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                    >
+                                        {t('header.ranking')}
+                                    </Link>
+                                </div>
+
                                 {/* 언어 선택 (항상 표시) */}
-                                <div className="p-4 bg-gray-50 border-t border-gray-100">
+                                <div className="p-4 bg-gray-50">
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
                                         {t('header.changeLanguage')}
                                     </p>
