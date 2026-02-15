@@ -14,6 +14,13 @@ import RatingHistoryChart from "../components/RatingHistoryChart";
 import { TierSection } from "../components/TierSection";
 import { GameTypeButtons } from "../components/GameTypeButtons";
 import lichessLogoImg from "../assets/images/logo/lichess-logo.png";
+import pawnImg from "../assets/images/tier/pawn.png";
+import knightImg from "../assets/images/tier/knight.png";
+import bishopImg from "../assets/images/tier/vishop.png";
+import rookImg from "../assets/images/tier/rook.png";
+import queenImg from "../assets/images/tier/queen.png";
+import kingImg from "../assets/images/tier/king.png";
+import unratedImg from "../assets/images/tier/unrated.png";
 import "./Profile.css";
 
 const Profile = () => {
@@ -379,6 +386,16 @@ const Profile = () => {
 
         setGeneratingCard(true);
         try {
+            // Tier 이미지 맵
+            const tierImageMap: { [key: string]: string } = {
+                'PAWN': pawnImg,
+                'KNIGHT': knightImg,
+                'BISHOP': bishopImg,
+                'ROOK': rookImg,
+                'QUEEN': queenImg,
+                'KING': kingImg
+            };
+
             const canvas = document.createElement('canvas');
             canvas.width = 800;
             canvas.height = 600;
@@ -389,34 +406,36 @@ const Profile = () => {
                 return;
             }
 
+            // --- 배경과 배너 그리기 ---
             // 기본 배경 (흰색)
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, 800, 600);
 
-            // 상단 배너 영역 (250px)
-            const bannerHeight = 250;
+            // 배너 영역 높이
+            const bannerHeight = 220;
+
+            // 배너 이미지 그리기
             if (bannerImage) {
                 const bannerImg = new Image();
-                bannerImg.crossOrigin = 'anonymous';
                 bannerImg.src = bannerImage;
                 
-                await new Promise((resolve, _) => {
+                await new Promise<void>((resolve) => {
                     bannerImg.onload = () => {
                         ctx.drawImage(bannerImg, 0, 0, 800, bannerHeight);
-                        resolve(null);
+                        resolve();
                     };
                     bannerImg.onerror = () => {
-                        // 배너 로드 실패 시 그라데이션 배경
+                        // 배너 로드 실패: 그라데이션
                         const gradient = ctx.createLinearGradient(0, 0, 800, bannerHeight);
                         gradient.addColorStop(0, '#667eea');
                         gradient.addColorStop(1, '#764ba2');
                         ctx.fillStyle = gradient;
                         ctx.fillRect(0, 0, 800, bannerHeight);
-                        resolve(null);
+                        resolve();
                     };
                 });
             } else {
-                // 배너가 없으면 그라데이션
+                // 배너 없음: 그라데이션
                 const gradient = ctx.createLinearGradient(0, 0, 800, bannerHeight);
                 gradient.addColorStop(0, '#667eea');
                 gradient.addColorStop(1, '#764ba2');
@@ -424,140 +443,162 @@ const Profile = () => {
                 ctx.fillRect(0, 0, 800, bannerHeight);
             }
 
-            // 프로필 사진 (배너와 기본 배경 중앙에 겹침)
-            const profileImgSize = 160;
-            const profileX = 50;
-            const profileY = bannerHeight - profileImgSize / 2;
+            // --- 프로필 사진 ---
+            const profileSize = 140;
+            const profileX = 40;
+            const profileY = bannerHeight - profileSize / 2;
 
-            // 원형 프로필 이미지를 위한 흰색 테두리 원
+            // 흰색 테두리
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.arc(profileX + profileImgSize / 2, profileY + profileImgSize / 2, profileImgSize / 2 + 3, 0, Math.PI * 2);
+            ctx.arc(profileX + profileSize / 2, profileY + profileSize / 2, profileSize / 2 + 4, 0, Math.PI * 2);
             ctx.fill();
 
-            // 원형 마스크
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(profileX + profileImgSize / 2, profileY + profileImgSize / 2, profileImgSize / 2, 0, Math.PI * 2);
-            ctx.clip();
-
-            // 프로필 이미지 그리기
+            // 프로필 이미지
             if (profileImage) {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.src = profileImage;
+                const profileImg = new Image();
+                profileImg.src = profileImage;
                 
-                await new Promise((resolve, _) => {
-                    img.onload = () => {
-                        ctx.drawImage(img, profileX, profileY, profileImgSize, profileImgSize);
-                        resolve(null);
+                await new Promise<void>((resolve) => {
+                    profileImg.onload = () => {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(profileX + profileSize / 2, profileY + profileSize / 2, profileSize / 2, 0, Math.PI * 2);
+                        ctx.clip();
+                        ctx.drawImage(profileImg, profileX, profileY, profileSize, profileSize);
+                        ctx.restore();
+                        resolve();
                     };
-                    img.onerror = () => {
+                    profileImg.onerror = () => {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(profileX + profileSize / 2, profileY + profileSize / 2, profileSize / 2, 0, Math.PI * 2);
+                        ctx.clip();
                         ctx.fillStyle = '#e0e0e0';
-                        ctx.fillRect(profileX, profileY, profileImgSize, profileImgSize);
-                        resolve(null);
+                        ctx.fillRect(profileX, profileY, profileSize, profileSize);
+                        ctx.restore();
+                        resolve();
                     };
                 });
-            } else {
-                ctx.fillStyle = '#e0e0e0';
-                ctx.fillRect(profileX, profileY, profileImgSize, profileImgSize);
             }
-            ctx.restore();
 
-            // 하단 배경 (정보 섹션)
-            ctx.fillStyle = '#f8f9fa';
-            ctx.fillRect(0, bannerHeight, 800, 600 - bannerHeight);
+            // --- 티어 이미지 (크게) ---
+            const tier = getTierFromRating(userPerf?.rating || 1200);
+            const tierImg = new Image();
+            tierImg.src = tierImageMap[tier] || unratedImg;
+            
+            const tierImgSize = 150;
+            const tierX = 600;
+            const tierY = bannerHeight + 20;
 
-            // 프로필 정보 (왼쪽)
-            const leftX = 250;
-            const infoY = bannerHeight + 30;
+            await new Promise<void>((resolve) => {
+                tierImg.onload = () => {
+                    ctx.drawImage(tierImg, tierX, tierY, tierImgSize, tierImgSize);
+                    resolve();
+                };
+                tierImg.onerror = () => {
+                    ctx.fillStyle = '#cccccc';
+                    ctx.fillRect(tierX, tierY, tierImgSize, tierImgSize);
+                    resolve();
+                };
+            });
 
-            // 사용자명
+            // --- 사용자명 및 기본 정보 ---
+            let infoY = bannerHeight + 30;
+            
             ctx.font = 'bold 32px Arial, sans-serif';
             ctx.fillStyle = '#000000';
             ctx.textAlign = 'left';
-            ctx.fillText(profile.username || 'Unknown Player', leftX, infoY);
+            ctx.fillText(profile.username || 'Unknown', 200, infoY);
 
-            // Lichess ID
+            infoY += 28;
             if (profile.lichessId) {
-                ctx.font = '14px Arial, sans-serif';
+                ctx.font = '13px Arial, sans-serif';
                 ctx.fillStyle = '#666666';
-                ctx.fillText(`@${profile.lichessId}`, leftX, infoY + 25);
+                ctx.fillText(`@${profile.lichessId}`, 200, infoY);
+                infoY += 20;
             }
 
-            // 게임 정보
-            const gameInfoY = infoY + 50;
+            // --- 게임 데이터 박스 ---
+            const boxX = 200;
+            const boxY = infoY + 5;
+            const boxWidth = 350;
+            const boxHeight = 110;
+
+            // 박스 배경
+            ctx.fillStyle = '#f5f5f5';
+            ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+            // 박스 테두리
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+            // 박스 내용
             ctx.font = '12px Arial, sans-serif';
-            ctx.fillStyle = '#555555';
-            
-            const gameInfo = [
-                `All Games: ${profile.allGames || 0}`,
-                `Wins: ${profile.wins || 0} | Losses: ${profile.losses || 0} | Draws: ${profile.draws || 0}`,
-                `Win Rate: ${profile.allGames > 0 ? ((profile.wins || 0) / profile.allGames * 100).toFixed(1) : 0}%`
-            ];
-
-            gameInfo.forEach((line, index) => {
-                ctx.fillText(line, leftX, gameInfoY + index * 20);
-            });
-
-            // 오른쪽: 티어와 레이팅 (큼)
-            const rightX = 550;
-            const tierY = bannerHeight + 40;
-
-            // 티어 정보 텍스트 (크게)
-            const tier = getTierFromRating(userPerf?.rating || 1200);
-            ctx.font = 'bold 48px Arial, sans-serif';
-            ctx.fillStyle = '#667eea';
-            ctx.textAlign = 'center';
-            ctx.fillText(tier, rightX, tierY);
-
-            // 레이팅 (작게)
-            ctx.font = 'bold 36px Arial, sans-serif';
-            ctx.fillStyle = '#000000';
-            ctx.fillText((userPerf?.rating || 1200).toString(), rightX, tierY + 50);
-
-            ctx.font = '14px Arial, sans-serif';
-            ctx.fillStyle = '#666666';
-            ctx.fillText('Rating', rightX, tierY + 70);
-
-            // 게임 타입
-            ctx.font = '14px Arial, sans-serif';
-            ctx.fillStyle = '#764ba2';
-            ctx.fillText(selectedGameType || 'RAPID', rightX, tierY + 95);
-
-            // 하단 Streak 정보
-            const streakY = 520;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, streakY, 800, 80);
-            
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(0, streakY, 800, 80);
-
-            ctx.font = 'bold 14px Arial, sans-serif';
             ctx.fillStyle = '#333333';
             ctx.textAlign = 'left';
-            ctx.fillText('Year Streak', 30, streakY + 25);
 
-            // 현재 년도 streak
+            const gameStats = [
+                `All Games: ${profile.allGames || 0}`,
+                `Wins: ${profile.wins || 0} | Losses: ${profile.losses || 0} | Draws: ${profile.draws || 0}`,
+                `Win Rate: ${profile.allGames > 0 ? ((profile.wins || 0) / profile.allGames * 100).toFixed(1) : 0}%`,
+                `Rated Games: ${profile.ratedGames || 0}`
+            ];
+
+            gameStats.forEach((stat, idx) => {
+                ctx.fillText(stat, boxX + 12, boxY + 22 + idx * 20);
+            });
+
+            // --- 레이팅 정보 (오른쪽 하단, 아래) ---
+            const ratingY = boxY + 40;
+            ctx.font = 'bold 24px Arial, sans-serif';
+            ctx.fillStyle = '#000000';
+            ctx.textAlign = 'center';
+            ctx.fillText((userPerf?.rating || 1200).toString(), 700, ratingY);
+
+            ctx.font = '11px Arial, sans-serif';
+            ctx.fillStyle = '#666666';
+            ctx.fillText('Rating', 700, ratingY + 18);
+
+            // --- Streak 정보 (하단) ---
+            const streakBoxY = 490;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, streakBoxY, 800, 110);
+
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, streakBoxY, 800, 110);
+
             const currentYear = new Date().getFullYear();
             const currentYearStreak = streakMap.get(currentYear.toString()) || 0;
 
-            ctx.font = 'bold 28px Arial, sans-serif';
-            ctx.fillStyle = '#ff6b6b';
-            ctx.fillText(currentYearStreak.toString(), 30, streakY + 60);
+            ctx.font = 'bold 18px Arial, sans-serif';
+            ctx.fillStyle = '#333333';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${currentYear} Year Streak`, 30, streakBoxY + 35);
 
+            ctx.font = 'bold 48px Arial, sans-serif';
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillText(currentYearStreak.toString(), 30, streakBoxY + 75);
+
+            ctx.font = '13px Arial, sans-serif';
+            ctx.fillStyle = '#999999';
+            ctx.fillText('days', 120, streakBoxY + 70);
+
+            // 게임 타입 표시
             ctx.font = '12px Arial, sans-serif';
             ctx.fillStyle = '#666666';
-            ctx.fillText(`days in ${currentYear}`, 100, streakY + 60);
-
-            // ChessMate 워터마크
-            ctx.font = '12px Arial, sans-serif';
-            ctx.fillStyle = '#cccccc';
             ctx.textAlign = 'right';
-            ctx.fillText('ChessMate - chess.mate.profile', 770, 595);
+            ctx.fillText(selectedGameType || 'RAPID', 770, streakBoxY + 35);
 
-            // 캔버스를 이미지로 변환 및 다운로드
+            // 워터마크
+            ctx.font = '11px Arial, sans-serif';
+            ctx.fillStyle = '#dddddd';
+            ctx.textAlign = 'right';
+            ctx.fillText('ChessMate', 770, streakBoxY + 100);
+
+            // --- 이미지 저장 ---
             canvas.toBlob((blob) => {
                 if (!blob) {
                     alert('이미지 생성에 실패했습니다.');
@@ -576,6 +617,7 @@ const Profile = () => {
                 alert('프로필 카드가 다운로드되었습니다!');
             }, 'image/png');
         } catch (error) {
+            console.error('프로필 카드 생성 오류:', error);
             alert('프로필 카드 생성 중 오류가 발생했습니다.');
         } finally {
             setGeneratingCard(false);
