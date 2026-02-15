@@ -137,7 +137,25 @@ const Header = () => {
                 <Link to="/page1" className="hover:text-[#1f4170] transition">{t('header.home')}</Link>
                 <Link to="/news" className="hover:text-[#1f4170] transition">{t('header.news')}</Link>
                 <Link to="/ranking" className="hover:text-[#1f4170] transition">{t('header.ranking')}</Link>
-                
+            </div>
+            
+            {/* 모바일 메뉴 버튼 */}
+            <div className="md:hidden ml-auto flex items-center">
+                {!isLoading && (
+                    <button 
+                        onClick={handleMenuToggle}
+                        className="px-3 py-2 text-[#2F639D] hover:text-[#1f4170] transition"
+                        title={t('header.menu')}
+                    >
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
+                        </svg>
+                    </button>
+                )}
+            </div>
+
+            {/* 데스크탑 메뉴 버튼 */}
+            <div className="hidden md:block">
                 {!isLoading && (
                     <div className="relative">
                         <button 

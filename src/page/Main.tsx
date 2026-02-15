@@ -200,7 +200,7 @@ function Main() {
 
             <main className="flex flex-col items-center justify-center pt-60 px-4 text-center">
                 <h1 className="md:text-5xl font-extrabold text-white drop-shadow mb-4 tracking-tight">
-                    <span className="text-9xl text-[#2F639D] fade-in-title">ChessLadder</span>
+                    <span className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl text-[#2F639D] fade-in-title">ChessLadder</span>
                 </h1>
                 <h2 className="text-4xl md:text-2xl text-[#86ABD7] font-bold mb-10 fade-in-subtitle">
                     {t('main.tagline')}
