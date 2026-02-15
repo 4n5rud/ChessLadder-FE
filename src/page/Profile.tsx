@@ -395,6 +395,9 @@ const Profile = () => {
                 'KING': kingImg
             };
 
+            // placeholder URL 제외하고 실제 이미지만 사용
+            const validProfileImage = profileImage && !profileImage.includes('placeholder') ? profileImage : null;
+
             const canvas = document.createElement('canvas');
             canvas.width = 400;
             canvas.height = 700;
@@ -423,9 +426,9 @@ const Profile = () => {
                 ctx.fillRect(0, 145 + i, 400, 1);
             }
             // 프로필 사진 로드 및 그리기
-            if (profileImage) {
+            if (validProfileImage) {
                 const profileImg = new Image();
-                profileImg.src = profileImage;
+                profileImg.src = validProfileImage;
                 
                 await new Promise<void>((resolve) => {
                     profileImg.onload = () => {
