@@ -282,17 +282,17 @@ function Main() {
                     <p className="text-base md:text-lg mb-8 text-white/90 font-semibold">{t('main.tierDescription')}</p>
                     
                     {/* Tier icons - Button Style */}
-                    <div className="flex flex-row justify-between gap-4 mb-12 w-full flex-wrap">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 md:gap-4 mb-12 w-full">
                         {tierData.map(tier => (
                             <div 
                                 key={tier.name} 
-                                className="flex flex-col items-center cursor-pointer group flex-1 min-w-[100px]"
+                                className="flex flex-col items-center cursor-pointer group"
                                 onClick={() => setSelectedTier(selectedTier === tier.name ? null : tier.name)}
                             >
-                                <div className={`aspect-square w-full max-w-24 rounded-xl shadow-lg flex items-center justify-center mb-2 transition-transform group-hover:scale-105 border-2 ${selectedTier === tier.name ? 'border-white ring-2 ring-white' : 'border-white/30'}`} style={{background: `linear-gradient(135deg, ${tier.color.split(' ').slice(1).join(' ')})`}}>
-                                    <img src={tier.icon} alt={tier.name} className="w-12 h-16" />
+                                <div className={`aspect-square w-full rounded-xl shadow-lg flex items-center justify-center mb-2 transition-transform group-hover:scale-105 border-2 ${selectedTier === tier.name ? 'border-white ring-2 ring-white' : 'border-white/30'}`} style={{background: `linear-gradient(135deg, ${tier.color.split(' ').slice(1).join(' ')})`}}>
+                                    <img src={tier.icon} alt={tier.name} className="w-10 h-14 md:w-12 md:h-16" />
                                 </div>
-                                <span className="text-sm font-semibold group-hover:text-yellow-300 text-center">{tier.name}</span>
+                                <span className="text-xs md:text-sm font-semibold group-hover:text-yellow-300 text-center">{tier.name}</span>
                             </div>
                         ))}
                     </div>
