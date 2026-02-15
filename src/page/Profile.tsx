@@ -386,7 +386,6 @@ const Profile = () => {
 
         setGeneratingCard(true);
         try {
-            // Tier 이미지 맵
             const tierImageMap: { [key: string]: string } = {
                 'PAWN': pawnImg,
                 'KNIGHT': knightImg,
@@ -397,8 +396,8 @@ const Profile = () => {
             };
 
             const canvas = document.createElement('canvas');
-            canvas.width = 800;
-            canvas.height = 600;
+            canvas.width = 400;
+            canvas.height = 700;
             const ctx = canvas.getContext('2d');
             
             if (!ctx) {
@@ -406,55 +405,24 @@ const Profile = () => {
                 return;
             }
 
-            // --- 배경과 배너 그리기 ---
-            // 기본 배경 (흰색)
+            // 배경
             ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, 800, 600);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 배너 영역 높이
-            const bannerHeight = 220;
+            // 상단 헤더 (그라데이션)
+            const headerGradient = ctx.createLinearGradient(0, 0, 400, 150);
+            headerGradient.addColorStop(0, '#667eea');
+            headerGradient.addColorStop(1, '#764ba2');
+            ctx.fillStyle = headerGradient;
+            ctx.fillRect(0, 0, 400, 150);
 
-            // 배너 이미지 그리기
-            if (bannerImage) {
-                const bannerImg = new Image();
-                bannerImg.src = bannerImage;
-                
-                await new Promise<void>((resolve) => {
-                    bannerImg.onload = () => {
-                        ctx.drawImage(bannerImg, 0, 0, 800, bannerHeight);
-                        resolve();
-                    };
-                    bannerImg.onerror = () => {
-                        // 배너 로드 실패: 그라데이션
-                        const gradient = ctx.createLinearGradient(0, 0, 800, bannerHeight);
-                        gradient.addColorStop(0, '#667eea');
-                        gradient.addColorStop(1, '#764ba2');
-                        ctx.fillStyle = gradient;
-                        ctx.fillRect(0, 0, 800, bannerHeight);
-                        resolve();
-                    };
-                });
-            } else {
-                // 배너 없음: 그라데이션
-                const gradient = ctx.createLinearGradient(0, 0, 800, bannerHeight);
-                gradient.addColorStop(0, '#667eea');
-                gradient.addColorStop(1, '#764ba2');
-                ctx.fillStyle = gradient;
-                ctx.fillRect(0, 0, 800, bannerHeight);
+            // 반올림 모서리 효과 (상단)
+            ctx.clearRect(0, 145, 400, 10);
+            ctx.fillStyle = headerGradient;
+            for (let i = 0; i < 5; i++) {
+                ctx.fillRect(0, 145 + i, 400, 1);
             }
-
-            // --- 프로필 사진 ---
-            const profileSize = 140;
-            const profileX = 40;
-            const profileY = bannerHeight - profileSize / 2;
-
-            // 흰색 테두리
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(profileX + profileSize / 2, profileY + profileSize / 2, profileSize / 2 + 4, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 프로필 이미지
+            // 프로필 사진 로드 및 그리기
             if (profileImage) {
                 const profileImg = new Image();
                 profileImg.src = profileImage;
@@ -463,142 +431,174 @@ const Profile = () => {
                     profileImg.onload = () => {
                         ctx.save();
                         ctx.beginPath();
-                        ctx.arc(profileX + profileSize / 2, profileY + profileSize / 2, profileSize / 2, 0, Math.PI * 2);
+                        ctx.arc(200, 120, 55, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fill();
                         ctx.clip();
-                        ctx.drawImage(profileImg, profileX, profileY, profileSize, profileSize);
+                        ctx.drawImage(profileImg, 145, 65 , 110, 110);
                         ctx.restore();
                         resolve();
                     };
                     profileImg.onerror = () => {
                         ctx.save();
                         ctx.beginPath();
-                        ctx.arc(profileX + profileSize / 2, profileY + profileSize / 2, profileSize / 2, 0, Math.PI * 2);
+                        ctx.arc(200, 120, 55, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fill();
                         ctx.clip();
                         ctx.fillStyle = '#e0e0e0';
-                        ctx.fillRect(profileX, profileY, profileSize, profileSize);
+                        ctx.fillRect(145, 65, 110, 110);
                         ctx.restore();
                         resolve();
                     };
+                    // 타임아웃 설정
+                    setTimeout(() => resolve(), 3000);
                 });
+            } else {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(200, 120, 55, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.clip();
+                ctx.fillStyle = '#e0e0e0';
+                ctx.fillRect(145, 65, 110, 110);
+                ctx.restore();
             }
 
-            // --- 티어 이미지 (크게) ---
+            // 사용자명
+            ctx.font = 'bold 28px Arial, sans-serif';
+            ctx.fillStyle = '#000000';
+            ctx.textAlign = 'center';
+            ctx.fillText(profile.username || 'Unknown', 200, 210);
+
+            // Lichess ID
+            if (profile.lichessId) {
+                ctx.font = '13px Arial, sans-serif';
+                ctx.fillStyle = '#999999';
+                ctx.fillText(`@${profile.lichessId}`, 200, 235);
+            }
+
+            // 티어 섹션 배경
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(20, 260, 360, 100);
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(20, 260, 360, 100);
+
+            // 티어 이미지
             const tier = getTierFromRating(userPerf?.rating || 1200);
             const tierImg = new Image();
             tierImg.src = tierImageMap[tier] || unratedImg;
-            
-            const tierImgSize = 150;
-            const tierX = 600;
-            const tierY = bannerHeight + 20;
 
             await new Promise<void>((resolve) => {
                 tierImg.onload = () => {
-                    ctx.drawImage(tierImg, tierX, tierY, tierImgSize, tierImgSize);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(70, 310, 30, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+                    ctx.clip();
+                    ctx.drawImage(tierImg, 40, 280, 60, 60);
+                    ctx.restore();
                     resolve();
                 };
                 tierImg.onerror = () => {
-                    ctx.fillStyle = '#cccccc';
-                    ctx.fillRect(tierX, tierY, tierImgSize, tierImgSize);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(70, 310, 30, 0, Math.PI * 2);
+                    ctx.fillStyle = '#f0f0f0';
+                    ctx.fill();
+                    ctx.restore();
                     resolve();
                 };
+                setTimeout(() => resolve(), 2000);
             });
 
-            // --- 사용자명 및 기본 정보 ---
-            let infoY = bannerHeight + 30;
-            
+            // 레이팅
             ctx.font = 'bold 32px Arial, sans-serif';
-            ctx.fillStyle = '#000000';
+            ctx.fillStyle = '#667eea';
             ctx.textAlign = 'left';
-            ctx.fillText(profile.username || 'Unknown', 200, infoY);
+            ctx.fillText((userPerf?.rating || 1200).toString(), 130, 320);
 
-            infoY += 28;
-            if (profile.lichessId) {
-                ctx.font = '13px Arial, sans-serif';
-                ctx.fillStyle = '#666666';
-                ctx.fillText(`@${profile.lichessId}`, 200, infoY);
-                infoY += 20;
-            }
-
-            // --- 게임 데이터 박스 ---
-            const boxX = 200;
-            const boxY = infoY + 5;
-            const boxWidth = 350;
-            const boxHeight = 110;
-
-            // 박스 배경
-            ctx.fillStyle = '#f5f5f5';
-            ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-
-            // 박스 테두리
-            ctx.strokeStyle = '#ddd';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
-
-            // 박스 내용
             ctx.font = '12px Arial, sans-serif';
-            ctx.fillStyle = '#333333';
-            ctx.textAlign = 'left';
+            ctx.fillStyle = '#999999';
+            ctx.fillText(selectedGameType || 'RAPID', 130, 345);
 
-            const gameStats = [
-                `All Games: ${profile.allGames || 0}`,
-                `Wins: ${profile.wins || 0} | Losses: ${profile.losses || 0} | Draws: ${profile.draws || 0}`,
-                `Win Rate: ${profile.allGames > 0 ? ((profile.wins || 0) / profile.allGames * 100).toFixed(1) : 0}%`,
-                `Rated Games: ${profile.ratedGames || 0}`
+            // 게임 통계 섹션
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(20, 375, 360, 140);
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(20, 375, 360, 140);
+
+            const stats = [
+                { label: 'Games', value: profile.allGames || 0 },
+                { label: 'Wins', value: profile.wins || 0}
             ];
 
-            gameStats.forEach((stat, idx) => {
-                ctx.fillText(stat, boxX + 12, boxY + 22 + idx * 20);
-            });
+            const stats2 = [
+                { label: 'Losses', value: profile.losses || 0 },
+                { label: 'Draws', value: profile.draws || 0 }
+            ];
 
-            // --- 레이팅 정보 (오른쪽 하단, 아래) ---
-            const ratingY = boxY + 40;
-            ctx.font = 'bold 24px Arial, sans-serif';
-            ctx.fillStyle = '#000000';
+            // 위쪽 행
+            ctx.font = '14px Arial, sans-serif';
+            ctx.fillStyle = '#333333';
             ctx.textAlign = 'center';
-            ctx.fillText((userPerf?.rating || 1200).toString(), 700, ratingY);
-
+            ctx.fillText(stats[0].value.toString(), 85, 405);
             ctx.font = '11px Arial, sans-serif';
-            ctx.fillStyle = '#666666';
-            ctx.fillText('Rating', 700, ratingY + 18);
+            ctx.fillStyle = '#999999';
+            ctx.fillText(stats[0].label, 85, 422);
 
-            // --- Streak 정보 (하단) ---
-            const streakBoxY = 490;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, streakBoxY, 800, 110);
+            ctx.font = '14px Arial, sans-serif';
+            ctx.fillStyle = '#333333';
+            ctx.fillText(stats[1].value.toString(), 200, 405);
+            ctx.font = '11px Arial, sans-serif';
+            ctx.fillStyle = '#999999';
+            ctx.fillText(stats[1].label, 200, 422);
 
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(0, streakBoxY, 800, 110);
+            ctx.font = '14px Arial, sans-serif';
+            ctx.fillStyle = '#333333';
+            ctx.textAlign = 'center';
+            ctx.fillText(stats2[0].value.toString(), 315, 405);
+            ctx.font = '11px Arial, sans-serif';
+            ctx.fillStyle = '#999999';
+            ctx.fillText(stats2[0].label, 315, 422);
 
+            // 아래쪽 행
+            ctx.font = '14px Arial, sans-serif';
+            ctx.fillStyle = '#333333';
+            ctx.fillText(stats2[1].value.toString(), 85, 485);
+            ctx.font = '11px Arial, sans-serif';
+            ctx.fillStyle = '#999999';
+            ctx.fillText(stats2[1].label, 85, 502);
+
+            const winRate = profile.allGames > 0 ? ((profile.wins || 0) / profile.allGames * 100).toFixed(1) : 0;
+            ctx.font = '14px Arial, sans-serif';
+            ctx.fillStyle = '#333333';
+            ctx.fillText(winRate.toString() + '%', 200, 485);
+            ctx.font = '11px Arial, sans-serif';
+            ctx.fillStyle = '#999999';
+            ctx.fillText('Win Rate', 200, 502);
+
+            // Streak
             const currentYear = new Date().getFullYear();
             const currentYearStreak = streakMap.get(currentYear.toString()) || 0;
-
-            ctx.font = 'bold 18px Arial, sans-serif';
-            ctx.fillStyle = '#333333';
-            ctx.textAlign = 'left';
-            ctx.fillText(`${currentYear} Year Streak`, 30, streakBoxY + 35);
-
-            ctx.font = 'bold 48px Arial, sans-serif';
+            ctx.font = '14px Arial, sans-serif';
             ctx.fillStyle = '#ff6b6b';
-            ctx.fillText(currentYearStreak.toString(), 30, streakBoxY + 75);
-
-            ctx.font = '13px Arial, sans-serif';
+            ctx.fillText(currentYearStreak.toString(), 315, 485);
+            ctx.font = '11px Arial, sans-serif';
             ctx.fillStyle = '#999999';
-            ctx.fillText('days', 120, streakBoxY + 70);
-
-            // 게임 타입 표시
-            ctx.font = '12px Arial, sans-serif';
-            ctx.fillStyle = '#666666';
-            ctx.textAlign = 'right';
-            ctx.fillText(selectedGameType || 'RAPID', 770, streakBoxY + 35);
+            ctx.fillText('Streak', 315, 502);
 
             // 워터마크
-            ctx.font = '11px Arial, sans-serif';
+            ctx.font = '10px Arial, sans-serif';
             ctx.fillStyle = '#dddddd';
-            ctx.textAlign = 'right';
-            ctx.fillText('ChessMate', 770, streakBoxY + 100);
+            ctx.textAlign = 'center';
+            ctx.fillText('ChessLadder Player Card', 200, 680);
 
-            // --- 이미지 저장 ---
+            // 다운로드
             canvas.toBlob((blob) => {
                 if (!blob) {
                     alert('이미지 생성에 실패했습니다.');
@@ -608,7 +608,7 @@ const Profile = () => {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `ChessMate_${profile.username}_${new Date().getTime()}.png`;
+                link.download = `ChessLadder_${profile.username || 'profile'}_${Date.now()}.png`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -616,9 +616,10 @@ const Profile = () => {
 
                 alert('프로필 카드가 다운로드되었습니다!');
             }, 'image/png');
+
         } catch (error) {
             console.error('프로필 카드 생성 오류:', error);
-            alert('프로필 카드 생성 중 오류가 발생했습니다.');
+            alert('프로필 카드 생성 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
         } finally {
             setGeneratingCard(false);
         }
