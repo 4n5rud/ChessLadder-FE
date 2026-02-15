@@ -712,7 +712,7 @@ const Profile = () => {
 
             {/* 게임 통계 섹션 */}
             {profile && (
-                <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
+                <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('profile.gameStatistics')}</h2>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
@@ -752,7 +752,7 @@ const Profile = () => {
             )}
 
             {/* 플레이 활동 섹션 - 게임타입 바로 하단 */}
-            <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
+            <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-gray-900 text-animate">{t('profile.gameActivityRecord')}</h2>
                     <select
@@ -768,7 +768,7 @@ const Profile = () => {
                     </select>
                 </div>
                 
-                <div className={`rounded-lg p-8 shadow-lg card-section card-hover overflow-x-auto ${
+                <div className={`rounded-lg p-4 md:p-8 shadow-lg card-section card-hover overflow-x-auto ${
                     userPerf?.uncertain ? 'bg-gray-100 border-2 border-gray-300' : 'bg-blue-50 border-2 border-blue-200'
                 }`}>
                     <p className="text-gray-700 text-sm font-bold uppercase tracking-wider mb-6 text-animate">{selectedYear}{language === 'KR' ? '년' : ''} {t('profile.activityStatus')}</p>
