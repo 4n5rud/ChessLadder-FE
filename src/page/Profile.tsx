@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { ReactElement } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getCurrentUser } from "../api/authService";
-import { getUploadUrl, completeUpload } from "../api/imageService";
+import { getUploadUrl } from "../api/imageService";
 import type { UserImageType } from "../api/imageService";
 import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, forceRefreshStats } from "../api/userService";
 import type { ProfileResponse, DailyStreakDto, UserPerfResponse } from "../api/userService";
@@ -301,11 +301,16 @@ const Profile = () => {
                 throw new Error(`Upload failed: ${uploadResponse.status}`);
             }
             
-            const imageUrl = await completeUpload(type);
-            const imageUrlWithTimestamp = `${imageUrl}?t=${Date.now()}`;
+            // 업로드 완료 후 프로필 데이터 재조회
+            const updatedProfile = await getUserProfile();
+            setProfile(updatedProfile);
             
-            if (type === 'BANNER') setBannerImage(imageUrlWithTimestamp);
-            if (type === 'PROFILE') setProfileImage(imageUrlWithTimestamp);
+            if (updatedProfile?.profile_image) {
+                setProfileImage(`${updatedProfile.profile_image}?t=${Date.now()}`);
+            }
+            if (updatedProfile?.banner_image) {
+                setBannerImage(`${updatedProfile.banner_image}?t=${Date.now()}`);
+            }
             
             const messageKey = type === 'BANNER' ? 'profile.imageBannerUploadSuccess' : 'profile.imageProfileUploadSuccess';
             alert(t(messageKey));
@@ -321,6 +326,12 @@ const Profile = () => {
         setSavingDescription(true);
         try {
             await updateUserDescription(description);
+            
+            // 자기소개 업데이트 후 프로필 데이터 재조회
+            const updatedProfile = await getUserProfile();
+            setProfile(updatedProfile);
+            setDescription(updatedProfile?.description || '');
+            
             setIsEditingDescription(false);
             alert(t('profile.saveSuccess'));
         } catch (error) {
