@@ -520,22 +520,22 @@ const Profile = () => {
                         </div>
 
                         {/* 프로필 정보 */}
-                        <div className="flex-1">
-                            <h1 className="text-4xl font-black text-gray-900 mb-2">
+                        <div className="flex-1 w-full md:w-auto">
+                            <h1 className="text-2xl md:text-4xl font-black text-gray-900 mb-2">
                                 {profile?.username || 'User'}
                             </h1>
-                            <div className="text-xs font-normal uppercase tracking-wider mb-6 flex gap-4">
-                                <p className="text-gray-500 opacity-60">
+                            <div className="text-[10px] md:text-xs font-normal uppercase tracking-wider mb-6 flex flex-col md:flex-row gap-2 md:gap-4">
+                                <p className="text-gray-500 opacity-60 whitespace-nowrap">
                                     {language === 'KR' ? '체스래더 가입일' : 'ChessLadder Joined'}: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '-'}
                                 </p>
-                                <p className="text-gray-500 opacity-60">
+                                <p className="text-gray-500 opacity-60 whitespace-nowrap">
                                     {t('profile.lichessJoinDate')}: {profile?.lichessCreatedAt ? new Date(profile.lichessCreatedAt).toLocaleDateString() : '-'}
                                 </p>
                             </div>
 
                             {/* Lichess 프로필 이동 버튼 + 강제 갱신 버튼 */}
                             <div className="mb-6 flex flex-col items-start gap-4">
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 flex-wrap">
                                     {profile?.lichessId && (
                                         <a
                                             href={`https://lichess.org/@/${profile.lichessId}`}
