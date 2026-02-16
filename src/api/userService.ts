@@ -280,6 +280,13 @@ export const forceRefreshStats = async (): Promise<any> => {
  * 사용자 계정을 삭제합니다.
  */
 export const deleteAccount = async (): Promise<any> => {
-  const res = await api('/user/withdraw', { method: 'DELETE' });
-  return res.data || res;
+  console.log('[UserService] deleteAccount 요청 시작');
+  try {
+    const res = await api('/user/withdraw', { method: 'DELETE' });
+    console.log('[UserService] deleteAccount 성공:', res);
+    return res.data || res;
+  } catch (error) {
+    console.error('[UserService] deleteAccount 실패:', error);
+    throw error;
+  }
 };
