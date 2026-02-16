@@ -114,9 +114,13 @@ const getTierWithSubTier = (rating: number): { tier: string; subTier: number } =
     },
     'KING': {
       min: 2101,
-      max: Infinity,
+      max: 2700,
       subTiers: {
-        1: [2101, Infinity]
+        5: [2101, 2220],
+        4: [2221, 2340],
+        3: [2341, 2460],
+        2: [2461, 2580],
+        1: [2581, 2700]
       }
     }
   };
