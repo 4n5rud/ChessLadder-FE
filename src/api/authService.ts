@@ -36,14 +36,14 @@ export interface UserPrincipal {
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
-  [key: string]: any;
+  [key: string]: any;  
 }
 
 /**
  * 현재 사용자 정보 조회
  * GET /api/auth/me
  * 쿠키 기반 인증 (credentials: include)
- */
+ ****/
 export const getCurrentUser = async (): Promise<UserPrincipal | null> => {
   try {
     const data = await api('/auth/me');
