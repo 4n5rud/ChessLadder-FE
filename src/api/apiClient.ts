@@ -82,11 +82,27 @@ export const api = async (endpoint: string, options: RequestInit = {}) => {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`[API] 오류 응답: ${response.status} ${response.statusText}`, errorText);
+    console.error(`[API] ❌ 오류 응답: ${response.status} ${response.statusText}`, {
+      status: response.status,
+      statusText: response.statusText,
+      url: fullUrl,
+      errorBody: errorText
+    });
     throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
-  const data = await response.json();
-  console.log(`[API] 응답 데이터: ${options.method || 'GET'} ${fullUrl}`, data);
+  let data;
+  try {
+    data = await response.json();
+  } catch (parseError) {
+    console.error(`[API] JSON 파싱 실패:`, {
+      url: fullUrl,
+      method: options.method || 'GET',
+      error: parseError
+    });
+    throw new Error(`Failed to parse JSON response from ${fullUrl}`);
+  }
+  
+  console.log(`[API] ✅ 응답 데이터: ${options.method || 'GET'} ${fullUrl}`, data);
   return data;
 };

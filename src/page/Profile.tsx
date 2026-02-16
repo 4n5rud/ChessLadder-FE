@@ -457,13 +457,18 @@ const Profile = () => {
         setDeletingAccount(true);
         try {
             console.log('[Profile] deleteAccount API 호출 시작');
-            await deleteAccount();
-            console.log('[Profile] deleteAccount API 호출 완료');
+            const result = await deleteAccount();
+            console.log('[Profile] deleteAccount API 호출 완료:', result);
             alert(t('profile.deleteAccountSuccess'));
             // 삭제 후 메인 페이지로 리다이렉트
             window.location.href = '/';
-        } catch (error) {
-            console.error('[Profile] deleteAccount 오류:', error);
+        } catch (error: any) {
+            console.error('[Profile] deleteAccount 오류 상세:', {
+                message: error?.message,
+                response: error?.response,
+                status: error?.status,
+                error: error
+            });
             alert(t('profile.deleteAccountFail'));
         } finally {
             setDeletingAccount(false);
