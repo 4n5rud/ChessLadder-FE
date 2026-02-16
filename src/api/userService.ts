@@ -275,3 +275,11 @@ export const forceRefreshStats = async (): Promise<any> => {
   const res = await api('/stat/force-refresh', { method: 'PUT' });
   return res.data || res;
 };
+
+/**
+ * 사용자 계정을 삭제합니다.
+ */
+export const deleteAccount = async (): Promise<any> => {
+  const res = await api('/user/withdraw', { method: 'DELETE' });
+  return res.data || res;
+};

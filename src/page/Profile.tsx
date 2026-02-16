@@ -7,7 +7,7 @@ import { toPng } from 'html-to-image';
 import { getCurrentUser } from "../api/authService";
 import { getUploadUrl } from "../api/imageService";
 import type { UserImageType } from "../api/imageService";
-import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, forceRefreshStats } from "../api/userService";
+import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, forceRefreshStats, deleteAccount } from "../api/userService";
 import type { ProfileResponse, DailyStreakDto, UserPerfResponse } from "../api/userService";
 import { useRatingHistory } from "../api/queries";
 import { useLanguage } from "../context/LanguageContext";
@@ -28,6 +28,8 @@ const Profile = () => {
     const [loadingBanner, setLoadingBanner] = useState(false);
     const [loadingProfile, setLoadingProfile] = useState(false);
     const [savingDescription, setSavingDescription] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deletingAccount, setDeletingAccount] = useState(false);
     
     // 게임 타입 관련 상태
     const [selectedGameType, setSelectedGameType] = useState<string>('RAPID');
@@ -436,6 +438,21 @@ const Profile = () => {
             alert(t('profile.refreshFail'));
         } finally {
             setRefreshing(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        setDeletingAccount(true);
+        try {
+            await deleteAccount();
+            alert(t('profile.deleteAccountSuccess'));
+            // 삭제 후 메인 페이지로 리다이렉트
+            window.location.href = '/';
+        } catch (error) {
+            alert(t('profile.deleteAccountFail'));
+        } finally {
+            setDeletingAccount(false);
+            setShowDeleteConfirm(false);
         }
     };
 
@@ -985,6 +1002,50 @@ const Profile = () => {
                     />
                 )}
             </div>
+
+            {/* 회원 탈퇴 섹션 */}
+            <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-bold text-red-700 mb-1">{t('profile.deleteAccount')}</h3>
+                            <p className="text-sm text-red-600">{t('profile.deleteAccountWarning')}</p>
+                        </div>
+                        <button
+                            onClick={() => setShowDeleteConfirm(true)}
+                            className="px-4 py-2 bg-red-600 text-white font-bold text-sm rounded-lg hover:bg-red-700 transition hover:shadow-lg flex-shrink-0"
+                        >
+                            {t('profile.deleteAccount')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* 회원 탈퇴 확인 다이얼로그 */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-8 max-w-sm w-full mx-4 shadow-xl">
+                        <h3 className="text-xl font-bold text-red-700 mb-4">{t('profile.deleteAccountConfirm')}</h3>
+                        <p className="text-gray-700 text-sm mb-6">{t('profile.deleteAccountWarning')}</p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                disabled={deletingAccount}
+                                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 font-bold text-sm rounded-lg hover:bg-gray-400 transition disabled:opacity-50"
+                            >
+                                {t('profile.deleteAccountNo')}
+                            </button>
+                            <button
+                                onClick={handleDeleteAccount}
+                                disabled={deletingAccount}
+                                className="flex-1 px-4 py-2 bg-red-600 text-white font-bold text-sm rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                            >
+                                {deletingAccount ? t('profile.deleteAccountDeleting') : t('profile.deleteAccountYes')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <Footer/>
         </div>
