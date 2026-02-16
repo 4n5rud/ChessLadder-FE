@@ -1031,7 +1031,6 @@ const Profile = () => {
             </div>
 
             {/* 회원 탈퇴 섹션 */}
-            {console.log('[Profile] 회원 탈퇴 섹션 렌더링 중')}
             <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
                 <div className="bg-red-50 border border-red-200 rounded-lg p-6 shadow-sm">
                     <div className="flex items-center justify-between">
