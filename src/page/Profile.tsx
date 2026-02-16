@@ -621,7 +621,7 @@ const Profile = () => {
                                             </div>
 
                                             <div className="flex justify-center bg-gray-50/50 p-8 rounded-[24px] border border-gray-200 overflow-x-auto shadow-inner">
-                                                <div className="w-[700px] h-[750px] scale-[0.85] origin-top flex-shrink-0">
+                                                <div style={{ width: '595px', height: '637px' }}>
                                                     {profile && userPerf && (
                                                         <ProfileCard 
                                                             profile={profile}

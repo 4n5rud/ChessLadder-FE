@@ -128,6 +128,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                         src={profile.banner_image} 
                         alt="Banner" 
                         crossOrigin="anonymous"
+                        loading="eager"
                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-110"
                     />
                 ) : (
@@ -148,11 +149,17 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                             src={profile.profile_image || 'https://via.placeholder.com/120'} 
                             alt="Profile" 
                             crossOrigin="anonymous"
+                            loading="eager"
                             className="w-28 h-28 rounded-[32px] border-[6px] bg-white object-cover shadow-2xl"
                             style={{ borderColor: 'white' }}
                         />
                         <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-lg">
-                            <img src={getTierImage(currentTier)} alt={currentTier} className="w-7 h-7 object-contain" />
+                            <img 
+                                src={getTierImage(currentTier)} 
+                                alt={currentTier} 
+                                loading="eager"
+                                className="w-7 h-7 object-contain" 
+                            />
                         </div>
                     </div>
                     <div className="text-white drop-shadow-lg">
