@@ -19,6 +19,7 @@ import lichessLogoImg from "../assets/images/logo/lichess-logo.png";
 import "./Profile.css";
 
 const Profile = () => {
+    console.log('[Profile] 컴포넌트 정의 시작');
     const { t, language } = useLanguage();
     
     // 프로필 페이지 마운트 확인
@@ -26,6 +27,9 @@ const Profile = () => {
         console.log('[Profile] 프로필 페이지 컴포넌트 마운트됨');
         console.log('[Profile] API BASE URL:', import.meta.env.DEV ? 'http://localhost:8080/api' : (import.meta.env.VITE_API_BASE_URL || '/api'));
         console.log('[Profile] 환경:', import.meta.env.DEV ? 'DEV' : 'PROD');
+        return () => {
+            console.log('[Profile] 프로필 페이지 언마운트됨');
+        };
     }, []);
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -471,6 +475,8 @@ const Profile = () => {
     useEffect(() => {
         console.log('[Profile] 렌더링됨 - profile:', profile?.username, 'userPerf:', userPerf?.rating);
     });
+
+    console.log('[Profile] JSX 렌더링 시작');
 
     return (
         <div className="profile-page" style={{
@@ -1020,6 +1026,7 @@ const Profile = () => {
             </div>
 
             {/* 회원 탈퇴 섹션 */}
+            {console.log('[Profile] 회원 탈퇴 섹션 렌더링 중')}
             <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
                 <div className="bg-red-50 border border-red-200 rounded-lg p-6 shadow-sm">
                     <div className="flex items-center justify-between">
