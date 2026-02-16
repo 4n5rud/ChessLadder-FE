@@ -20,6 +20,13 @@ import "./Profile.css";
 
 const Profile = () => {
     const { t, language } = useLanguage();
+    
+    // 프로필 페이지 마운트 확인
+    useEffect(() => {
+        console.log('[Profile] 프로필 페이지 컴포넌트 마운트됨');
+        console.log('[Profile] API BASE URL:', import.meta.env.DEV ? 'http://localhost:8080/api' : (import.meta.env.VITE_API_BASE_URL || '/api'));
+        console.log('[Profile] 환경:', import.meta.env.DEV ? 'DEV' : 'PROD');
+    }, []);
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -459,6 +466,11 @@ const Profile = () => {
             setShowDeleteConfirm(false);
         }
     };
+
+    // 렌더링 전 로그
+    useEffect(() => {
+        console.log('[Profile] 렌더링됨 - profile:', profile?.username, 'userPerf:', userPerf?.rating);
+    });
 
     return (
         <div className="profile-page" style={{
