@@ -442,13 +442,17 @@ const Profile = () => {
     };
 
     const handleDeleteAccount = async () => {
+        console.log('[Profile] handleDeleteAccount 함수 실행됨');
         setDeletingAccount(true);
         try {
+            console.log('[Profile] deleteAccount API 호출 시작');
             await deleteAccount();
+            console.log('[Profile] deleteAccount API 호출 완료');
             alert(t('profile.deleteAccountSuccess'));
             // 삭제 후 메인 페이지로 리다이렉트
             window.location.href = '/';
         } catch (error) {
+            console.error('[Profile] deleteAccount 오류:', error);
             alert(t('profile.deleteAccountFail'));
         } finally {
             setDeletingAccount(false);
@@ -1012,7 +1016,10 @@ const Profile = () => {
                             <p className="text-sm text-red-600">{t('profile.deleteAccountWarning')}</p>
                         </div>
                         <button
-                            onClick={() => setShowDeleteConfirm(true)}
+                            onClick={() => {
+                                console.log('[Profile] 탈퇴 확인 버튼 클릭');
+                                setShowDeleteConfirm(true);
+                            }}
                             className="px-4 py-2 bg-red-600 text-white font-bold text-sm rounded-lg hover:bg-red-700 transition hover:shadow-lg flex-shrink-0"
                         >
                             {t('profile.deleteAccount')}
@@ -1029,14 +1036,20 @@ const Profile = () => {
                         <p className="text-gray-700 text-sm mb-6">{t('profile.deleteAccountWarning')}</p>
                         <div className="flex gap-3">
                             <button
-                                onClick={() => setShowDeleteConfirm(false)}
+                                onClick={() => {
+                                    console.log('[Profile] 취소 버튼 클릭');
+                                    setShowDeleteConfirm(false);
+                                }}
                                 disabled={deletingAccount}
                                 className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 font-bold text-sm rounded-lg hover:bg-gray-400 transition disabled:opacity-50"
                             >
                                 {t('profile.deleteAccountNo')}
                             </button>
                             <button
-                                onClick={handleDeleteAccount}
+                                onClick={() => {
+                                    console.log('[Profile] 예, 삭제합니다 버튼 클릭');
+                                    handleDeleteAccount();
+                                }}
                                 disabled={deletingAccount}
                                 className="flex-1 px-4 py-2 bg-red-600 text-white font-bold text-sm rounded-lg hover:bg-red-700 transition disabled:opacity-50"
                             >
