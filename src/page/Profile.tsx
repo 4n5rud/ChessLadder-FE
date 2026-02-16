@@ -19,18 +19,7 @@ import lichessLogoImg from "../assets/images/logo/lichess-logo.png";
 import "./Profile.css";
 
 const Profile = () => {
-    console.log('[Profile] 컴포넌트 정의 시작');
     const { t, language } = useLanguage();
-    
-    // 프로필 페이지 마운트 확인
-    useEffect(() => {
-        console.log('[Profile] 프로필 페이지 컴포넌트 마운트됨');
-        console.log('[Profile] API BASE URL:', import.meta.env.DEV ? 'http://localhost:8080/api' : (import.meta.env.VITE_API_BASE_URL || '/api'));
-        console.log('[Profile] 환경:', import.meta.env.DEV ? 'DEV' : 'PROD');
-        return () => {
-            console.log('[Profile] 프로필 페이지 언마운트됨');
-        };
-    }, []);
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -457,31 +446,19 @@ const Profile = () => {
         setDeletingAccount(true);
         try {
             console.log('[Profile] deleteAccount API 호출 시작');
-            const result = await deleteAccount();
-            console.log('[Profile] deleteAccount API 호출 완료:', result);
+            await deleteAccount();
+            console.log('[Profile] deleteAccount API 호출 완료');
             alert(t('profile.deleteAccountSuccess'));
             // 삭제 후 메인 페이지로 리다이렉트
             window.location.href = '/';
-        } catch (error: any) {
-            console.error('[Profile] deleteAccount 오류 상세:', {
-                message: error?.message,
-                response: error?.response,
-                status: error?.status,
-                error: error
-            });
+        } catch (error) {
+            console.error('[Profile] deleteAccount 오류:', error);
             alert(t('profile.deleteAccountFail'));
         } finally {
             setDeletingAccount(false);
             setShowDeleteConfirm(false);
         }
     };
-
-    // 렌더링 전 로그
-    useEffect(() => {
-        console.log('[Profile] 렌더링됨 - profile:', profile?.username, 'userPerf:', userPerf?.rating);
-    });
-
-    console.log('[Profile] JSX 렌더링 시작');
 
     return (
         <div className="profile-page" style={{

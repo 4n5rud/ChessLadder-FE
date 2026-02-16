@@ -281,19 +281,12 @@ export const forceRefreshStats = async (): Promise<any> => {
  */
 export const deleteAccount = async (): Promise<any> => {
   console.log('[UserService] deleteAccount 요청 시작');
-  console.log('[UserService] 요청 URL: /user/withdraw');
   try {
-    console.log('[UserService] api() 함수 호출 전');
     const res = await api('/user/withdraw', { method: 'DELETE' });
-    console.log('[UserService] api() 함수 호출 완료');
     console.log('[UserService] deleteAccount 성공:', res);
     return res.data || res;
-  } catch (error: any) {
-    console.error('[UserService] deleteAccount 실패 상세:', {
-      errorMessage: error?.message,
-      errorStack: error?.stack,
-      fullError: error
-    });
+  } catch (error) {
+    console.error('[UserService] deleteAccount 실패:', error);
     throw error;
   }
 };
