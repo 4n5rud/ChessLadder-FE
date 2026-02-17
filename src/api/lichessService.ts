@@ -58,7 +58,6 @@ export const getRatingHistory = async (username: string, gameType: string = 'RAP
 
     return ratingHistory;
   } catch (error) {
-    console.error('Error fetching rating history:', error);
     throw error;
   }
 };
@@ -83,7 +82,6 @@ export const getUserInfo = async (username: string): Promise<any> => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching user info:', error);
     throw error;
   }
 };

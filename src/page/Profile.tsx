@@ -177,7 +177,6 @@ const Profile = () => {
             link.href = dataUrl;
             link.click();
         } catch (err) {
-            console.error('Export failed', err);
             alert('카드 추출 중 오류가 발생했습니다.');
         } finally {
             setIsExporting(false);
@@ -442,17 +441,13 @@ const Profile = () => {
     };
 
     const handleDeleteAccount = async () => {
-        console.log('[Profile] handleDeleteAccount 함수 실행됨');
         setDeletingAccount(true);
         try {
-            console.log('[Profile] deleteAccount API 호출 시작');
             await deleteAccount();
-            console.log('[Profile] deleteAccount API 호출 완료');
             alert(t('profile.deleteAccountSuccess'));
             // 삭제 후 메인 페이지로 리다이렉트
             window.location.href = '/';
         } catch (error) {
-            console.error('[Profile] deleteAccount 오류:', error);
             alert(t('profile.deleteAccountFail'));
         } finally {
             setDeletingAccount(false);
@@ -1017,7 +1012,6 @@ const Profile = () => {
                         </div>
                         <button
                             onClick={() => {
-                                console.log('[Profile] 탈퇴 확인 버튼 클릭');
                                 setShowDeleteConfirm(true);
                             }}
                             className="px-4 py-2 bg-red-600 text-white font-bold text-sm rounded-lg hover:bg-red-700 transition hover:shadow-lg flex-shrink-0"
@@ -1037,7 +1031,6 @@ const Profile = () => {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => {
-                                    console.log('[Profile] 취소 버튼 클릭');
                                     setShowDeleteConfirm(false);
                                 }}
                                 disabled={deletingAccount}
@@ -1047,7 +1040,6 @@ const Profile = () => {
                             </button>
                             <button
                                 onClick={() => {
-                                    console.log('[Profile] 예, 삭제합니다 버튼 클릭');
                                     handleDeleteAccount();
                                 }}
                                 disabled={deletingAccount}

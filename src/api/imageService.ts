@@ -33,16 +33,11 @@ export const getUploadUrl = async (
     { method: 'GET' }
   );
   
-  console.log('[ImageService] getUploadUrl response:', { type, res });
-  
   const uploadUrl = res.upload_url || res.data?.upload_url || res.data?.uploadUrl || res.uploadUrl;
   
   if (!uploadUrl) {
-    console.error('[ImageService] Failed to extract upload URL from response:', res);
     throw new Error(`업로드 URL을 받지 못했습니다. 응답: ${JSON.stringify(res)}`);
   }
-  
-  console.log('[ImageService] Upload URL extracted:', uploadUrl);
   return { uploadUrl, contentType };
 };
 
@@ -56,13 +51,11 @@ export const completeUpload = async (type: UserImageType): Promise<string> => {
   const res = await api(`/image/upload-complete?type=${type}`, {
     method: 'POST',
   });
-  console.log('[ImageService] completeUpload response:', { type, res });
   
   // 응답에서 이미지 URL 추출
   const imageUrl = res.data?.url || res.data?.image_url || res.url || res.image_url;
   
   if (!imageUrl) {
-    console.error('[ImageService] Failed to extract image URL from completeUpload response:', res);
     throw new Error(`이미지 URL을 받지 못했습니다. 응답: ${JSON.stringify(res)}`);
   }
   
@@ -78,22 +71,16 @@ export const completeUpload = async (type: UserImageType): Promise<string> => {
 export const getImageUrl = async (type: UserImageType): Promise<string> => {
   const res = await api(`/image/image-url?type=${type}`, { method: 'GET' });
   
-  console.log('[ImageService] getImageUrl full response:', res);
-  
   const imageUrl = res.upload_url || res.data?.upload_url || res.imageUrl || res.data?.imageUrl;
   
   if (!imageUrl) {
-    console.error('[ImageService] Failed to extract image URL from response:', res);
     throw new Error(`이미지 URL을 받지 못했습니다. 응답: ${JSON.stringify(res)}`);
   }
-  
-  console.log('[ImageService] Raw image URL:', imageUrl);
   
   // URL이 상대 경로인 경우 API 기반 URL과 결합
   const finalUrl = imageUrl.startsWith('http') 
     ? imageUrl 
     : `${import.meta.env.VITE_API_BASE_URL}/${imageUrl}`;
   
-  console.log('[ImageService] Final image URL:', finalUrl);
   return finalUrl;
 };

@@ -120,17 +120,13 @@ function Main() {
         
         try {
             setIsLoading(true);
-            console.log('[Login] OAuth URL 획득 시도...');
             const res = await getOAuthUrl();
-            console.log('[Login] OAuth 응답 수신:', res);
             
             const oauthUrl = res.data?.oauth_url || res.oauth_url || res.oauthUrl;
             
             if (!oauthUrl) {
                 throw new Error(t('main.loginFailAlert'));
             }
-            
-            console.log('[Login] 리다이렉트 실행:', oauthUrl);
             
             // 즉시 이동 시도
             window.location.assign(oauthUrl);
@@ -151,7 +147,7 @@ function Main() {
                 const logged = await isLoggedIn();
                 setIsUserLoggedIn(logged);
             } catch (error) {
-                console.error('로그인 상태 확인 실패:', error);
+                // 로그인 상태 확인 실패
             }
         };
         checkLogin();
@@ -163,10 +159,8 @@ function Main() {
             try {
                 const { api } = await import('../api/apiClient');
                 const data = await api('/user/count');
-                console.log('사용자 수 API 응답:', data);
                 
                 const userCountValue = data.count !== undefined ? data.count : (data.data?.count || 0);
-                console.log('추출된 count:', userCountValue);
                 
                 setUserCount(userCountValue);
             } catch (err) {
@@ -187,7 +181,7 @@ function Main() {
                     setRecentNews(news[0]);
                 }
             } catch (err) {
-                console.error('최근 뉴스 로드 오류:', err);
+                // 최근 뉴스 로드 실패
             }
         };
 

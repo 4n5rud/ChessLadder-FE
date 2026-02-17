@@ -178,7 +178,6 @@ export const getUserProfile = async (): Promise<ProfileResponse> => {
       draws: Number(data.draws ?? data.draw ?? 0) || 0,
     };
   } catch (error) {
-    console.error('[UserService] getUserProfile error:', error);
     throw error;
   }
 };
@@ -251,7 +250,6 @@ export const getUserPerf = async (gameType: string = 'RAPID'): Promise<UserPerfR
       gamesPlayed: Number(data.gamesPlayed ?? data.all ?? data.games ?? 0) || 0,
     };
   } catch (error) {
-    console.error('[UserService] getUserPerf error:', error);
     throw error;
   }
 };
@@ -280,13 +278,10 @@ export const forceRefreshStats = async (): Promise<any> => {
  * 사용자 계정을 삭제합니다.
  */
 export const deleteAccount = async (): Promise<any> => {
-  console.log('[UserService] deleteAccount 요청 시작');
   try {
     const res = await api('/user/withdraw', { method: 'DELETE' });
-    console.log('[UserService] deleteAccount 성공:', res);
     return res.data || res;
   } catch (error) {
-    console.error('[UserService] deleteAccount 실패:', error);
     throw error;
   }
 };

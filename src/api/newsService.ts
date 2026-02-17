@@ -95,7 +95,7 @@ export const loadAllNews = async (): Promise<NewsItem[]> => {
             });
           }
         } catch (err) {
-          console.error(`[NewsService] Failed to load news file: ${filename}`, err);
+          // Failed to load news file
         }
       }
 
@@ -107,7 +107,6 @@ export const loadAllNews = async (): Promise<NewsItem[]> => {
       throw new Error('manifest.json not found');
     }
   } catch (err) {
-    console.error('[NewsService] Failed to load news manifest:', err);
     return [];
   }
 };
@@ -132,7 +131,7 @@ export const loadNewsByID = async (id: string): Promise<NewsItem | null> => {
       };
     }
   } catch (err) {
-    console.error(`[NewsService] Failed to load news: ${id}`, err);
+    // Failed to load news
   }
 
   return null;
