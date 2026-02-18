@@ -86,7 +86,7 @@ function deleteCookie(name: string) {
 export async function initializeAuthFromRefresh(): Promise<User | null> {
   try {
     // refresh 쿠키 확인
-    const refreshToken = getCookie('refresh');
+    const refreshToken = getCookie('ChessLadder-refresh');
     if (!refreshToken) {
       return null;
     }
@@ -111,7 +111,7 @@ export async function initializeAuthFromRefresh(): Promise<User | null> {
     if (accessToken) {
       useAuthStore.getState().setAccessToken(accessToken);
       // 쿠키도 있으면 삭제 (XSS 공격 대비)
-      deleteCookie('access');
+      deleteCookie('ChessLadder-Access');
       
       // 바로 사용자 정보 조회 (/api/auth/me)
       const userData = await getCurrentUser();
@@ -121,10 +121,10 @@ export async function initializeAuthFromRefresh(): Promise<User | null> {
       }
     } else {
       // 응답 본문에 없으면 쿠키에서 시도
-      const cookieAccessToken = getCookie('access');
+      const cookieAccessToken = getCookie('ChessLadder-Access');
       if (cookieAccessToken) {
         useAuthStore.getState().setAccessToken(cookieAccessToken);
-        deleteCookie('access');
+        deleteCookie('ChessLadder-Access');
         
         const userData = await getCurrentUser();
         if (userData) {
@@ -143,29 +143,47 @@ export async function initializeAuthFromRefresh(): Promise<User | null> {
 /**
  * Step 5: OAuth 성공 처리
  * /oauth/success 페이지에서 호출
- * 1. 쿠키에서 access token 읽어서 store에 저장
- * 2. GET /api/auth/me로 현재 사용자 정보 확인
- * 3. 사용자 정보 store에 저장
+ * 
+ * 프로세스:
+ * 1. 백엔드에서 이미 토큰 쿠키 설정 완료 (api.chessladder.org 도메인)
+ * 2. credentials: 'include'로 /api/auth/refresh 호출 → 응답 본문에서 access token 취득
+ * 3. 응답 받은 access 쿠키도 직접 읽기 (도메인 설정시)
+ * 4. Zustand store에 저장
+ * 5. /api/auth/me로 사용자 정보 조회
  */
 export async function handleOAuthSuccess() {
   try {
-    // 먼저 쿠키에서 access 토큰 읽기 및 저장
-    const accessToken = getCookie('access');
-    if (accessToken) {
-      // Zustand store에 저장 (다음 api 호출 때 Authorization 헤더에 사용)
-      useAuthStore.getState().setAccessToken(accessToken);
-      // 쿠키 삭제 (CSRF/XSS 공격 대비)
-      deleteCookie('access');
+    // 방법 1: 쿠키에서 access 토큰 읽기 시도 (도메인이 .chessladder.org로 설정된 경우)
+    let accessToken = getCookie('ChessLadder-Access');
+    
+    // 방법 2: 쿠키를 못 읽으면 /api/auth/refresh로 토큰 취득 (credentials 자동 포함)
+    if (!accessToken) {
+      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // refresh 쿠키 자동 포함
+      });
+
+      if (refreshResponse.ok) {
+        const refreshData = await refreshResponse.json();
+        // 백엔드에서 응답 본문에 access token 포함하도록 수정되었다면 사용
+        accessToken = refreshData.access_token || refreshData.data?.access_token;
+      }
     }
 
-    // 이제 Authorization 헤더와 함께 /api/auth/me 호출
+    if (accessToken) {
+      useAuthStore.getState().setAccessToken(accessToken);
+      deleteCookie('ChessLadder-Access'); // 쿠키 삭제 (CSRF/XSS 공격 대비)
+    }
+
+    // /api/auth/me 호출 (Authorization 헤더로 accessToken 사용)
     const data = await api('/auth/me', {
       method: 'GET',
     });
 
     const user = data.data || data;
-
-    // 상태 관리에 저장
     useAuthStore.getState().setUser(user);
 
     return { success: true, user };

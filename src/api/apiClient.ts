@@ -98,13 +98,13 @@ export const api = async (endpoint: string, options: RequestInit = {}) => {
 
       if (refreshResponse.ok) {
         // 응답 후 쿠키에서 새 access 토큰 읽기 및 저장
-        const newAccessToken = getCookie('access');
+        const newAccessToken = getCookie('ChessLadder-Access');
         
         if (newAccessToken) {
           // Zustand store에 저장
           useAuthStore.getState().setAccessToken(newAccessToken);
           // 쿠키 삭제 (CSRF/XSS 공격 대비)
-          deleteCookie('access');
+          deleteCookie('ChessLadder-Access');
         }
         
         // 원래 요청 재시도
