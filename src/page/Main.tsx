@@ -326,7 +326,7 @@ function Main() {
                 <div className="flex flex-col pt-5 pb-12 md:pb-20 px-3 md:px-4 max-w-6xl mx-auto text-white">
                     <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('main.discordLink')}</h2>
                     <a
-                        href="https://discord.com/invite/5rZ8YfjgzN"
+                        href="https://discord.gg/MsrSydjAd5"
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-3 bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-2 md:py-3 px-6 md:px-8 rounded-full shadow-lg transition transform hover:scale-105 w-fit text-sm md:text-base"
