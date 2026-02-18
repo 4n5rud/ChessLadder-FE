@@ -1,41 +1,74 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentUser } from '../api/authService';
+import { handleOAuthSuccess } from '../api/authService';
 
 /**
  * OAuth 로그인 성공 페이지
- * 백엔드 redirect → /oauth/success
+ * 명세서 Step 5: 토큰 저장 및 관리
  * 
  * 프로세스:
- * 1. getCurrentUser() 호출로 로그인 상태 확인 (GET /api/auth/me)
- * 2. 백엔드에서 HttpOnly 쿠키 기반으로 사용자 정보 반환
- * 3. 홈으로 리다이렉트 (UI 없이 즉시)
+ * 1. handleOAuthSuccess() 호출
+ * 2. GET /api/auth/me로 현재 사용자 정보 조회
+ * 3. 상태 관리와 localStorage에 사용자 정보 저장
+ * 4. 홈으로 리다이렉트
  */
 export default function OAuthSuccess() {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkAndRedirect = async () => {
+    const handleSuccess = async () => {
       try {
-        // 현재 인증된 사용자 정보 조회
-        const userData = await getCurrentUser();
+        // Step 5: handleOAuthSuccess() 호출
+        const result = await handleOAuthSuccess();
         
-        if (!userData) {
-          throw new Error('사용자 정보를 가져올 수 없습니다.');
+        if (!result.success) {
+          throw new Error('사용자 정보 조회 실패');
         }
         
-        //즉시 홈으로 이동
-        navigate('/', { replace: true });
-      } catch (error) {
-        // 로그인 확인 실패
+        setIsLoading(false);
         
-        // 즉시 실패 페이지로 이동
-        navigate('/oauth/fail', { replace: true });
+        // 짧은 딜레이 후 홈으로 리다이렉트
+        setTimeout(() => {
+          navigate('/', { replace: true });
+        }, 500);
+      } catch (err: any) {
+        setError(err.message || '로그인 처리 중 오류가 발생했습니다.');
+        setIsLoading(false);
       }
     };
 
-    checkAndRedirect();
+    handleSuccess();
   }, [navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">로그인 처리 중...</h2>
+          <p className="text-gray-600">잠시만 기다려주세요.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2 text-red-600">오류</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => navigate('/', { replace: true })}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            홈으로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return null;
 }

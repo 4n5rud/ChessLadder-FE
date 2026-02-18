@@ -203,20 +203,20 @@ export default function Ranking() {
     fetchRanking();
   }, [currentPage, selectedGameType, t]);
 
-  const handleUserClick = (userId: number) => {
-    navigate(`/profile/${userId}`);
+  const handleUserClick = (username: string) => {
+    navigate(`/profile/${username}`);
   };
 
   const handleLogin = async () => {
     try {
       const res = await getOAuthUrl();
-      const oauthUrl = res.data?.oauth_url || res.oauth_url || res.oauthUrl;
+      const oauth_url = res?.oauth_url || res?.data?.oauth_url;
       
-      if (!oauthUrl) {
+      if (!oauth_url) {
         throw new Error(t('main.loginFailAlert'));
       }
       
-      window.location.assign(oauthUrl);
+      window.location.href = oauth_url;
     } catch (err) {
       alert(t('main.loginFailAlert'));
     }
@@ -315,7 +315,7 @@ export default function Ranking() {
                   return (
                     <div
                       key={user.id}
-                      onClick={() => handleUserClick(user.id)}
+                      onClick={() => handleUserClick(user.username)}
                       className="group cursor-pointer bg-white rounded-xl border-2 border-gray-200 p-4 flex items-start gap-4 hover:shadow-md transition-all relative overflow-hidden"
                       style={{ borderColor: tierColor.borderColor }}
                     >
@@ -424,7 +424,7 @@ export default function Ranking() {
                       return (
                         <div
                           key={user.id}
-                          onClick={() => handleUserClick(user.id)}
+                          onClick={() => handleUserClick(user.username)}
                           className="group cursor-pointer bg-white rounded-xl border-2 border-gray-200 p-4 flex items-center gap-4 hover:shadow-md transition-all relative overflow-hidden"
                           style={{ borderColor: tierColor.borderColor }}
                         >
@@ -546,7 +546,7 @@ export default function Ranking() {
                       return (
                         <div
                           key={user.id}
-                          onClick={() => handleUserClick(user.id)}
+                          onClick={() => handleUserClick(user.username)}
                           className="group cursor-pointer bg-white rounded-xl border-2 border-gray-200 p-4 flex items-center gap-4 hover:shadow-md transition-all"
                           style={{ borderColor: tierColor.borderColor }}
                         >

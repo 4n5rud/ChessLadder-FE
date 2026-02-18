@@ -4,7 +4,7 @@ import Footer from '../global/Footer';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getOAuthUrl } from '../api/oauthService';
-import { isLoggedIn } from '../api/authService';
+import { initializeAuth } from '../api/authService';
 import { loadAllNews, type NewsItem } from '../api/newsService';
 import { useLanguage } from '../context/LanguageContext';
 import pawnImg from '../assets/images/tier/pawn.png';
@@ -115,42 +115,50 @@ function Main() {
     ];
 
     // 로그인 버튼 클릭 핸들러
+    // 명세서 Step 2: OAuth URL 요청
     const handleLichessLogin = async () => {
         if (isLoading) return;
         
         try {
             setIsLoading(true);
-            const res = await getOAuthUrl();
             
-            const oauthUrl = res.data?.oauth_url || res.oauth_url || res.oauthUrl;
+            // Step 2: getOauthUrl() 호출
+            const result = await getOAuthUrl();
             
-            if (!oauthUrl) {
+            if (!result.success || !result.oauth_url) {
                 throw new Error(t('main.loginFailAlert'));
             }
             
-            // 즉시 이동 시도
-            window.location.assign(oauthUrl);
+            // Step 3: Lichess로 리다이렉트
+            window.location.href = result.oauth_url;
             
-            // 이동이 지연될 경우를 대비해 5초 후 로딩 해제 (안전장치)
-            setTimeout(() => setIsLoading(false), 5000);
-            
-        } catch (error: any) {
-            alert(error.message || t('main.loginFailAlert'));
+        } catch (error) {
             setIsLoading(false);
+            alert(t('main.loginFailAlert'));
         }
     };
 
-    // 로그인 상태 확인
+    // 앱 초기화: 로그인 상태 확인 및 토큰 갱신
     useEffect(() => {
-        const checkLogin = async () => {
+        const initializeApp = async () => {
             try {
-                const logged = await isLoggedIn();
-                setIsUserLoggedIn(logged);
+                // /api/auth/me 호출
+                // - 401이면 apiClient에서 자동으로 refresh token 사용해서 갱신
+                // - 갱신 후 /api/auth/me 재시도
+                // - refresh가 발생했으면 자동으로 페이지 새로고침
+                const user = await initializeAuth();
+                
+                if (user) {
+                    setIsUserLoggedIn(true);
+                } else {
+                    setIsUserLoggedIn(false);
+                }
             } catch (error) {
-                // 로그인 상태 확인 실패
+                setIsUserLoggedIn(false);
             }
         };
-        checkLogin();
+        
+        initializeApp();
     }, []);
 
     // 사용자 수 조회

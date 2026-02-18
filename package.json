@@ -14,6 +14,7 @@
     "@tanstack/query-sync-storage-persister": "^5.90.22",
     "@tanstack/react-query": "^5.90.20",
     "@tanstack/react-query-persist-client": "^5.90.22",
+    "axios": "^1.13.5",
     "html-to-image": "^1.11.13",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -21,7 +22,8 @@
     "react-router-dom": "^6.30.2",
     "recharts": "^3.7.0",
     "tailwindcss": "^4.1.18",
-    "tailwinds": "^0.0.0"
+    "tailwinds": "^0.0.0",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

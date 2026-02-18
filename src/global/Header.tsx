@@ -1,12 +1,19 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import type { UserPrincipal } from '../api/authService';
-import { logout, isLoggedIn, getCurrentUser } from '../api/authService';
+import { logout, getCurrentUser, initializeAuth } from '../api/authService';
 import { getUserProfile } from '../api/userService';
 import { getOAuthUrl } from '../api/oauthService';
 import { useLanguage, type Language } from '../context/LanguageContext';
 import knightLogo from '../assets/images/tier/knight.png';
 import lichessLogoImg from '../assets/images/logo/lichess-logo.png';
+
+interface User {
+  id?: string | number;
+  username?: string;
+  lichessId?: string;
+  title?: string;
+  [key: string]: any;
+}
 
 const Header = () => {
     const navigate = useNavigate();
@@ -15,7 +22,7 @@ const Header = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isLoginLoading, setIsLoginLoading] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [user, setUser] = useState<UserPrincipal | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const [bannerImage, setBannerImage] = useState<string | null>(null);
 
@@ -23,13 +30,21 @@ const Header = () => {
     useEffect(() => {
         const checkLoginStatus = async () => {
             try {
-                const loggedIn = await isLoggedIn();
-                setIsLogged(loggedIn);
-                if (loggedIn) {
-                    const userData = await getCurrentUser();
+                // /api/auth/me 호출 (401이면 자동으로 refresh)
+                const userData = await initializeAuth();
+                
+                if (userData) {
+                    // 로그인 성공
                     setUser(userData);
-                    
-                    // 프로필을 조회하면서 이미지 가져오기
+                    setIsLogged(true);
+                } else {
+                    // 비로그인
+                    setIsLogged(false);
+                    setUser(null);
+                }
+                
+                // 프로필 이미지 로드
+                if (userData) {
                     try {
                         const profileData = await getUserProfile();
                         if (profileData?.profile_image) {
@@ -39,10 +54,10 @@ const Header = () => {
                             setBannerImage(`${profileData.banner_image}?t=${Date.now()}`);
                         }
                     } catch (error) {
-                        // 프로필 이미지 로드 실패 (사용자 입장에서 로그 숨김)
+                        // 프로필 이미지 로드 실패 (무시)
                     }
                 }
-            } catch {
+            } catch (error) {
                 setIsLogged(false);
                 setUser(null);
             } finally {
@@ -56,33 +71,34 @@ const Header = () => {
     const handleLogout = async () => {
         try {
             setIsLoading(true);
-            await logout();
+            // logout()은 명세서 Step 8 구현
+            const success = await logout();
             setIsLogged(false);
             setUser(null);
             setIsMenuOpen(false);
-            window.location.href = '/';
+            if (success) {
+                window.location.href = '/';
+            }
         } catch (error) {
             alert('로그아웃 중 오류가 발생했습니다.');
             setIsLoading(false);
         }
     };
 
+    // 명세서 Step 2: OAuth URL 요청
     const handleLichessLogin = async () => {
         if (isLoginLoading) return;
         
         try {
             setIsLoginLoading(true);
-            const res = await getOAuthUrl();
+            const result = await getOAuthUrl();
             
-            const oauthUrl = res.data?.oauth_url || res.oauth_url || res.oauthUrl;
-            
-            if (!oauthUrl) {
+            if (!result.success || !result.oauth_url) {
                 throw new Error(t('main.loginFailAlert'));
             }
             
-            window.location.assign(oauthUrl);
-            
-            setTimeout(() => setIsLoginLoading(false), 5000);
+            // Step 3: Lichess로 리다이렉트
+            window.location.href = result.oauth_url;
             
         } catch (error: any) {
             alert(error.message || t('main.loginFailAlert'));
