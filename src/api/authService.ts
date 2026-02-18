@@ -208,34 +208,18 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 /**
- * 앱 초기화-로그인 상태 확인 및 자동 토큰 갱신
+ * 앱 초기화-로그인 상태 확인
  * 1. access token이 없으면 /api/auth/me 호출 시 401
- * 2. apiClient에서 자동으로 refresh token으로 갱신 (501 handling)
- * 3. 갱신 후 /api/auth/me 재시도
- * 4. refresh가 발생했으면 (hadTokenBefore=false && hasTokenNow=true) 페이지 새로고침
+ * 2. apiClient에서 자동으로 refresh token으로 갱신 (401 handling)
+ * 3. 갱신 후 /api/auth/me 재시도 → 사용자 정보 반환
  */
 export async function initializeAuth(): Promise<User | null> {
   try {
-    const store = useAuthStore.getState();
-    // refresh 전 access token 상태 확인
-    const hadTokenBefore = store.access_token !== null;
-    
     // /api/auth/me 호출 (401이면 apiClient에서 자동으로 refresh)
     const user = await getCurrentUser();
     
-    // refresh 후 access token 상태 확인
-    const hasTokenNow = store.access_token !== null;
-    
     if (user) {
-      // /api/auth/me 성공
-      if (!hadTokenBefore && hasTokenNow) {
-        // refresh token 사용해서 새로운 access token 획득!
-        // 페이지 새로고침 해서 메모리 상태 초기화
-        window.location.reload();
-        return user; // 실행 안 됨 (reload 때문에)
-      }
-      
-      // 이미 token이 있었거나, token 없이 요청 성공 (unusual)
+      // /api/auth/me 성공 (로그인 상태)
       return user;
     } else {
       // /api/auth/me 실패 (비로그인 상태)
