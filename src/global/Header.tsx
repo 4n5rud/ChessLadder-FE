@@ -4,6 +4,7 @@ import { logout, getCurrentUser, initializeAuth } from '../api/authService';
 import { getUserProfile } from '../api/userService';
 import { getOAuthUrl } from '../api/oauthService';
 import { useLanguage, type Language } from '../context/LanguageContext';
+import { useAuthStore } from '../store/authStore';
 import knightLogo from '../assets/images/tier/knight.png';
 import lichessLogoImg from '../assets/images/logo/lichess-logo.png';
 
@@ -34,13 +35,15 @@ const Header = () => {
                 const userData = await initializeAuth();
                 
                 if (userData) {
-                    // 로그인 성공
+                    // 로그인 성공 - Header local state와 Zustand store 모두 저장
                     setUser(userData);
                     setIsLogged(true);
+                    useAuthStore.getState().setUser(userData);
                 } else {
                     // 비로그인
                     setIsLogged(false);
                     setUser(null);
+                    useAuthStore.getState().clearUser();
                 }
                 
                 // 프로필 이미지 로드
@@ -60,6 +63,7 @@ const Header = () => {
             } catch (error) {
                 setIsLogged(false);
                 setUser(null);
+                useAuthStore.getState().clearUser();
             } finally {
                 setIsLoading(false);
             }

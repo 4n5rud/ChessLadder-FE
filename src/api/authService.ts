@@ -143,25 +143,27 @@ export async function initializeAuthFromRefresh(): Promise<User | null> {
 /**
  * Step 5: OAuth 성공 처리
  * /oauth/success 페이지에서 호출
- * GET /api/auth/me로 현재 사용자 정보 확인
- * 401 시 자동으로 토큰 갱신 후 재시도 (apiClient의 401 handling)
+ * 1. 쿠키에서 access token 읽어서 store에 저장
+ * 2. GET /api/auth/me로 현재 사용자 정보 확인
+ * 3. 사용자 정보 store에 저장
  */
 export async function handleOAuthSuccess() {
   try {
+    // 먼저 쿠키에서 access 토큰 읽기 및 저장
+    const accessToken = getCookie('access');
+    if (accessToken) {
+      // Zustand store에 저장 (다음 api 호출 때 Authorization 헤더에 사용)
+      useAuthStore.getState().setAccessToken(accessToken);
+      // 쿠키 삭제 (CSRF/XSS 공격 대비)
+      deleteCookie('access');
+    }
+
+    // 이제 Authorization 헤더와 함께 /api/auth/me 호출
     const data = await api('/auth/me', {
       method: 'GET',
     });
 
     const user = data.data || data;
-
-    // 응답 후 쿠키에서 access 토큰 읽기
-    const accessToken = getCookie('access');
-    if (accessToken) {
-      // Zustand store에 저장
-      useAuthStore.getState().setAccessToken(accessToken);
-      // 쿠키 삭제 (CSRF/XSS 공격 대비)
-      deleteCookie('access');
-    }
 
     // 상태 관리에 저장
     useAuthStore.getState().setUser(user);

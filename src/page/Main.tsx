@@ -4,9 +4,9 @@ import Footer from '../global/Footer';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getOAuthUrl } from '../api/oauthService';
-import { initializeAuth } from '../api/authService';
 import { loadAllNews, type NewsItem } from '../api/newsService';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuthStore } from '../store/authStore';
 import pawnImg from '../assets/images/tier/pawn.png';
 import knightImg from '../assets/images/tier/knight.png';
 import bishopImg from '../assets/images/tier/vishop.png';
@@ -29,8 +29,10 @@ function Main() {
     const [isLoading, setIsLoading] = useState(false);
     const [userCount, setUserCount] = useState<number>(0);
     const [selectedTier, setSelectedTier] = useState<string | null>('KNIGHT');
-    const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
     const [recentNews, setRecentNews] = useState<NewsItem | null>(null);
+    
+    // Zustand store에서 로그인 상태 구독
+    const user = useAuthStore((state) => state.user);
 
     // 티어 데이터
     const tierData: TierData[] = [
@@ -138,29 +140,6 @@ function Main() {
         }
     };
 
-    // 앱 초기화: 로그인 상태 확인 및 토큰 갱신
-    useEffect(() => {
-        const initializeApp = async () => {
-            try {
-                // /api/auth/me 호출
-                // - 401이면 apiClient에서 자동으로 refresh token 사용해서 갱신
-                // - 갱신 후 /api/auth/me 재시도
-                // - refresh가 발생했으면 자동으로 페이지 새로고침
-                const user = await initializeAuth();
-                
-                if (user) {
-                    setIsUserLoggedIn(true);
-                } else {
-                    setIsUserLoggedIn(false);
-                }
-            } catch (error) {
-                setIsUserLoggedIn(false);
-            }
-        };
-        
-        initializeApp();
-    }, []);
-
     // 사용자 수 조회
     useEffect(() => {
         const fetchUserCount = async () => {
@@ -233,13 +212,13 @@ function Main() {
                 {/* 로그인 버튼 */}
                 <button 
                     onClick={handleLichessLogin}
-                    disabled={isLoading || isUserLoggedIn}
+                    disabled={isLoading || !!user}
                     className="mx-auto flex items-center gap-3 bg-white text-black font-bold py-3 px-7 rounded-full shadow-lg hover:bg-[#e6e6e6] transition text-lg fade-in-bottom-section disabled:opacity-50 disabled:cursor-not-allowed" 
                     style={{animationDelay: '1.5s'}}
-                    title={isUserLoggedIn ? t('profile.alreadyLoggedIn') : ''}
+                    title={user ? t('profile.alreadyLoggedIn') : ''}
                 >
                     <img src={lichessLogoImg} alt="Lichess Logo" className="w-8 h-8" />
-                    {isLoading ? t('profile.loading') : (isUserLoggedIn ? t('profile.alreadyLoggedIn') : t('main.loginWithLichess'))}
+                    {isLoading ? t('profile.loading') : (user ? t('profile.alreadyLoggedIn') : t('main.loginWithLichess'))}
                 </button>
 
                 <div className="fade-in-bottom-section" style={{animationDelay: '1.5s'}}>

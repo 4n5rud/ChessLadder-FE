@@ -82,20 +82,24 @@ export const api = async (endpoint: string, options: RequestInit = {}) => {
   // 401 Unauthorized - 토큰 만료 → 토큰 갱신 시도
   // 명세서 Step 7-2 "Access Token 만료 처리"
   if (response.status === 401 && !endpoint.includes('/oauth/oauth-url')) {
+
+    
     try {
       // 토큰 갱신 요청 (Authorization 헤더 제외, 쿠키만 사용)
+      // refresh token은 HttpOnly 쿠키이므로 credentials: 'include'로 자동 포함됨
       const refreshHeaders = new Headers();
       refreshHeaders.set('Content-Type', 'application/json');
       
       const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'GET', // ⭐ 명세서 Step 7-3
         headers: refreshHeaders,
-        credentials: 'include', // ⭐ Refresh Token 쿠키 필수
+        credentials: 'include', // ⭐ Refresh Token 쿠키 (HttpOnly) 자동 포함
       });
 
       if (refreshResponse.ok) {
         // 응답 후 쿠키에서 새 access 토큰 읽기 및 저장
         const newAccessToken = getCookie('access');
+        
         if (newAccessToken) {
           // Zustand store에 저장
           useAuthStore.getState().setAccessToken(newAccessToken);
@@ -121,19 +125,18 @@ export const api = async (endpoint: string, options: RequestInit = {}) => {
           credentials: 'include',
         });
       } else {
-        // 토큰 갱신 실패 - 로그인 페이지로 리다이렉트
-        window.location.href = '/';
-        throw new Error('Token refresh failed');
+        // 토큰 갱신 실패 - 비로그인 상태로 처리
+        useAuthStore.getState().clearUser();
+        throw new Error(`Token refresh failed: ${refreshResponse.status}`);
       }
     } catch (error) {
-      window.location.href = '/';
+      useAuthStore.getState().clearUser();
       throw error;
     }
   }
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
+    throw new Error(`API error: ${response.status} ${response.statusText}`);
   }
 
   return response.json();
