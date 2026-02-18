@@ -28,7 +28,7 @@ function getCookie(name: string): string | null {
  * 쿠키 삭제
  */
 function deleteCookie(name: string) {
-  document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
+  document.cookie = `${name}=; Domain=.chessladder.org; Path=/; Max-Age=0;`;
 }
 
 /**
