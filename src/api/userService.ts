@@ -94,17 +94,8 @@ export const getRanking = async (
 
     return response;
   } catch (error) {
-    return {
-      users: [],
-      total_count: 0,
-      current_page: 0,
-      total_pages: 0,
-      is_logged_in_user: false,
-      is_unrated: false,
-      my_rank: null,
-      my_rating: null,
-      my_user_id: null,
-    };
+    // 에러를 throw하여 Ranking.tsx에서 처리하도록 함
+    throw error;
   }
 };
 
