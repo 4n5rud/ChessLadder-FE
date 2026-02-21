@@ -5,7 +5,7 @@ import type { ReactElement } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toPng } from 'html-to-image';
 import { getCurrentUser } from "../api/authService";
-import { getUploadUrl } from "../api/imageService";
+import { getUploadUrl, completeUpload } from "../api/imageService";
 import type { UserImageType } from "../api/imageService";
 import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, forceRefreshStats, deleteAccount } from "../api/userService";
 import type { ProfileResponse, DailyStreakDto, UserPerfResponse } from "../api/userService";
@@ -177,7 +177,7 @@ const Profile = () => {
             link.href = dataUrl;
             link.click();
         } catch (err) {
-            alert('카드 추출 중 오류가 발생했습니다.');
+            // 카드 추출 실패 (사용자에게 표시 안 함)
         } finally {
             setIsExporting(false);
         }
@@ -332,9 +332,11 @@ const Profile = () => {
         if (type === 'PROFILE') setLoadingProfile(true);
         
         try {
+            // 1. Presigned URL 취득
             const result = await getUploadUrl(type, file.type);
             const { uploadUrl, contentType } = result;
             
+            // 2. Cloudflare R2에 파일 직접 업로드
             const uploadResponse = await fetch(uploadUrl, {
                 method: 'PUT',
                 body: file,
@@ -346,6 +348,9 @@ const Profile = () => {
             if (!uploadResponse.ok) {
                 throw new Error(`Upload failed: ${uploadResponse.status}`);
             }
+            
+            // 3. 백엔드에 업로드 완료 알림 (DB에 저장)
+            await completeUpload(type);
             
             // 업로드 완료 후 프로필 데이터 재조회
             const updatedProfile = await getUserProfile();
@@ -369,11 +374,8 @@ const Profile = () => {
             if (updatedProfile?.banner_image) {
                 setBannerImage(updatedProfile.banner_image);
             }
-            
-            const messageKey = type === 'BANNER' ? 'profile.imageBannerUploadSuccess' : 'profile.imageProfileUploadSuccess';
-            alert(t(messageKey));
         } catch (error) {
-            alert(`${t('profile.uploadFail')}: ${error}`);
+            // 에러 처리 (사용자에게 표시 안 함)
         } finally {
             if (type === 'BANNER') setLoadingBanner(false);
             if (type === 'PROFILE') setLoadingProfile(false);
@@ -403,9 +405,8 @@ const Profile = () => {
             setDescription(updatedProfile?.description || '');
             
             setIsEditingDescription(false);
-            alert(t('profile.saveSuccess'));
         } catch (error) {
-            alert(t('profile.saveFail'));
+            // 에러 처리 (사용자에게 표시 안 함)
         } finally {
             setSavingDescription(false);
         }
@@ -431,10 +432,8 @@ const Profile = () => {
             
             setLastRefreshTime(Date.now());
             setRemainingTime(REFRESH_COOLDOWN);
-            alert(t('profile.refreshSuccess'));
         } catch (error) {
-            // 강제 갱신 실패
-            alert(t('profile.refreshFail'));
+            // 강제 갱신 실패 (사용자에게 표시 안 함)
         } finally {
             setRefreshing(false);
         }
@@ -444,11 +443,10 @@ const Profile = () => {
         setDeletingAccount(true);
         try {
             await deleteAccount();
-            alert(t('profile.deleteAccountSuccess'));
             // 삭제 후 메인 페이지로 리다이렉트
             window.location.href = '/';
         } catch (error) {
-            alert(t('profile.deleteAccountFail'));
+            // 계정 삭제 실패 (사용자에게 표시 안 함)
         } finally {
             setDeletingAccount(false);
             setShowDeleteConfirm(false);

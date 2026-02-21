@@ -84,7 +84,7 @@ const Header = () => {
                 window.location.href = '/';
             }
         } catch (error) {
-            alert('로그아웃 중 오류가 발생했습니다.');
+            // 로그아웃 중 오류 (사용자에게 표시 안 함)
             setIsLoading(false);
         }
     };
@@ -105,7 +105,7 @@ const Header = () => {
             window.location.href = result.oauth_url;
             
         } catch (error: any) {
-            alert(error.message || t('main.loginFailAlert'));
+            // 로그인 실패 (사용자에게 표시 안 함)
             setIsLoginLoading(false);
         }
     };

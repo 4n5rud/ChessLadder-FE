@@ -218,7 +218,7 @@ export default function Ranking() {
       
       window.location.href = oauth_url;
     } catch (err) {
-      alert(t('main.loginFailAlert'));
+      // 로그인 실패 (사용자에게 표시 안 함)
     }
   };
 

@@ -36,7 +36,7 @@ export const getUploadUrl = async (
   const uploadUrl = res.upload_url || res.data?.upload_url || res.data?.uploadUrl || res.uploadUrl;
   
   if (!uploadUrl) {
-    throw new Error(`업로드 URL을 받지 못했습니다. 응답: ${JSON.stringify(res)}`);
+    throw new Error('Upload URL fetch failed');
   }
   return { uploadUrl, contentType };
 };
@@ -45,21 +45,18 @@ export const getUploadUrl = async (
  * POST /api/image/upload-complete
  * 클라이언트가 Cloudflare R2에 파일 업로드 후 서버에 완료 통보 (DB에 저장)
  * @param type PROFILE | BANNER
- * @returns 이미지 URL이 포함된 응답
+ * @returns 이미지 URL (없으면 null 허용)
  */
-export const completeUpload = async (type: UserImageType): Promise<string> => {
+export const completeUpload = async (type: UserImageType): Promise<void> => {
   const res = await api(`/image/upload-complete?type=${type}`, {
     method: 'POST',
   });
   
-  // 응답에서 이미지 URL 추출
-  const imageUrl = res.data?.url || res.data?.image_url || res.url || res.image_url;
-  
-  if (!imageUrl) {
-    throw new Error(`이미지 URL을 받지 못했습니다. 응답: ${JSON.stringify(res)}`);
+  // 백엔드에서 data: null을 반환하는 경우도 성공으로 처리
+  // (이미지는 getUserProfile()에서 다시 조회하므로 OK)
+  if (!res.success) {
+    throw new Error('Upload complete failed');
   }
-  
-  return imageUrl;
 };
 
 /**
@@ -74,7 +71,7 @@ export const getImageUrl = async (type: UserImageType): Promise<string> => {
   const imageUrl = res.upload_url || res.data?.upload_url || res.imageUrl || res.data?.imageUrl;
   
   if (!imageUrl) {
-    throw new Error(`이미지 URL을 받지 못했습니다. 응답: ${JSON.stringify(res)}`);
+    throw new Error('Image URL fetch failed');
   }
   
   // URL이 상대 경로인 경우 API 기반 URL과 결합
