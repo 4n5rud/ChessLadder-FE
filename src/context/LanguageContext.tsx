@@ -151,6 +151,8 @@ const translations: Translations = {
     'common.articles': '기사',
     'ranking.loginPrompt': '로그인해서 내 랭킹을 확인해보세요!',
     'ranking.unrated': '게임을 더 하여 레이팅을 얻어보세요!',
+    'ranking.notRated': '아직 레이팅을 얻지 못했습니다.',
+    'ranking.playMoreGames': '더 많은 게임을 진행하여 정식 레이팅을 얻어보세요!',
   },
   EN: {
     // Header
@@ -294,6 +296,8 @@ const translations: Translations = {
     'common.articles': 'Articles',
     'ranking.loginPrompt': 'Log in to check your ranking!',
     'ranking.unrated': 'Play more games to get your rating!',
+    'ranking.notRated': 'You haven\'t gotten a rating yet.',
+    'ranking.playMoreGames': 'Play more games to unlock your official rating!',
   },
 };
 

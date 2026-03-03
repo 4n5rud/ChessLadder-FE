@@ -404,10 +404,10 @@ export default function Ranking() {
                       </h2>
                       <div className="space-y-4">
                         <p className="text-sm text-white text-opacity-90 leading-relaxed">
-                          아직 레이팅을 얻지 못했습니다.
+                          {t('ranking.notRated')}
                         </p>
                         <p className="text-xs text-white text-opacity-80">
-                          더 많은 게임을 진행하여 정식 레이팅을 얻어보세요!
+                          {t('ranking.playMoreGames')}
                         </p>
                       </div>
                     </div>
