@@ -7,14 +7,16 @@ import { toPng } from 'html-to-image';
 import { getCurrentUser } from "../api/authService";
 import { getUploadUrl, completeUpload } from "../api/imageService";
 import type { UserImageType } from "../api/imageService";
-import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, forceRefreshStats, deleteAccount } from "../api/userService";
-import type { ProfileResponse, DailyStreakDto, UserPerfResponse } from "../api/userService";
+import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, forceRefreshStats, deleteAccount, getColorStats, getFirstMoveStats } from "../api/userService";
+import type { ProfileResponse, DailyStreakDto, UserPerfResponse, ColorStatsResponse, FirstMoveResponse } from "../api/userService";
 import { useRatingHistory } from "../api/queries";
 import { useLanguage } from "../context/LanguageContext";
 import RatingHistoryChart from "../components/RatingHistoryChart";
 import { TierSection } from "../components/TierSection";
 import ProfileCard from "../components/ProfileCard";
 import { GameTypeButtons } from "../components/GameTypeButtons";
+import ColorStatsChart from "../components/ColorStatsChart";
+import FirstMoveStatsChart from "../components/FirstMoveStatsChart";
 import lichessLogoImg from "../assets/images/logo/lichess-logo.png";
 import "./Profile.css";
 
@@ -144,6 +146,14 @@ const Profile = () => {
     const [remainingTime, setRemainingTime] = useState(0);
     const REFRESH_COOLDOWN = 5 * 60 * 1000; // 5분 (300초) 제한
 
+    // 색깔별 게임 통계 관련 상태
+    const [colorStats, setColorStats] = useState<ColorStatsResponse | null>(null);
+    const [loadingColorStats, setLoadingColorStats] = useState(false);
+
+    // 첫 수 통계 관련 상태
+    const [firstMoveStats, setFirstMoveStats] = useState<FirstMoveResponse | null>(null);
+    const [loadingFirstMoveStats, setLoadingFirstMoveStats] = useState(false);
+
     const cardRef = useRef<HTMLDivElement>(null);
     const previewRef = useRef<HTMLDivElement>(null);
     const [isExporting, setIsExporting] = useState(false);
@@ -268,10 +278,19 @@ const Profile = () => {
     useEffect(() => {
         const fetchGameTypeData = async () => {
             setLoadingPerf(true);
+            setLoadingColorStats(true);
+            setLoadingFirstMoveStats(true);
             try {
-                const perfData = await getUserPerf(selectedGameType);
+                const [perfData, colorData, firstMoveData] = await Promise.all([
+                    getUserPerf(selectedGameType),
+                    getColorStats(selectedGameType),
+                    getFirstMoveStats(selectedGameType)
+                ]);
+                
                 // perf 데이터 수신
                 setUserPerf(perfData);
+                setColorStats(colorData);
+                setFirstMoveStats(firstMoveData);
             } catch (error) {
                 // 성능 데이터 조회 실패
                 // 에러 시 기본 uncertain 상태
@@ -285,8 +304,12 @@ const Profile = () => {
                     maxStreak: 0, maxLossStreak: 0,
                     uncertain: true
                 });
+                setColorStats(null);
+                setFirstMoveStats(null);
             } finally {
                 setLoadingPerf(false);
+                setLoadingColorStats(false);
+                setLoadingFirstMoveStats(false);
             }
         };
         
@@ -981,6 +1004,40 @@ const Profile = () => {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* 색깔별 게임 통계 섹션 */}
+            <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6 text-animate">{language === 'KR' ? '색깔별 게임 통계' : 'Color Game Stats'}</h2>
+                {colorStats ? (
+                    <ColorStatsChart data={colorStats} isLoading={loadingColorStats} />
+                ) : loadingColorStats ? (
+                    <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm animate-pulse">
+                        <div className="h-6 bg-gray-200 rounded mb-4"></div>
+                        <div className="h-96 bg-gray-200 rounded"></div>
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
+                        <p className="text-gray-500 text-center">{language === 'KR' ? '데이터가 없습니다.' : 'No data available'}</p>
+                    </div>
+                )}
+            </div>
+
+            {/* 첫 수 통계 섹션 */}
+            <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6 text-animate">{language === 'KR' ? '첫 수 통계' : 'First Move Stats'}</h2>
+                {firstMoveStats ? (
+                    <FirstMoveStatsChart data={firstMoveStats} isLoading={loadingFirstMoveStats} />
+                ) : loadingFirstMoveStats ? (
+                    <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm animate-pulse">
+                        <div className="h-6 bg-gray-200 rounded mb-4"></div>
+                        <div className="h-96 bg-gray-200 rounded"></div>
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
+                        <p className="text-gray-500 text-center">{language === 'KR' ? '데이터가 없습니다.' : 'No data available'}</p>
+                    </div>
+                )}
             </div>
 
             {/* Hidden export card placed outside the zoom wrapper so it renders at 1:1 for html-to-image */}

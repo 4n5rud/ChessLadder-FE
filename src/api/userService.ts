@@ -266,6 +266,70 @@ export const forceRefreshStats = async (): Promise<any> => {
 };
 
 /**
+ * 색깔별 게임 통계 응답 타입
+ */
+export interface ColorStatsResponse {
+  game_type: string;
+  white_total: number;
+  white_wins: number;
+  white_loses: number;
+  white_draws: number;
+  black_total: number;
+  black_wins: number;
+  black_loses: number;
+  black_draws: number;
+}
+
+/**
+ * 첫 수 통계 응답 타입
+ */
+export interface FirstMoveResponse {
+  game_type: string;
+  white_moves: { [key: string]: number };
+  black_moves: { [key: string]: number };
+}
+
+/**
+ * 사용자의 색깔별 게임 통계를 가져옵니다.
+ */
+export const getColorStats = async (gameType: string = 'RAPID'): Promise<ColorStatsResponse> => {
+  try {
+    const res = await api(`/stat/color?gameType=${encodeURIComponent(gameType)}`);
+    const data = res.data || res;
+    return {
+      game_type: data.game_type || data.gameType || gameType,
+      white_total: Number(data.white_total ?? data.whiteTotal ?? 0) || 0,
+      white_wins: Number(data.white_wins ?? data.whiteWins ?? 0) || 0,
+      white_loses: Number(data.white_loses ?? data.whiteLoses ?? 0) || 0,
+      white_draws: Number(data.white_draws ?? data.whiteDraws ?? 0) || 0,
+      black_total: Number(data.black_total ?? data.blackTotal ?? 0) || 0,
+      black_wins: Number(data.black_wins ?? data.blackWins ?? 0) || 0,
+      black_loses: Number(data.black_loses ?? data.blackLoses ?? 0) || 0,
+      black_draws: Number(data.black_draws ?? data.blackDraws ?? 0) || 0,
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * 사용자의 첫 수 통계를 가져옵니다.
+ */
+export const getFirstMoveStats = async (gameType: string = 'RAPID'): Promise<FirstMoveResponse> => {
+  try {
+    const res = await api(`/stat/first-move?gameType=${encodeURIComponent(gameType)}`);
+    const data = res.data || res;
+    return {
+      game_type: data.game_type || data.gameType || gameType,
+      white_moves: data.white_moves || data.whiteMoves || {},
+      black_moves: data.black_moves || data.blackMoves || {},
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
  * 사용자 계정을 삭제합니다.
  */
 export const deleteAccount = async (): Promise<any> => {
