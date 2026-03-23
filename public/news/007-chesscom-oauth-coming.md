@@ -18,3 +18,22 @@ ChessLadder에 새로운 기능이 추가될 예정입니다!
 이제 더욱 많은 체스 플레이어들이 ChessLadder를 통해 자신의 실력을 향상시킬 수 있을 것 같습니다!
 
 계속해서 더 나은 서비스를 제공하기 위해 노력하겠습니다. 감사합니다! 🙏
+
+---
+
+# ♟️ Chess.com OAuth Integration Coming Soon!
+
+New features are being added to ChessLadder!
+
+In addition to the existing Lichess integration, **Chess.com OAuth login** is now supported.
+
+## 🎯 Planned Changes
+
+- ✨ **Main Page**: Dual login buttons for Lichess + Chess.com
+- ✨ **Header Menu**: Chess.com login option added
+- ✨ **Profile Integration**: Support for linking Lichess and Chess.com accounts
+- ✨ **Statistics Integration**: View chess statistics from both platforms together
+
+Now more chess players will be able to improve their skills through ChessLadder!
+
+We are committed to providing better services. Thank you! 🙏

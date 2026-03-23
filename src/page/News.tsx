@@ -90,7 +90,7 @@ export default function News() {
                         {news.title}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {new Date(news.date).toLocaleDateString("ko-KR")}
+                        {news.date}
                       </p>
                     </button>
                   ))}
@@ -107,14 +107,7 @@ export default function News() {
                         {selectedNews.title}
                       </h1>
                       <p className="text-gray-500 text-sm">
-                        {new Date(selectedNews.date).toLocaleDateString(
-                          "ko-KR",
-                          {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          }
-                        )}
+                        {selectedNews.date}
                       </p>
                     </div>
 

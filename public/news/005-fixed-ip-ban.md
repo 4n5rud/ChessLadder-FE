@@ -1,8 +1,8 @@
-📢 Issue Resolved: IP Ban & Sync Issues
+---
+date: 2026-02-18
+---
 
----
-2026-02-18
----
+# 📢 Issue Resolved: IP Ban & Sync Issues
 
 Title: [Fixed] Connection Issues & IP Ban Resolved
 

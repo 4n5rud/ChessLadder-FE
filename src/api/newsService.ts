@@ -10,13 +10,11 @@ export interface NewsItem {
 }
 
 /**
- * YAML front matter에서 날짜 추출
+ * 마크다운 파일의 front matter에서 날짜 추출 (파싱 없이 그대로 반환)
  * 형식:
  * ---
  * date: 2026-02-13
  * ---
- * # 제목
- * 본문
  */
 const extractDate = (content: string): string => {
   // YAML front matter 추출 (--로 둘러싸인 부분)
@@ -24,15 +22,15 @@ const extractDate = (content: string): string => {
   
   if (frontmatterMatch) {
     const frontmatter = frontmatterMatch[1];
-    // date: YYYY-MM-DD 형식 추출
-    const dateMatch = frontmatter.match(/date:\s*(\d{4}-\d{2}-\d{2})/);
+    // date: 이후의 모든 문자 추출 (그대로 반환)
+    const dateMatch = frontmatter.match(/date:\s*(.+?)(?:\n|$)/);
     if (dateMatch && dateMatch[1]) {
-      return dateMatch[1];
+      return dateMatch[1].trim();
     }
   }
   
-  // front matter가 없으면 오늘 날짜 반환
-  return new Date().toISOString().split('T')[0];
+  // front matter가 없으면 공백 반환
+  return '';
 };
 
 /**
@@ -99,10 +97,12 @@ export const loadAllNews = async (): Promise<NewsItem[]> => {
         }
       }
 
-      // 날짜 역순으로 정렬 (최신 뉴스가 먼저)
-      return newsItems.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
+      // 파일명의 앞 번호를 기준으로 내림차순 정렬 (숫자가 클수록 최신)
+      return newsItems.sort((a, b) => {
+        const numA = parseInt(a.id.match(/^\d+/)?.[0] || '0', 10);
+        const numB = parseInt(b.id.match(/^\d+/)?.[0] || '0', 10);
+        return numB - numA;
+      });
     } else {
       throw new Error('manifest.json not found');
     }
