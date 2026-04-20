@@ -2,9 +2,13 @@
 // GET /login/oauth2/lichess/url  → data.oauthUrl
 // GET /login/oauth2/chesscom/url → data.oauthUrl
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '')
+  : '';
+
 const fetchOAuthUrl = async (path: string) => {
   try {
-    const response = await fetch(path, {
+    const response = await fetch(`${BASE_URL}${path}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -32,7 +36,7 @@ export const getChesscomOAuthUrl = () => fetchOAuthUrl('/login/oauth2/chesscom/u
 /** POST /api/auth/logout */
 export const logout = async () => {
   try {
-    const response = await fetch('/api/auth/logout', {
+    const response = await fetch(`${BASE_URL}/api/auth/logout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
