@@ -50,6 +50,46 @@ export const getOAuthUrl = async () => {
 
 
 
+export const getChesscomOAuthUrl = async () => {
+  try {
+    const API_BASE_URL = import.meta.env.DEV
+      ? 'http://localhost:8080/api'
+      : (import.meta.env.VITE_API_BASE_URL || '/api');
+
+    const response = await fetch(`${API_BASE_URL}/oauth/chesscom/oauth-url`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const oauth_url = data?.data?.oauth_url || data?.oauth_url;
+
+    if (!oauth_url) {
+      throw new Error('OAuth URL not found in response');
+    }
+
+    return {
+      success: true,
+      oauth_url,
+      data: data.data,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message,
+      oauthUrl: null,
+    };
+  }
+};
+
+
 /**
  * 로그아웃
  * POST /api/oauth/logout

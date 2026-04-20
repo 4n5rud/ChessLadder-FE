@@ -1,6 +1,39 @@
 // 이미지 업로드/조회 API - Swagger 명세 준수
 import { api } from './apiClient';
 
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+export const validateImageFile = (file: File): { message: string } | null => {
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    return { message: '지원하지 않는 파일 형식입니다. JPG, PNG, WEBP, GIF만 가능합니다.' };
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    return { message: '파일 크기는 10MB 이하여야 합니다.' };
+  }
+  return null;
+};
+
+export const validateImageDimensions = (file: File): Promise<{ message: string } | null> => {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      if (img.width < 100 || img.height < 100) {
+        resolve({ message: '이미지 해상도가 너무 낮습니다. 최소 100x100px 이상이어야 합니다.' });
+      } else {
+        resolve(null);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve({ message: '이미지를 읽을 수 없습니다.' });
+    };
+    img.src = url;
+  });
+};
+
 /**
  * 사용자 이미지 타입
  * PROFILE: 프로필 사진
