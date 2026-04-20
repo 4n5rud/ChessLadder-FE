@@ -9,8 +9,10 @@ import Main from './page/Main';
 import OAuthSuccess from './page/OAuthSuccess';
 import OAuthFail from './page/OAuthFail';
 import Profile from './page/Profile';
+import UserProfile from './page/UserProfile';
 import Ranking from './page/Ranking';
 import News from './page/News';
+import Settings from './page/Settings';
 import Header from './global/Header';
 import Footer from './global/Footer';
 
@@ -70,6 +72,8 @@ function App() {
                         <Route path="/oauth/success" element={<OAuthSuccess />}/>
                         <Route path="/oauth/fail" element={<OAuthFail />}/>
                         <Route path="/profile" element={<Profile />}/>
+                        <Route path="/profile/:username" element={<UserProfile />}/>
+                        <Route path="/settings" element={<Settings />}/>
                         <Route path="/page1" element={<ComingSoon />}/>
                         <Route path="/news" element={<News />}/>
                         <Route path="/ranking" element={<Ranking />}/>

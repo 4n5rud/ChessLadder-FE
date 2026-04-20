@@ -51,10 +51,9 @@ const getTierWithSubTier = (rating: number, thresholds: Record<string, number>, 
 };
 
 // 다음 레벨 계산 함수
-const getNextLevel = (currentRating: number, currentTier: string, currentSub: string, tierRanges: Record<string, any>) => {
+const getNextLevel = (_currentRating: number, currentTier: string, currentSub: string, tierRanges: Record<string, any>) => {
     const tierOrder = ['PAWN', 'KNIGHT', 'BISHOP', 'ROOK', 'QUEEN', 'KING'];
     const tierIndex = tierOrder.indexOf(currentTier);
-    const subOrder = [5, 4, 3, 2, 1];
     const currentSubNum = parseInt(currentSub === 'I' ? '1' : currentSub === 'II' ? '2' : currentSub === 'III' ? '3' : currentSub === 'IV' ? '4' : '5');
 
     let nextTier = currentTier;
@@ -88,11 +87,16 @@ export const TierSection = ({
 }: TierSectionProps) => {
     const { t, language } = useLanguage();
 
+    const opaque = (rgba: string) => rgba.replace(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[^)]+\)/, 'rgb($1,$2,$3)');
+
     if (loadingPerf) {
         return (
             <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
-                <div className="flex items-center justify-center py-12 bg-white/4 border border-white/8 rounded-xl">
-                    <p className="text-white/35 text-sm">{t('common.loading')}</p>
+                <div className="flex flex-col items-center justify-center gap-3 py-16 bg-[#0b1220] border border-white/10 rounded-2xl">
+                    <div className="flex gap-1 text-4xl opacity-10 select-none">
+                        <span>♟</span><span>♞</span><span>♝</span><span>♜</span><span>♛</span><span>♚</span>
+                    </div>
+                    <p className="text-white/20 text-xs">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -101,8 +105,16 @@ export const TierSection = ({
     if (!userPerf) {
         return (
             <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
-                <div className="flex items-center justify-center py-12 bg-white/4 border border-white/8 rounded-xl">
-                    <p className="text-white/35 text-sm">{t('profile.noRatingData')}</p>
+                <div className="flex flex-col items-center justify-center gap-4 py-16 bg-[#070d1a] border border-white/8 rounded-2xl">
+                    <div className="flex gap-1 text-5xl opacity-15 select-none">
+                        <span>♟</span><span>♞</span><span>♝</span><span>♜</span><span>♛</span><span>♚</span>
+                    </div>
+                    <p className="text-white/30 text-sm">
+                        {language === 'KR' ? '레이팅 데이터 없음' : 'No rating data'}
+                    </p>
+                    <p className="text-white/15 text-xs">
+                        {language === 'KR' ? '이 타임 컨트롤로 플레이된 게임이 없습니다' : 'No games played with this time control'}
+                    </p>
                 </div>
             </div>
         );
@@ -155,51 +167,94 @@ export const TierSection = ({
 
     // 현재 티어의 색상 스키마 가져오기
     const tierColors = tierColorScheme[mainTier] || tierColorScheme['KING'];
+    const mainSolid = opaque(tierColors.mainColor);
+    const textSolid = opaque(tierColors.darkText);
+    const softSolid = opaque(tierColors.lightText);
 
     return (
         <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
             <div
-                className="rounded-2xl p-5 md:p-8 border-2 backdrop-blur-sm transition-all duration-300 shadow-lg"
+                className="relative overflow-hidden rounded-2xl p-5 md:p-8 border shadow-lg"
                 style={{
-                    backgroundColor: tierColors.darkBg,
-                    borderColor: tierColors.borderColor,
+                    background: 'linear-gradient(160deg, #0a1222 0%, #0e172b 58%, #0a1222 100%)',
+                    borderColor: 'rgba(255,255,255,0.12)',
+                    boxShadow: '0 24px 50px rgba(0,0,0,0.42)',
                 }}
             >
+                {/* Top accent */}
+                <div
+                    className="absolute left-4 right-4 top-0 h-[3px] rounded-b-full pointer-events-none"
+                    style={{ background: `linear-gradient(90deg, ${mainSolid}, ${textSolid})` }}
+                />
+
+                {/* Base gradient layer */}
+                <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                        background: `radial-gradient(circle at 14% 8%, ${softSolid}16, transparent 40%), linear-gradient(145deg, #0d1527 0%, #0b1324 52%, #0a1222 100%)`,
+                    }}
+                />
+                {/* Aurora accents */}
+                <div
+                    className="absolute -top-16 -right-10 w-64 h-64 rounded-full pointer-events-none"
+                    style={{
+                        background: mainSolid,
+                        opacity: 0.07,
+                        filter: 'blur(72px)',
+                    }}
+                />
+                <div
+                    className="absolute -bottom-24 -left-12 w-72 h-72 rounded-full pointer-events-none"
+                    style={{
+                        background: textSolid,
+                        opacity: 0.04,
+                        filter: 'blur(82px)',
+                    }}
+                />
+
+                <div className="relative z-10">
                 {/* Tier info row */}
                 <div className="flex flex-col md:flex-row md:items-center gap-5 md:gap-8 mb-8">
                     {/* Tier image */}
                     <div
                         className="flex-shrink-0 w-28 h-28 md:w-36 md:h-36 mx-auto md:mx-0 rounded-2xl border-2 flex items-center justify-center shadow-md"
                         style={{
-                            backgroundColor: tierColors.lightBg,
-                            borderColor: tierColors.borderColor,
+                            background: 'linear-gradient(145deg, #111b31 0%, #0d162a 100%)',
+                            borderColor: `${mainSolid}66`,
+                            boxShadow: `inset 0 0 0 1px ${mainSolid}26`,
                         }}
                     >
                         <img
                             src={tierImageSrc}
                             alt={mainTier}
-                            className="w-20 h-20 md:w-28 md:h-28 object-contain drop-shadow-lg"
+                            className="w-20 h-20 md:w-28 md:h-28 object-contain"
+                            style={{ filter: `drop-shadow(0 0 5px ${mainSolid})` }}
                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                         />
                     </div>
 
                     {/* Rating + level */}
                     <div className="flex-1 text-center md:text-left">
-                        <div className="flex flex-col md:flex-row md:items-baseline gap-1 md:gap-3 mb-3 justify-center md:justify-start">
+                        <div className="flex flex-col md:flex-row md:items-end gap-2 md:gap-4 mb-3 justify-center md:justify-start">
                             <p
                                 className="text-4xl md:text-6xl font-black drop-shadow-lg"
-                                style={{ color: tierColors.darkText }}
+                                style={{ color: textSolid }}
                             >
                                 {cap(mainTier)}
                             </p>
-                            <p
-                                className="text-2xl md:text-3xl font-bold"
-                                style={{ color: tierColors.lightText }}
+                            <span
+                                className="inline-flex items-center justify-center min-w-[44px] md:min-w-[56px] h-9 md:h-11 px-3 rounded-xl font-black text-2xl md:text-3xl leading-none"
+                                style={{
+                                    color: textSolid,
+                                    background: `${mainSolid}22`,
+                                    border: `1px solid ${mainSolid}66`,
+                                    boxShadow: `inset 0 0 0 1px ${mainSolid}2a, 0 0 10px ${mainSolid}33`,
+                                }}
                             >
                                 {currentSub}
-                            </p>
+                            </span>
                         </div>
-                        <p className="text-sm font-medium" style={{ color: tierColors.lightText }}>
+                        <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.72)' }}>
                             {userPerf.rating} Rating
                         </p>
                     </div>
@@ -207,22 +262,24 @@ export const TierSection = ({
 
                 {/* Progress bar */}
                 <div className="mb-8">
-                    <div className="flex items-center justify-between text-xs font-semibold mb-3" style={{ color: tierColors.lightText }}>
+                    <div className="flex items-center justify-between text-xs font-semibold mb-3" style={{ color: 'rgba(255,255,255,0.72)' }}>
                         <span>{cap(mainTier)} {currentSub} → {cap(nextTier)} {nextSub}</span>
                         <span>{remaining} {language === 'KR' ? '레이팅 남음' : 'rating left'}</span>
                     </div>
                     <div
                         className="w-full rounded-full h-3 overflow-hidden shadow-inner"
-                        style={{ backgroundColor: tierColors.lightBg }}
+                        style={{ backgroundColor: '#13203a' }}
                     >
                         <div
-                            className="h-full rounded-full transition-all duration-500 shadow-lg"
+                            className="h-full rounded-full shadow-lg"
                             style={{
                                 width: `${pct}%`,
-                                backgroundColor: tierColors.mainColor,
+                                background: `linear-gradient(90deg, ${mainSolid} 0%, ${textSolid} 100%)`,
+                                boxShadow: `0 0 6px ${mainSolid}`,
                             }}
                         />
                     </div>
+                </div>
                 </div>
             </div>
         </div>

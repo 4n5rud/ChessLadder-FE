@@ -243,32 +243,36 @@ export const getRanking = async (
 
   const rankingArray: any[] = data.entries ?? data.ranking ?? data.users ?? data.ranking_users ?? data.rankingList ?? [];
 
-  const users: RankingUserResponse[] = (rankingArray ?? []).map((u: any) => ({
+  // 명세서: data.ranking 배열, 각 항목 userId/bannerImage/profileImage
+  const rankingList = data.ranking ?? rankingArray ?? [];
+  const users: RankingUserResponse[] = rankingList.map((u: any) => ({
     id: u.userId ?? u.id ?? u.user_id ?? 0,
-    username: u.username ?? u.name ?? '',
+    username: u.username ?? '',
     lichess_id: u.lichess_id ?? u.lichessId ?? null,
     description: u.description ?? null,
-    profile_image: u.profileImageUrl ?? u.profileImage ?? u.profile ?? u.profile_image ?? null,
-    banner_image: u.bannerImageUrl ?? u.bannerImage ?? u.banner ?? u.banner_image ?? null,
-    rating: Number(u.rating ?? u.rate ?? 0) || 0,
-    rank: Number(u.rank ?? u.position ?? 0) || 0,
+    profile_image: u.profileImage ?? u.profileImageUrl ?? u.profile_image ?? null,
+    banner_image: u.bannerImage ?? u.bannerImageUrl ?? u.banner_image ?? null,
+    rating: Number(u.rating ?? 0) || 0,
+    rank: Number(u.rank ?? 0) || 0,
     rated_games: Number(u.rated_games ?? u.ratedGames ?? 0) || 0,
   }));
 
+  // 명세서: myRankInfo.loggedInUser / .rank / .rating / .platformMismatch
+  const myInfo = data.myRankInfo ?? data.my_rank_info ?? null;
   return {
     users,
-    total_count: Number(data.totalCount ?? data.total_count ?? data.total ?? 0) || 0,
-    current_page: Number(data.current_page ?? data.page ?? 0) || 0,
-    page_size: data.page_size ? Number(data.page_size) : data.pageSize ? Number(data.pageSize) : undefined,
-    total_pages: Number(data.total_pages ?? data.totalPages ?? 0) || 0,
-    is_logged_in_user: Boolean(data.my_rank_info?.logged_in_user ?? data.is_logged_in_user ?? data.isLoggedIn ?? false),
-    is_unrated: Boolean(data.my_rank_info?.unrated ?? data.is_unrated ?? data.isUnrated ?? false),
-    my_rank: data.myRank ?? data.my_rank_info?.rank ?? data.my_rank ?? null,
-    my_rating: data.my_rank_info?.rating ?? data.my_rating ?? data.myRating ?? null,
-    my_user_id: data.my_rank_info?.user_id ?? data.my_user_id ?? data.myUserId ?? null,
-    my_username: data.my_rank_info?.username ?? data.my_username ?? data.myUsername ?? null,
-    my_banner: data.my_rank_info?.banner ?? data.my_banner ?? data.myBanner ?? null,
-    my_profile: data.my_rank_info?.profile ?? data.my_profile ?? data.myProfile ?? null,
+    total_count: Number(data.totalCount ?? data.total_count ?? 0) || 0,
+    current_page: Number(data.currentPage ?? data.current_page ?? 0) || 0,
+    page_size: Number(data.pageSize ?? data.page_size ?? 20) || 20,
+    total_pages: Number(data.totalPages ?? data.total_pages ?? 0) || 0,
+    is_logged_in_user: Boolean(myInfo?.loggedInUser ?? myInfo?.logged_in_user ?? false),
+    is_unrated: Boolean(myInfo?.platformMismatch ?? false),
+    my_rank: myInfo?.rank ?? null,
+    my_rating: myInfo?.rating ?? null,
+    my_user_id: myInfo?.userId ?? myInfo?.user_id ?? null,
+    my_username: myInfo?.username ?? null,
+    my_banner: myInfo?.banner ?? null,
+    my_profile: myInfo?.profile ?? null,
   };
 };
 
@@ -502,21 +506,17 @@ export const getRatingHistory = async (timeClass?: string): Promise<RatingHistor
       return {
         from: data.from,
         to: data.to,
-        data: Array.isArray(data.data) ? data.data : [],
+        data: Array.isArray(data.data) ? data.data.map((e: any) => ({
+          yearMonth: e.yearMonth ?? e.year_month ?? '',
+          timeClass: e.timeClass ?? e.time_class ?? '',
+          rating: e.rating ?? 0,
+        })) : [],
       };
     }
 
-    return {
-      from: '',
-      to: '',
-      data: [],
-    };
+    return { from: '', to: '', data: [] };
   } catch {
-    return {
-      from: '',
-      to: '',
-      data: [],
-    };
+    return { from: '', to: '', data: [] };
   }
 };
 
@@ -547,6 +547,129 @@ export const getUserCard = async (): Promise<UserCardResponse | null> => {
   }
 };
 
+// ── 내 통계 API 명세 alias (getMyXxx) ──────────────────────────────────────
+// 명세서: GET /api/stat/perf?platform=&timeClass=
+
+/**
+ * GET /api/stat/perf?platform=&timeClass=
+ * 명세 alias: getMyPerf
+ */
+export const getMyPerf = async (
+  platform: string,
+  timeClass?: string,
+): Promise<UserPerfResponse | null> => {
+  const tc = timeClass ? timeClass.toLowerCase() : undefined;
+  const url = tc
+    ? `/stat/perf?platform=${platform}&timeClass=${tc}`
+    : `/stat/perf?platform=${platform}`;
+  const res = await api(url);
+  const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
+  if (items.length === 0) return null;
+  const item = tc
+    ? (items.find(i => (i.time_class ?? i.timeClass ?? '').toLowerCase() === tc) ?? items[0])
+    : items[0];
+  if (!item) return null;
+  return {
+    rating: Number(item.rating ?? 0) || 0,
+    gamesPlayed: Number(item.games ?? 0) || 0,
+    wins: Number(item.wins ?? 0) || 0,
+    losses: Number(item.losses ?? 0) || 0,
+    draws: Number(item.draws ?? 0) || 0,
+    prov: item.prov ?? false,
+    uncertain: false,
+  };
+};
+
+/**
+ * GET /api/stat/streak?platform=&year=
+ * 명세 alias: getMyStreak
+ */
+export const getMyStreak = async (
+  platform: string,
+  year?: number,
+): Promise<StreakResponse> => getUserStreak(year, platform);
+
+/**
+ * GET /api/stat/color?platform=&timeClass=
+ * 명세 alias: getMyColorStats
+ */
+export const getMyColorStats = async (
+  platform: string,
+  timeClass?: string,
+): Promise<ColorStatsResponse | null> => {
+  const tc = timeClass ? timeClass.toLowerCase() : 'rapid';
+  const res = await api(`/stat/color?platform=${platform}&timeClass=${tc}`);
+  const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
+  if (items.length === 0) return null;
+  const agg = (color: string) =>
+    items
+      .filter(i => (i.color ?? '').toUpperCase() === color)
+      .reduce(
+        (acc, i) => ({
+          wins: acc.wins + (Number(i.wins) || 0),
+          draws: acc.draws + (Number(i.draws) || 0),
+          losses: acc.losses + (Number(i.losses) || 0),
+        }),
+        { wins: 0, draws: 0, losses: 0 },
+      );
+  const w = agg('WHITE');
+  const b = agg('BLACK');
+  return {
+    game_type: timeClass ?? tc,
+    white_wins: w.wins, white_draws: w.draws, white_losses: w.losses,
+    black_wins: b.wins, black_draws: b.draws, black_losses: b.losses,
+  };
+};
+
+/**
+ * GET /api/stat/first-move?platform=&timeClass=
+ * 명세 alias: getMyFirstMoveStats
+ */
+export const getMyFirstMoveStats = async (
+  platform: string,
+  timeClass?: string,
+): Promise<FirstMoveResponse | null> => {
+  const tc = timeClass ? timeClass.toLowerCase() : 'rapid';
+  const res = await api(`/stat/first-move?platform=${platform}&timeClass=${tc}`);
+  const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
+  if (items.length === 0) return null;
+  const toMap = (color: string): { [key: string]: number } =>
+    items
+      .filter(i => (i.color ?? '').toUpperCase() === color && i.move)
+      .reduce((acc, i) => {
+        acc[i.move] = (acc[i.move] ?? 0) + (Number(i.count) || 0);
+        return acc;
+      }, {} as { [key: string]: number });
+  return {
+    game_type: timeClass ?? tc,
+    white_moves: toMap('WHITE'),
+    black_moves: toMap('BLACK'),
+  };
+};
+
+/**
+ * GET /api/stat/rating-history?platform=&timeClass=
+ * 명세 alias: getMyRatingHistory
+ */
+export const getMyRatingHistory = async (
+  platform: string,
+  timeClass?: string,
+): Promise<RatingHistoryResponse> => {
+  const url = timeClass
+    ? `/stat/rating-history?platform=${platform}&timeClass=${timeClass.toLowerCase()}`
+    : `/stat/rating-history?platform=${platform}`;
+  try {
+    const res = await api(url);
+    const data = res.data ?? res;
+    if (data && typeof data === 'object' && 'from' in data && 'to' in data && 'data' in data) {
+      return { from: data.from, to: data.to, data: Array.isArray(data.data) ? data.data : [] };
+    }
+    return { from: '', to: '', data: [] };
+  } catch {
+    return { from: '', to: '', data: [] };
+  }
+};
+
 // ── 기타 ──────────────────────────────────────────────────────────────────
 
 export const forceRefreshStats = async (): Promise<any> => {
@@ -555,6 +678,344 @@ export const forceRefreshStats = async (): Promise<any> => {
 };
 
 export const deleteAccount = async (): Promise<any> => {
-  const res = await api('/user/withdraw', { method: 'DELETE' });
+  const res = await api('/user', { method: 'DELETE' });
   return res.data ?? res;
+};
+
+/** GET /api/user/platform-stats — 플랫폼별 사용자 수 */
+export interface PlatformStatsResponse {
+  lichessCount: number;
+  chesscomCount: number;
+  totalCount: number;
+}
+
+export const getPlatformStats = async (): Promise<PlatformStatsResponse> => {
+  try {
+    const res = await api('/user/platform-stats');
+    const raw = res.data ?? res;
+    const d = raw?.data ?? raw;
+    const lichessCount = Number(d.lichessCount ?? d.lichess_count ?? 0);
+    const chesscomCount = Number(d.chesscomCount ?? d.chesscom_count ?? 0);
+    return {
+      lichessCount,
+      chesscomCount,
+      totalCount: Number(d.totalCount ?? d.total_count ?? (lichessCount + chesscomCount)),
+    };
+  } catch {
+    return { lichessCount: 0, chesscomCount: 0, totalCount: 0 };
+  }
+};
+
+// ── 타인 프로필 관련 타입 및 API ──────────────────────────────────────────────
+
+/** GET /api/users/{username}/profile?platform= 응답 */
+export interface PublicProfileData {
+  id: number;
+  username: string;
+  platform: 'LICHESS' | 'CHESSCOM';
+  description?: string | null;
+  profileImageUrl?: string | null;
+  bannerImageUrl?: string | null;
+  createdAt?: string | null;
+  platformJoinedAt?: string | null;
+  title?: string;
+}
+
+/**
+ * GET /api/users/{username}/profile?platform=LICHESS
+ */
+export const getPublicUserProfile = async (
+  username: string,
+  platform: 'LICHESS' | 'CHESSCOM' = 'LICHESS',
+): Promise<PublicProfileData> => {
+  const res = await api(`/users/${encodeURIComponent(username)}/profile?platform=${platform}`);
+  const d = res.data ?? res;
+  const imgUrl = d.profileImageUrl ?? d.profile_image_url ?? d.profile_image ?? null;
+  const banUrl = d.bannerImageUrl ?? d.banner_image_url ?? d.banner_image ?? null;
+  return {
+    id: d.id ?? d.userId ?? 0,
+    username: d.username ?? username,
+    platform: d.platform ?? platform,
+    description: d.description ?? null,
+    profileImageUrl: imgUrl,
+    bannerImageUrl: banUrl,
+    createdAt: d.createdAt ?? d.created_at ?? null,
+    platformJoinedAt: d.platformJoinedAt ?? d.platform_joined_at ?? null,
+    title: d.title ?? undefined,
+  };
+};
+
+/**
+ * GET /api/users/{username}/stats/perf?platform=&timeClass=
+ * 특정 게임 타입의 성능 통계를 반환
+ */
+export const getPublicUserPerf = async (
+  username: string,
+  platform: 'LICHESS' | 'CHESSCOM',
+  gameType: string = 'RAPID',
+): Promise<UserPerfResponse | null> => {
+  const tc = gameType.toLowerCase();
+  const res = await api(
+    `/users/${encodeURIComponent(username)}/stats/perf?platform=${platform}&timeClass=${tc}`,
+  );
+  const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
+  if (items.length === 0) return null;
+  const item = items.find(i => (i.time_class ?? i.timeClass ?? '').toLowerCase() === tc) ?? items[0] ?? null;
+  if (!item) return null;
+  return {
+    rating: Number(item.rating ?? 0) || 0,
+    gamesPlayed: Number(item.games ?? 0) || 0,
+    wins: Number(item.wins ?? 0) || 0,
+    losses: Number(item.losses ?? 0) || 0,
+    draws: Number(item.draws ?? 0) || 0,
+    prov: item.prov ?? false,
+    uncertain: false,
+  };
+};
+
+/**
+ * 타인의 전체 게임 타입 성능 통계 (합산용)
+ * GET /api/users/{username}/stats/perf?platform=
+ */
+export const getPublicUserPerfAll = async (
+  username: string,
+  platform: 'LICHESS' | 'CHESSCOM',
+): Promise<Array<{ games: number; wins: number; losses: number; draws: number }>> => {
+  try {
+    const res = await api(
+      `/users/${encodeURIComponent(username)}/stats/perf?platform=${platform}`,
+    );
+    const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
+    return items.map(i => ({
+      games: Number(i.games ?? 0) || 0,
+      wins: Number(i.wins ?? 0) || 0,
+      losses: Number(i.losses ?? 0) || 0,
+      draws: Number(i.draws ?? 0) || 0,
+    }));
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * GET /api/users/{username}/stats/streak?platform=
+ */
+export const getPublicUserStreak = async (
+  username: string,
+  platform: 'LICHESS' | 'CHESSCOM',
+  year?: number,
+): Promise<StreakResponse> => {
+  try {
+    const url = year
+      ? `/users/${encodeURIComponent(username)}/stats/streak?platform=${platform}&year=${year}`
+      : `/users/${encodeURIComponent(username)}/stats/streak?platform=${platform}`;
+    const res = await api(url);
+    const data: any = res.data ?? res;
+
+    if (data && typeof data === 'object' && 'current_streak' in data && 'years' in data) {
+      const years = Array.isArray(data.years) ? data.years : [];
+      const filteredYears = year ? years.filter((g: any) => g.year === year) : years;
+      return {
+        currentStreak: Number(data.current_streak ?? 0) || 0,
+        years: filteredYears.map((g: any) => ({
+          year: g.year,
+          days: (Array.isArray(g.days) ? g.days : []).map((d: any) => ({
+            date: d.date,
+            total: d.total ?? 0,
+            win: d.wins ?? d.win ?? 0,
+            wins: d.wins ?? d.win ?? 0,
+            lose: d.losses ?? d.lose ?? d.loss ?? 0,
+            losses: d.losses ?? d.lose ?? d.loss ?? 0,
+            draw: d.draws ?? d.draw ?? 0,
+            draws: d.draws ?? d.draw ?? 0,
+            lastRating: d.last_rating ?? d.lastRating ?? undefined,
+            last_rating: d.last_rating ?? d.lastRating ?? undefined,
+            rating: d.rating ?? undefined,
+          })),
+        })),
+      };
+    }
+    return { currentStreak: 0, years: [] };
+  } catch {
+    return { currentStreak: 0, years: [] };
+  }
+};
+
+/**
+ * GET /api/users/{username}/stats/color?platform=&timeClass=
+ */
+export const getPublicUserColorStats = async (
+  username: string,
+  platform: 'LICHESS' | 'CHESSCOM',
+  gameType: string = 'RAPID',
+): Promise<ColorStatsResponse | null> => {
+  try {
+    const tc = gameType.toLowerCase();
+    const res = await api(
+      `/users/${encodeURIComponent(username)}/stats/color?platform=${platform}&timeClass=${tc}`,
+    );
+    const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
+    if (items.length === 0) return null;
+    const agg = (color: string) =>
+      items
+        .filter(i => (i.color ?? '').toUpperCase() === color)
+        .reduce(
+          (acc, i) => ({
+            wins: acc.wins + (Number(i.wins) || 0),
+            draws: acc.draws + (Number(i.draws) || 0),
+            losses: acc.losses + (Number(i.losses) || 0),
+          }),
+          { wins: 0, draws: 0, losses: 0 },
+        );
+    const w = agg('WHITE');
+    const b = agg('BLACK');
+    return {
+      game_type: gameType,
+      white_wins: w.wins, white_draws: w.draws, white_losses: w.losses,
+      black_wins: b.wins, black_draws: b.draws, black_losses: b.losses,
+    };
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * GET /api/users/{username}/stats/first-move?platform=&timeClass=
+ */
+export const getPublicUserFirstMoveStats = async (
+  username: string,
+  platform: 'LICHESS' | 'CHESSCOM',
+  gameType: string = 'RAPID',
+): Promise<FirstMoveResponse | null> => {
+  try {
+    const tc = gameType.toLowerCase();
+    const res = await api(
+      `/users/${encodeURIComponent(username)}/stats/first-move?platform=${platform}&timeClass=${tc}`,
+    );
+    const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
+    if (items.length === 0) return null;
+    const toMap = (color: string): { [key: string]: number } =>
+      items
+        .filter(i => (i.color ?? '').toUpperCase() === color && i.move)
+        .reduce((acc, i) => {
+          acc[i.move] = (acc[i.move] ?? 0) + (Number(i.count) || 0);
+          return acc;
+        }, {} as { [key: string]: number });
+    return {
+      game_type: gameType,
+      white_moves: toMap('WHITE'),
+      black_moves: toMap('BLACK'),
+    };
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * GET /api/users/{username}/stats/rating-history?platform=&timeClass=
+ */
+export const getPublicUserRatingHistory = async (
+  username: string,
+  platform: 'LICHESS' | 'CHESSCOM',
+  timeClass?: string,
+): Promise<RatingHistoryResponse> => {
+  try {
+    const url = timeClass
+      ? `/users/${encodeURIComponent(username)}/stats/rating-history?platform=${platform}&timeClass=${timeClass.toLowerCase()}`
+      : `/users/${encodeURIComponent(username)}/stats/rating-history?platform=${platform}`;
+    const res = await api(url);
+    const data = res.data ?? res;
+    if (data && typeof data === 'object' && 'from' in data && 'to' in data && 'data' in data) {
+      return {
+        from: data.from,
+        to: data.to,
+        data: Array.isArray(data.data) ? data.data.map((e: any) => ({
+          yearMonth: e.yearMonth ?? e.year_month ?? '',
+          timeClass: e.timeClass ?? e.time_class ?? '',
+          rating: e.rating ?? 0,
+        })) : [],
+      };
+    }
+    return { from: '', to: '', data: [] };
+  } catch {
+    return { from: '', to: '', data: [] };
+  }
+};
+
+// ── 유저 검색 API ──────────────────────────────────────────────────────────────
+
+/** GET /api/users/{username}?platform= 응답 */
+export interface UserSearchResult {
+  id: number;
+  username: string;
+  platform: 'LICHESS' | 'CHESSCOM';
+  rating: number;
+  rank?: number | null;
+  description?: string | null;
+  profileImageUrl?: string | null;
+  bannerImageUrl?: string | null;
+}
+
+/**
+ * GET /api/users/{username}?platform=LICHESS
+ * 타인 검색 → data.users[]
+ */
+export const searchUsers = async (
+  query: string,
+  platform: 'LICHESS' | 'CHESSCOM' = 'LICHESS',
+): Promise<UserSearchResult[]> => {
+  try {
+    const res = await api(
+      `/users/${encodeURIComponent(query)}?platform=${platform}`,
+    );
+    const payload = res.data ?? res;
+    const users: any[] = Array.isArray(payload.users)
+      ? payload.users
+      : Array.isArray(payload.data?.users)
+        ? payload.data.users
+        : Array.isArray(payload)
+          ? payload
+          : [];
+    return users.map(u => ({
+      id: u.userId ?? u.id ?? u.user_id ?? 0,
+      username: u.username ?? '',
+      platform: u.platform ?? platform,
+      rating: Number(u.rating ?? 0) || 0,
+      rank: u.rank ?? null,
+      description: u.description ?? null,
+      profileImageUrl: u.profileImageUrl ?? u.profile_image_url ?? u.profileImage ?? u.profile_image ?? null,
+      bannerImageUrl: u.bannerImageUrl ?? u.banner_image_url ?? u.bannerImage ?? u.banner_image ?? null,
+    }));
+  } catch {
+    return [];
+  }
+};
+
+// ── 동기화 상태 API ────────────────────────────────────────────────────────────
+
+export type SyncStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'TOKEN_EXPIRED';
+
+export interface SyncStatusResponse {
+  jobId: string | null;
+  status: SyncStatus;
+  totalFetched: number;
+  syncCursor: string | null;
+  errorMsg: string | null;
+}
+
+/**
+ * GET /api/sync/status?platform=LICHESS
+ */
+export const getSyncStatus = async (
+  platform: 'LICHESS' | 'CHESSCOM',
+): Promise<SyncStatusResponse> => {
+  const res = await api(`/sync/status?platform=${platform}`);
+  const d = res.data ?? res;
+  return {
+    jobId: d.jobId ?? d.job_id ?? null,
+    status: d.status ?? 'FAILED',
+    totalFetched: Number(d.totalFetched ?? d.total_fetched ?? 0) || 0,
+    syncCursor: d.syncCursor ?? d.sync_cursor ?? null,
+    errorMsg: d.errorMsg ?? d.error_msg ?? null,
+  };
 };

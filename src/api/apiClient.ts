@@ -89,10 +89,11 @@ export const api = async (endpoint: string, options: RequestInit = {}) => {
       const refreshHeaders = new Headers();
       refreshHeaders.set('Content-Type', 'application/json');
       
-      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'GET', // ⭐ 명세서 Step 7-3
+      const provider = useAuthStore.getState().user?.platform ?? 'LICHESS';
+      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh?provider=${provider}`, {
+        method: 'POST',
         headers: refreshHeaders,
-        credentials: 'include', // ⭐ Refresh Token 쿠키 (HttpOnly) 자동 포함
+        credentials: 'include',
       });
 
       if (refreshResponse.ok) {

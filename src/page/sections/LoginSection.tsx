@@ -14,7 +14,7 @@ export function LoginSection() {
             console.log('OAuth 응답:', res);
             
             // 백엔드 응답 형식에 맞게 URL 추출
-            const oauthUrl = res.oauthUrl || res.data?.oauthUrl;
+            const oauthUrl = res.oauth_url;
             
             if (!oauthUrl) {
                 console.error('응답 전체:', JSON.stringify(res, null, 2));

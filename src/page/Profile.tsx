@@ -2,14 +2,13 @@ import Header from "../global/Header";
 import Footer from "../global/Footer";
 import { useState, useEffect, useRef } from "react";
 import type { ReactElement } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate, Link } from "react-router-dom";
 import { toPng } from 'html-to-image';
 import { initializeAuth } from "../api/authService";
 import { useAuthStore } from "../store/authStore";
 import { getUploadUrl, completeUpload, validateImageFile, validateImageDimensions } from "../api/imageService";
 import type { UserImageType } from "../api/imageService";
-import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, forceRefreshStats, deleteAccount, getColorStats, getFirstMoveStats, getLichessSummary, getChesscomSummary, getRatingHistory } from "../api/userService";
+import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, getColorStats, getFirstMoveStats, getLichessSummary, getChesscomSummary, getRatingHistory } from "../api/userService";
 import type { ProfileResponse, DailyStreakDto, UserPerfResponse, ColorStatsResponse, FirstMoveResponse, RatingHistoryResponse } from "../api/userService";
 import { useLanguage } from "../context/LanguageContext";
 import MonthlyRatingHistoryChart from "../components/MonthlyRatingHistoryChart";
@@ -26,6 +25,8 @@ const Profile = () => {
     const { t, language } = useLanguage();
     const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
+    const setAuthUser = useAuthStore((state) => state.setUser);
+    const [authChecked, setAuthChecked] = useState(false);
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -34,8 +35,6 @@ const Profile = () => {
     const [loadingBanner, setLoadingBanner] = useState(false);
     const [loadingProfile, setLoadingProfile] = useState(false);
     const [savingDescription, setSavingDescription] = useState(false);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [deletingAccount, setDeletingAccount] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [showError, setShowError] = useState(false);
     
@@ -51,14 +50,14 @@ const Profile = () => {
         'CLASSICAL': 'Classical'
     };
     
-    // 티어별 색상 — 티어 정체성을 은은하게 표현
+    // 티어별 색상 — Pawn(green) Knight(blue) Bishop(purple) Rook(red) Queen(orange) King(gold)
     const tierColorScheme: { [key: string]: { mainColor: string; lightBg: string; darkBg: string; borderColor: string; lightText: string; darkText: string } } = {
-        'PAWN':   { mainColor: 'rgba(150,155,165,0.75)', lightBg: 'rgba(150,155,165,0.06)', darkBg: 'rgba(150,155,165,0.10)', borderColor: 'rgba(150,155,165,0.20)', lightText: 'rgba(180,185,195,0.65)', darkText: 'rgba(200,205,215,1)' },
-        'KNIGHT': { mainColor: 'rgba(80,160,100,0.80)',  lightBg: 'rgba(80,160,100,0.06)',  darkBg: 'rgba(80,160,100,0.11)',  borderColor: 'rgba(80,160,100,0.22)',  lightText: 'rgba(100,180,120,0.65)', darkText: 'rgba(130,210,150,1)'  },
-        'BISHOP': { mainColor: 'rgba(60,145,195,0.80)',  lightBg: 'rgba(60,145,195,0.06)',  darkBg: 'rgba(60,145,195,0.11)',  borderColor: 'rgba(60,145,195,0.22)',  lightText: 'rgba(80,165,215,0.65)', darkText: 'rgba(110,190,240,1)'  },
-        'ROOK':   { mainColor: 'rgba(47,99,157,0.90)',   lightBg: 'rgba(47,99,157,0.07)',   darkBg: 'rgba(47,99,157,0.13)',   borderColor: 'rgba(47,99,157,0.27)',   lightText: 'rgba(74,130,200,0.65)', darkText: 'rgba(100,160,230,1)'  },
-        'QUEEN':  { mainColor: 'rgba(130,75,185,0.80)',  lightBg: 'rgba(130,75,185,0.06)',  darkBg: 'rgba(130,75,185,0.11)',  borderColor: 'rgba(130,75,185,0.23)',  lightText: 'rgba(155,100,210,0.65)', darkText: 'rgba(185,135,240,1)' },
-        'KING':   { mainColor: 'rgba(195,155,55,0.82)',  lightBg: 'rgba(195,155,55,0.07)',  darkBg: 'rgba(195,155,55,0.11)',  borderColor: 'rgba(195,155,55,0.23)',  lightText: 'rgba(210,170,80,0.65)', darkText: 'rgba(235,195,100,1)'  },
+        'PAWN':   { mainColor: 'rgba(34,197,94,0.85)',   lightBg: 'rgba(34,197,94,0.06)',   darkBg: 'rgba(34,197,94,0.11)',   borderColor: 'rgba(34,197,94,0.22)',   lightText: 'rgba(74,222,128,0.65)', darkText: 'rgba(134,239,172,1)' },
+        'KNIGHT': { mainColor: 'rgba(59,130,246,0.85)',  lightBg: 'rgba(59,130,246,0.06)',  darkBg: 'rgba(59,130,246,0.11)',  borderColor: 'rgba(59,130,246,0.22)',  lightText: 'rgba(100,160,255,0.65)', darkText: 'rgba(147,197,253,1)'  },
+        'BISHOP': { mainColor: 'rgba(168,85,247,0.80)',  lightBg: 'rgba(168,85,247,0.06)',  darkBg: 'rgba(168,85,247,0.11)',  borderColor: 'rgba(168,85,247,0.22)',  lightText: 'rgba(192,132,252,0.65)', darkText: 'rgba(216,180,254,1)'  },
+        'ROOK':   { mainColor: 'rgba(239,68,68,0.85)',   lightBg: 'rgba(239,68,68,0.06)',   darkBg: 'rgba(239,68,68,0.11)',   borderColor: 'rgba(239,68,68,0.22)',   lightText: 'rgba(248,113,113,0.65)', darkText: 'rgba(252,165,165,1)'  },
+        'QUEEN':  { mainColor: 'rgba(255,140,0,0.85)',   lightBg: 'rgba(255,140,0,0.06)',   darkBg: 'rgba(255,140,0,0.11)',   borderColor: 'rgba(255,140,0,0.22)',   lightText: 'rgba(251,146,60,0.65)', darkText: 'rgba(253,186,116,1)'   },
+        'KING':   { mainColor: 'rgba(255,215,0,0.85)',   lightBg: 'rgba(255,215,0,0.07)',   darkBg: 'rgba(255,215,0,0.11)',   borderColor: 'rgba(255,215,0,0.23)',   lightText: 'rgba(234,179,8,0.65)',  darkText: 'rgba(253,224,71,1)'   },
     };
     
     // 티어별 프로모션 임계값 정의
@@ -98,6 +97,7 @@ const Profile = () => {
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [availableYears, setAvailableYears] = useState<number[]>([]);
     const [streakMap, setStreakMap] = useState<Map<string, DailyStreakDto>>(new Map());
+    const [currentStreakDays, setCurrentStreakDays] = useState(0);
     
     // 레이팅 히스토리 관련 상태
     const [ratingHistoryResponse, setRatingHistoryResponse] = useState<RatingHistoryResponse | null>(null);
@@ -106,10 +106,6 @@ const Profile = () => {
     // 티어 관련 상태
     const [userPerf, setUserPerf] = useState<UserPerfResponse | null>(null);
     const [loadingPerf, setLoadingPerf] = useState(false);
-    const [refreshing, setRefreshing] = useState(false);
-    const [lastRefreshTime, setLastRefreshTime] = useState<number | null>(null);
-    const [remainingTime, setRemainingTime] = useState(0);
-    const REFRESH_COOLDOWN = 5 * 60 * 1000; // 5분 (300초) 제한
 
     // 색깔별 게임 통계 관련 상태
     const [colorStats, setColorStats] = useState<ColorStatsResponse | null>(null);
@@ -172,36 +168,22 @@ const Profile = () => {
         }
     };
 
-    // 남은 시간 업데이트 (1초마다)
+    // 인증 초기화가 끝난 뒤에만 비로그인 리다이렉트
     useEffect(() => {
-        if (!lastRefreshTime) return;
-
-        const interval = setInterval(() => {
-            const now = Date.now();
-            const elapsed = now - lastRefreshTime;
-            const remaining = Math.max(0, REFRESH_COOLDOWN - elapsed);
-            setRemainingTime(remaining);
-
-            if (remaining === 0) {
-                clearInterval(interval);
-            }
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [lastRefreshTime]);
-
-    // 인증 체크: 로그인이 안 되어 있으면 홈으로 리다이렉트
-    useEffect(() => {
+        if (!authChecked) return;
         if (!user) {
             navigate('/', { replace: true });
         }
-    }, [user, navigate]);
+    }, [authChecked, user, navigate]);
 
     useEffect(() => {
         const fetchUserAndImages = async () => {
             try {
                 // 먼저 인증 상태 초기화 (store 업데이트)
-                await initializeAuth();
+                const initializedUser = await initializeAuth();
+                if (initializedUser) {
+                    setAuthUser(initializedUser);
+                }
 
                 // 프로필 정보 조회
                 const profileData = await getUserProfile();
@@ -262,13 +244,12 @@ const Profile = () => {
                 }
             } catch (error) {
                 // 사용자 데이터 조회 실패
+            } finally {
+                setAuthChecked(true);
             }
         };
         fetchUserAndImages();
-    }, []);
-
-    // QueryClient 인스턴스 접근
-    const queryClient = useQueryClient();
+    }, [setAuthUser]);
 
     useEffect(() => {
         // platform이 결정된 이후에만 호출
@@ -314,6 +295,7 @@ const Profile = () => {
                 const streakData = await getUserStreak(selectedYear, profile?.platform);
                 if (!streakData) {
                     setStreakMap(new Map());
+                    setCurrentStreakDays(0);
                     return;
                 }
 
@@ -328,9 +310,11 @@ const Profile = () => {
                     });
                 }
                 setStreakMap(map);
+                setCurrentStreakDays(Number(streakData.currentStreak ?? 0));
                 setStreakLoaded(true);
             } catch (error) {
                 setStreakMap(new Map());
+                setCurrentStreakDays(0);
                 setStreakLoaded(true);
             }
         };
@@ -458,46 +442,6 @@ const Profile = () => {
         }
     };
 
-    const handleForceRefresh = async () => {
-        // 쿨타임 체크
-        if (lastRefreshTime && Date.now() - lastRefreshTime < REFRESH_COOLDOWN) {
-            const remaining = Math.ceil((REFRESH_COOLDOWN - (Date.now() - lastRefreshTime)) / 1000);
-            alert(`${remaining}초 동안 다시 갱신할 수 없습니다. (5분 제한)`);
-            return;
-        }
-
-        setRefreshing(true);
-        try {
-            await forceRefreshStats();
-            // 갱신 후 현재 게임 타입의 데이터 다시 로드
-            const perfData = await getUserPerf(selectedGameType);
-            setUserPerf(perfData);
-            
-            // 캐시된 레이팅 히스토리 즉시 갱신
-            queryClient.invalidateQueries({ queryKey: ['ratingHistory'] });
-            
-            setLastRefreshTime(Date.now());
-            setRemainingTime(REFRESH_COOLDOWN);
-        } catch (error) {
-            // 강제 갱신 실패 (사용자에게 표시 안 함)
-        } finally {
-            setRefreshing(false);
-        }
-    };
-
-    const handleDeleteAccount = async () => {
-        setDeletingAccount(true);
-        try {
-            await deleteAccount();
-            // 삭제 후 메인 페이지로 리다이렉트
-            window.location.href = '/';
-        } catch (error) {
-            // 계정 삭제 실패 (사용자에게 표시 안 함)
-        } finally {
-            setDeletingAccount(false);
-            setShowDeleteConfirm(false);
-        }
-    };
 
     return (
         <div className="min-h-screen bg-[#070d1a]">
@@ -606,7 +550,19 @@ const Profile = () => {
 
                             {/* Lichess 프로필 이동 버튼 + 강제 갱신 버튼 */}
                             <div className="mb-6 flex flex-col items-start gap-4">
-                                <div className="flex gap-2 flex-wrap">
+                                <div className="flex gap-2 flex-wrap items-center">
+                                    {/* 설정 링크 */}
+                                    <Link
+                                        to="/settings"
+                                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-white/10 border border-white/20 text-white/80 hover:text-white rounded-lg transition hover:bg-white/15 font-bold text-sm"
+                                        title={language === 'KR' ? '설정' : 'Settings'}
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        {language === 'KR' ? '설정' : 'Settings'}
+                                    </Link>
                                     {profile?.platform !== 'CHESSCOM' && profile?.lichessId && (
                                         <a
                                             href={`https://lichess.org/@/${profile.lichessId}`}
@@ -621,14 +577,6 @@ const Profile = () => {
                                             />
                                         </a>
                                     )}
-                                    <button
-                                        onClick={handleForceRefresh}
-                                        disabled={refreshing || remainingTime > 0}
-                                        className="inline-flex items-center justify-center px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg hover:shadow-lg transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm"
-                                        title={remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}${t('profile.availableAfter')}` : t('profile.fetchFromLichess')}
-                                    >
-                                        {refreshing ? t('profile.refreshing') : remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}${t('profile.waitSeconds')}` : t('profile.dataRefresh')}
-                                    </button>
                                     <div className="flex relative">
                                         <button
                                             onClick={handleExportCard}
@@ -775,14 +723,50 @@ const Profile = () => {
             {/* 플레이 활동 섹션 */}
             <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-white text-animate">{t('profile.gameActivityRecord')}</h2>
+                    <div className="flex items-center gap-5">
+                        <h2 className="text-2xl font-bold text-white text-animate">{t('profile.gameActivityRecord')}</h2>
+                        {/* 현재 연속 스트릭 강조 */}
+                        {(() => {
+                            const streakTier = userPerf && !userPerf.uncertain ? getTierFromRating(userPerf.rating) : 'PAWN';
+                            const stc = tierColorScheme[streakTier];
+                            return (
+                                <div
+                                    className="flex items-center gap-2.5 px-4 py-2 rounded-full border"
+                                    style={{
+                                        backgroundColor: currentStreakDays > 0 ? stc.darkBg : 'rgba(255,255,255,0.04)',
+                                        borderColor: currentStreakDays > 0 ? stc.borderColor : 'rgba(255,255,255,0.10)',
+                                    }}
+                                >
+                                    <svg
+                                        width="14" height="14" viewBox="0 0 14 14" fill="currentColor"
+                                        style={{ color: currentStreakDays > 0 ? stc.darkText : 'rgba(255,255,255,0.20)', flexShrink: 0 }}
+                                    >
+                                        <path d="M7.5 1C7.5 1 10 4.5 10 7.5C10 9.5 9 10.8 8 11.5C8 11.5 8.5 9.5 7 8.5C6 8 5 8.5 5 8.5C5 6.5 6 4.5 7.5 1Z"/>
+                                        <path d="M7.5 9.5C7.5 9.5 8.5 10.5 8.5 11.5C8.5 12.8 7.5 13.5 7 13.5C6.5 13.5 5.5 12.5 6 11.5C6.5 10.5 7.5 9.5 7.5 9.5Z"/>
+                                    </svg>
+                                    <span
+                                        className="text-xl font-black tabular-nums leading-none"
+                                        style={{ color: currentStreakDays > 0 ? stc.darkText : 'rgba(255,255,255,0.25)' }}
+                                    >
+                                        {streakLoaded ? currentStreakDays : '?'}
+                                    </span>
+                                    <span className="text-white/35 text-xs font-medium">{t('profile.streakDays')}</span>
+                                </div>
+                            );
+                        })()}
+                    </div>
                     <select
                         value={selectedYear}
                         onChange={(e) => setSelectedYear(Number(e.target.value))}
-                        className="px-4 py-2 bg-white/5 border border-white/15 rounded-lg text-white text-sm font-medium focus:outline-none transition"
+                        className="px-4 py-2 bg-[#0d1626] border border-white/20 rounded-lg text-white text-sm font-semibold focus:outline-none transition"
                     >
                         {availableYears.map((year) => (
-                            <option key={year} value={year}>
+                            <option
+                                key={year}
+                                value={year}
+                                className="bg-[#0d1626] text-white"
+                                style={{ backgroundColor: '#0d1626', color: '#ffffff' }}
+                            >
                                 {year}{language === 'KR' ? '년' : ''}
                             </option>
                         ))}
@@ -920,56 +904,67 @@ const Profile = () => {
                         const streakTier = userPerf && !userPerf.uncertain ? getTierFromRating(userPerf.rating) : 'PAWN';
                         const stc = tierColorScheme[streakTier];
 
+                        const items = [
+                            {
+                                label: t('profile.currentStreak') || 'Current Streak',
+                                value: streakLoaded ? `${currentStreakDays}` : '?',
+                                unit: language === 'KR' ? '일' : 'days',
+                                highlight: true,
+                            },
+                            {
+                                label: `${selectedYear}${language === 'KR' ? '년 ' : ' '} ${t('profile.consecutiveDays')}`,
+                                value: streakLoaded ? `${maxStreak}` : '?',
+                                unit: language === 'KR' ? '일' : 'days',
+                            },
+                            {
+                                label: t('profile.activeDays'),
+                                value: streakLoaded ? `${activeDays}` : '?',
+                                unit: language === 'KR' ? '일' : 'days',
+                            },
+                            {
+                                label: t('profile.totalPlayGames'),
+                                value: streakLoaded ? `${totalGames}` : '?',
+                                unit: language === 'KR' ? '게임' : 'games',
+                            },
+                            {
+                                label: t('profile.winRate'),
+                                value: streakLoaded ? (winRate !== null ? `${winRate}` : '0.0') : '?',
+                                unit: '%',
+                                sub: streakLoaded ? `${totalWins}W ${totalLoses}L` : '',
+                            },
+                        ];
+
                         return (
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                {/* Max Streak — tier 색상으로 강조 */}
-                                <div
-                                    className="rounded-lg p-6 border transition hover:brightness-110"
-                                    style={{ backgroundColor: stc.darkBg, borderColor: stc.borderColor }}
-                                >
-                                    <div className="text-center">
-                                        <p className="text-xs font-semibold mb-3 uppercase tracking-wide" style={{ color: stc.lightText }}>{t('profile.consecutiveDays')}</p>
-                                        <p className="text-5xl font-black leading-none mb-1" style={{ color: stc.darkText }}>{streakLoaded ? maxStreak : '?'}</p>
-                                        <p className="text-xs text-white/40 font-medium">일</p>
+                            <div className="flex flex-wrap gap-2">
+                                {items.map((item) => (
+                                    <div
+                                        key={item.label}
+                                        className={`flex items-center gap-3 rounded-lg border ${item.highlight ? 'px-4 py-2.5 min-w-[190px]' : 'px-3 py-2 min-w-[130px]'}`}
+                                        style={{
+                                            backgroundColor: item.highlight ? stc.darkBg : 'rgba(255,255,255,0.03)',
+                                            borderColor: item.highlight ? stc.borderColor : 'rgba(255,255,255,0.08)',
+                                            opacity: item.highlight ? 1 : 0.78,
+                                        }}
+                                    >
+                                        <div>
+                                            <p className="text-white/40 text-[10px] uppercase tracking-wider leading-none mb-1">
+                                                {item.label}
+                                            </p>
+                                            <div className="flex items-baseline gap-1">
+                                                <span
+                                                    className={item.highlight ? 'text-2xl font-black tabular-nums leading-none' : 'text-xl font-bold tabular-nums leading-none'}
+                                                    style={{ color: item.highlight ? stc.darkText : 'rgba(255,255,255,0.82)' }}
+                                                >
+                                                    {item.value}
+                                                </span>
+                                                <span className="text-white/30 text-xs">{item.unit}</span>
+                                            </div>
+                                            {item.sub && (
+                                                <p className="text-white/25 text-[10px] mt-0.5">{item.sub}</p>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                                {/* Active Days */}
-                                <div
-                                    className="rounded-lg p-6 border"
-                                    style={{ backgroundColor: stc.lightBg, borderColor: stc.borderColor }}
-                                >
-                                    <div className="text-center">
-                                        <p className="text-white/60 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.activeDays')}</p>
-                                        <p className="text-4xl font-black text-white leading-none mb-1">{streakLoaded ? activeDays : '?'}</p>
-                                        <p className="text-xs text-white/40 font-medium">일</p>
-                                    </div>
-                                </div>
-                                {/* Total Games */}
-                                <div
-                                    className="rounded-lg p-6 border"
-                                    style={{ backgroundColor: stc.lightBg, borderColor: stc.borderColor }}
-                                >
-                                    <div className="text-center">
-                                        <p className="text-white/60 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.totalPlayGames')}</p>
-                                        <p className="text-4xl font-black text-white leading-none mb-1">{streakLoaded ? totalGames : '?'}</p>
-                                        <p className="text-xs text-white/40 font-medium">게임</p>
-                                    </div>
-                                </div>
-                                {/* Win Rate */}
-                                <div
-                                    className="rounded-lg p-6 border"
-                                    style={{ backgroundColor: stc.lightBg, borderColor: stc.borderColor }}
-                                >
-                                    <div className="text-center">
-                                        <p className="text-white/60 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.winRate')}</p>
-                                        <p className="text-4xl font-black text-white leading-none mb-1">
-                                            {streakLoaded ? (winRate !== null ? `${winRate}%` : '0.0%') : '?'}
-                                        </p>
-                                        <p className="text-xs text-white/40 font-medium">
-                                            {streakLoaded ? `${totalWins}승 ${totalLoses}패` : '-'}
-                                        </p>
-                                    </div>
-                                </div>
+                                ))}
                             </div>
                         );
                     })()}
@@ -1004,13 +999,13 @@ const Profile = () => {
                     <h2 className="text-3xl md:text-4xl font-bold text-white text-animate">{language === 'KR' ? '레이팅 진행 추세' : 'Rating Progress Trend'}</h2>
                     <div className="w-16 h-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-transparent rounded-full"></div>
                 </div>
-                <div className="bg-white/4 border border-white/8 rounded-lg p-8 card-section card-hover">
+                <div className="bg-[#070d1a] border border-white/8 rounded-2xl p-8">
                     {loadingRatingHistory ? (
-                        <div className="flex items-center justify-center h-80">
+                        <div className="flex items-center justify-center min-h-[420px]">
                             <p className="text-white/40 text-sm">{t('profile.dataLoading')}</p>
                         </div>
                     ) : ratingHistoryResponse && ratingHistoryResponse.data.length > 0 ? (
-                        <div className="h-[450px]">
+                        <div className="h-[420px]">
                             <MonthlyRatingHistoryChart
                                 ratingHistory={ratingHistoryResponse}
                                 tierThresholds={promotionThresholds}
@@ -1018,41 +1013,37 @@ const Profile = () => {
                             />
                         </div>
                     ) : (
-                        <div className="flex items-center justify-center h-80">
-                            <p className="text-white/40 text-sm">{gameTypeDisplayNames[selectedGameType]} {t('profile.noRatingData')}</p>
+                        <div className="flex flex-col items-center justify-center min-h-[420px] gap-4">
+                            <div className="flex gap-1 text-5xl opacity-15 select-none">
+                                <span>♟</span><span>♞</span><span>♝</span><span>♜</span><span>♛</span><span>♚</span>
+                            </div>
+                            <p className="text-white/30 text-sm font-medium">
+                                {gameTypeDisplayNames[selectedGameType]} {t('profile.noRatingData')}
+                            </p>
+                            <p className="text-white/15 text-xs">
+                                {language === 'KR' ? '이 타임 컨트롤로 플레이된 게임이 없습니다' : 'No games played with this time control'}
+                            </p>
                         </div>
                     )}
                 </div>
             </div>
 
             {/* 색깔별 게임 통계 섹션 */}
-            <div className="max-w-6xl mx-auto px-6 mb-12 section-spacing">
-                <div className="flex flex-col gap-1 mb-8">
+            <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
+                <div className="flex flex-col gap-1 mb-6">
                     <h2 className="text-3xl md:text-4xl font-bold text-white text-animate">{language === 'KR' ? '색깔별 게임 통계' : 'Color Game Statistics'}</h2>
                     <div className="w-16 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-transparent rounded-full"></div>
                 </div>
-                {colorStats ? (
-                    <ColorStatsChart data={colorStats} isLoading={loadingColorStats} />
-                ) : (
-                    <div className="bg-gradient-to-br from-[#0d1626]/80 to-[#070d1a]/50 border border-white/10 rounded-2xl p-8">
-                        <p className="text-white/40 text-center h-96 flex items-center justify-center">{language === 'KR' ? '데이터가 없습니다.' : 'No data available'}</p>
-                    </div>
-                )}
+                <ColorStatsChart data={colorStats} isLoading={loadingColorStats} />
             </div>
 
             {/* 첫 수 통계 섹션 */}
-            <div className="max-w-6xl mx-auto px-6 mb-12 section-spacing">
-                <div className="flex flex-col gap-1 mb-8">
+            <div className="max-w-6xl mx-auto px-3 md:px-6 mb-12 section-spacing">
+                <div className="flex flex-col gap-1 mb-6">
                     <h2 className="text-3xl md:text-4xl font-bold text-white text-animate">{language === 'KR' ? '첫 수 통계' : 'First Move Statistics'}</h2>
                     <div className="w-16 h-1 bg-gradient-to-r from-purple-500 via-blue-500 to-transparent rounded-full"></div>
                 </div>
-                {firstMoveStats ? (
-                    <FirstMoveStatsChart data={firstMoveStats} isLoading={loadingFirstMoveStats} />
-                ) : (
-                    <div className="bg-gradient-to-br from-[#0d1626]/80 to-[#070d1a]/50 border border-white/10 rounded-2xl p-8">
-                        <p className="text-white/40 text-center h-96 flex items-center justify-center">{language === 'KR' ? '데이터가 없습니다.' : 'No data available'}</p>
-                    </div>
-                )}
+                <FirstMoveStatsChart data={firstMoveStats} isLoading={loadingFirstMoveStats} />
             </div>
 
             {/* Hidden export card placed outside the zoom wrapper so it renders at 1:1 for html-to-image */}
@@ -1071,56 +1062,6 @@ const Profile = () => {
                     />
                 )}
             </div>
-
-            {/* 회원 탈퇴 섹션 */}
-            <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
-                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-lg font-bold text-red-400 mb-1">{t('profile.deleteAccount')}</h3>
-                            <p className="text-sm text-red-400/80">{t('profile.deleteAccountWarning')}</p>
-                        </div>
-                        <button
-                            onClick={() => {
-                                setShowDeleteConfirm(true);
-                            }}
-                            className="px-4 py-2 bg-red-600 text-white font-bold text-sm rounded-lg hover:bg-red-700 transition hover:shadow-lg flex-shrink-0"
-                        >
-                            {t('profile.deleteAccount')}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* 회원 탈퇴 확인 다이얼로그 */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-[#0d1626] border border-white/15 rounded-lg p-8 max-w-sm w-full mx-4 shadow-xl">
-                        <h3 className="text-xl font-bold text-red-400 mb-4">{t('profile.deleteAccountConfirm')}</h3>
-                        <p className="text-white/70 text-sm mb-6">{t('profile.deleteAccountWarning')}</p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => {
-                                    setShowDeleteConfirm(false);
-                                }}
-                                disabled={deletingAccount}
-                                className="flex-1 px-4 py-2 bg-white/10 text-white/70 font-bold text-sm rounded-lg hover:bg-white/15 transition disabled:opacity-50"
-                            >
-                                {t('profile.deleteAccountNo')}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    handleDeleteAccount();
-                                }}
-                                disabled={deletingAccount}
-                                className="flex-1 px-4 py-2 bg-red-600 text-white font-bold text-sm rounded-lg hover:bg-red-700 transition disabled:opacity-50"
-                            >
-                                {deletingAccount ? t('profile.deleteAccountDeleting') : t('profile.deleteAccountYes')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <Footer/>
         </div>

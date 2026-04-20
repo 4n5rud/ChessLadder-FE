@@ -31,18 +31,18 @@ const getTierColor = (rating: number, thresholds: Record<string, number> = DEFAU
   for (const [tier, minRating] of tiers) {
     if (rating >= minRating) {
       switch (tier) {
-        case 'Pawn': return '#aecdb1';
-        case 'Knight': return '#87abd6';
-        case 'Bishop': return '#ae97d7';
-        case 'Rook': return '#e7ada8';
-        case 'Queen': return '#edae6c';
-        case 'King': return '#edae6c';
+        case 'Pawn': return '#22c55e';
+        case 'Knight': return '#3b82f6';
+        case 'Bishop': return '#a855f7';
+        case 'Rook': return '#ef4444';
+        case 'Queen': return '#fb923c';
+        case 'King': return '#f59e0b';
         default: return '#2F639D';
       }
     }
   }
   
-  return '#aecdb1';
+  return '#22c55e';
 };
 
 const getRatingTier = (rating: number, thresholds: Record<string, number> = DEFAULT_TIER_THRESHOLDS): string => {

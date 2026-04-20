@@ -38,12 +38,12 @@ const promotionThresholds: { [key: string]: number } = {
 };
 
 const tierColorScheme: { [key: string]: { mainColor: string; borderColor: string } } = {
-  'PAWN':   { mainColor: 'rgba(150,155,165,0.75)', borderColor: 'rgba(150,155,165,0.25)' },
-  'KNIGHT': { mainColor: 'rgba(80,160,100,0.80)',  borderColor: 'rgba(80,160,100,0.25)'  },
-  'BISHOP': { mainColor: 'rgba(60,145,195,0.80)',  borderColor: 'rgba(60,145,195,0.25)'  },
-  'ROOK':   { mainColor: 'rgba(47,99,157,0.90)',   borderColor: 'rgba(47,99,157,0.30)'   },
-  'QUEEN':  { mainColor: 'rgba(130,75,185,0.80)',  borderColor: 'rgba(130,75,185,0.25)'  },
-  'KING':   { mainColor: 'rgba(195,155,55,0.82)',  borderColor: 'rgba(195,155,55,0.28)'  },
+  'PAWN':   { mainColor: 'rgba(34,197,94,0.85)',   borderColor: 'rgba(34,197,94,0.25)'   },
+  'KNIGHT': { mainColor: 'rgba(59,130,246,0.85)',  borderColor: 'rgba(59,130,246,0.25)'  },
+  'BISHOP': { mainColor: 'rgba(168,85,247,0.80)',  borderColor: 'rgba(168,85,247,0.25)'  },
+  'ROOK':   { mainColor: 'rgba(239,68,68,0.85)',   borderColor: 'rgba(239,68,68,0.25)'   },
+  'QUEEN':  { mainColor: 'rgba(255,140,0,0.85)',   borderColor: 'rgba(255,140,0,0.25)'   },
+  'KING':   { mainColor: 'rgba(255,215,0,0.85)',   borderColor: 'rgba(255,215,0,0.28)'   },
 };
 
 const tierImages: { [key: string]: string } = {
@@ -177,7 +177,7 @@ export default function Ranking() {
     fetchRanking();
   }, [currentPage, selectedGameType, selectedPlatform, t]);
 
-  const handleUserClick = (username: string) => navigate(`/profile/${username}`);
+  const handleUserClick = (username: string) => navigate(`/profile/${username}?platform=${selectedPlatform}`);
 
   const handleLichessLogin = async () => {
     if (isLichessLoading) return;

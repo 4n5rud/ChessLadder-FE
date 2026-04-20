@@ -306,10 +306,11 @@ const MonthlyRatingHistoryChart = ({
 
   if (!ratingHistory?.data?.length) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <p className="text-white/30 text-sm">
-          {isKR ? '데이터가 없습니다' : 'No data available'}
-        </p>
+      <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+        <div className="flex gap-1 text-4xl select-none opacity-15">
+          <span>♟</span><span>♞</span><span>♝</span><span>♜</span><span>♛</span><span>♚</span>
+        </div>
+        <p className="text-white/30 text-sm">{isKR ? '레이팅 히스토리가 없습니다' : 'No rating history'}</p>
       </div>
     );
   }

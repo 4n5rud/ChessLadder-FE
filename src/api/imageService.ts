@@ -66,7 +66,7 @@ export const getUploadUrl = async (
     { method: 'GET' }
   );
   
-  const uploadUrl = res.upload_url || res.data?.upload_url || res.data?.uploadUrl || res.uploadUrl;
+  const uploadUrl = res.data?.uploadUrl ?? res.data?.upload_url ?? res.uploadUrl ?? res.upload_url;
   
   if (!uploadUrl) {
     throw new Error('Upload URL fetch failed');
@@ -85,11 +85,9 @@ export const completeUpload = async (type: UserImageType): Promise<void> => {
     method: 'POST',
   });
   
+  // api()가 !response.ok 일 때 throw하므로 여기까지 도달하면 성공
   // 백엔드에서 data: null을 반환하는 경우도 성공으로 처리
-  // (이미지는 getUserProfile()에서 다시 조회하므로 OK)
-  if (!res.success) {
-    throw new Error('Upload complete failed');
-  }
+  void res;
 };
 
 /**
@@ -99,9 +97,10 @@ export const completeUpload = async (type: UserImageType): Promise<void> => {
  * @returns SuccessResponse<UploadUrlResponse>
  */
 export const getImageUrl = async (type: UserImageType): Promise<string> => {
-  const res = await api(`/image/image-url?type=${type}`, { method: 'GET' });
+  const res = await api(`/image/url?type=${type}`, { method: 'GET' });
   
-  const imageUrl = res.upload_url || res.data?.upload_url || res.imageUrl || res.data?.imageUrl;
+  // 명세: GET /api/image/url 응답 필드명도 uploadUrl
+  const imageUrl = res.data?.uploadUrl ?? res.data?.upload_url ?? res.data?.imageUrl ?? res.uploadUrl ?? res.imageUrl;
   
   if (!imageUrl) {
     throw new Error('Image URL fetch failed');

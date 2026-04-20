@@ -1,0 +1,16 @@
+[1mdiff --git a/.claude/settings.local.json b/.claude/settings.local.json[m
+[1mindex 259040d..11b1b5f 100644[m
+[1m--- a/.claude/settings.local.json[m
+[1m+++ b/.claude/settings.local.json[m
+[36m@@ -4,7 +4,10 @@[m
+       "Bash(npx tsc:*)",[m
+       "Bash(npx vite:*)",[m
+       "Bash(node_modules/.bin/tsc --noEmit)",[m
+[31m-      "Bash(./node_modules/.bin/tsc --noEmit)"[m
+[32m+[m[32m      "Bash(./node_modules/.bin/tsc --noEmit)",[m
+[32m+[m[32m      "Bash(node *)",[m
+[32m+[m[32m      "Bash(cp \"C:/Users/4n5rud/AppData/Roaming/Code/User/History/32ccbb3f/1LwT.ts\" \"C:/WorkSpace/Project/chess-mate/client/src/api/userService.ts\")",[m
+[32m+[m[32m      "Bash(cp \"C:/Users/4n5rud/AppData/Roaming/Code/User/History/-71b7b403/3v0V.tsx\" \"C:/WorkSpace/Project/chess-mate/client/src/global/Header.tsx\")"[m
+     ][m
+   }[m
+ }[m

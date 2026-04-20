@@ -5,6 +5,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getOAuthUrl, getChesscomOAuthUrl } from '../api/oauthService';
 import { loadAllNews, type NewsItem } from '../api/newsService';
+import { getPlatformStats, type PlatformStatsResponse } from '../api/userService';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuthStore } from '../store/authStore';
 import pawnImg from '../assets/images/tier/pawn.png';
@@ -29,7 +30,7 @@ function Main() {
     const { t } = useLanguage();
     const [isLoading, setIsLoading] = useState(false);
     const [isChesscomLoading, setIsChesscomLoading] = useState(false);
-    const [userCount, setUserCount] = useState<number>(0);
+    const [platformStats, setPlatformStats] = useState<PlatformStatsResponse>({ lichessCount: 0, chesscomCount: 0, totalCount: 0 });
     const [selectedTier, setSelectedTier] = useState<string | null>('KNIGHT');
     const [selectedPlatform, setSelectedPlatform] = useState<'lichess' | 'chesscom'>('lichess');
     const [recentNews, setRecentNews] = useState<NewsItem | null>(null);
@@ -229,24 +230,9 @@ function Main() {
         }
     };
 
-    // 사용자 수 조회
+    // 플랫폼별 사용자 수 조회
     useEffect(() => {
-        const fetchUserCount = async () => {
-            try {
-                const { api } = await import('../api/apiClient');
-                const data = await api('/user/count');
-                
-                // 새 명세서: { data: { totalCount } }
-                const userCountValue = data.data?.totalCount ?? data.totalCount ?? data.data?.count ?? data.count ?? 0;
-                
-                setUserCount(userCountValue);
-            } catch (err) {
-                // 사용자 수 조회 실패
-                setUserCount(0);
-            }
-        };
-
-        fetchUserCount();
+        getPlatformStats().then(setPlatformStats);
     }, []);
 
     // 최근 뉴스 로드
@@ -269,7 +255,7 @@ function Main() {
             <Header />
 
             {/* ── Hero Section ── */}
-            <main className="hero-glow-bg relative flex flex-col items-center justify-center min-h-screen px-4 text-center pb-24 overflow-hidden">
+            <main className="hero-glow-bg relative flex flex-col items-center justify-start min-h-screen px-4 text-center pt-[14vh] pb-16 overflow-hidden">
                 {/* Chess grid overlay */}
                 <div className="chess-grid absolute inset-0 pointer-events-none" />
 
@@ -367,32 +353,75 @@ function Main() {
                             disabled={isChesscomLoading || !!user}
                             className="flex items-center gap-3 bg-[#81B64C] border border-[#6a9e3a] text-white font-semibold py-3 px-7 rounded-full hover:bg-[#70a33e] transition text-base disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            <img src={chesscomLogoImg} alt="Chess.com" className="w-7 h-7 object-contain" />
+                            <img src={chesscomLogoImg} alt="Chess.com" className="w-7 h-7 object-contain rounded-sm" />
                             {isChesscomLoading ? t('profile.loading') : (user ? t('profile.alreadyLoggedIn') : t('main.loginWithChesscom'))}
                         </button>
                     )}
                 </div>
 
                 {/* Stats cards */}
-                <div className="relative pt-16 flex flex-col sm:flex-row gap-4 items-stretch w-full max-w-xl mx-auto fade-in-bottom-section" style={{animationDelay: '1.5s'}}>
-                    <div className="glass-card-info flex-1 p-5 text-center">
-                        <p className="text-xs text-white/35 uppercase tracking-widest mb-1">{t('main.recentUsers')}</p>
-                        <p className="text-2xl font-bold text-white">{userCount.toLocaleString()}<span className="text-white/40 text-base font-normal ml-1">{t('main.users')}</span></p>
+                <div className="relative flex flex-col gap-2 items-stretch w-full max-w-xl mx-auto mt-3 md:mt-4 fade-in-bottom-section" style={{animationDelay: '1.5s'}}>
+
+                    {/* 카드 1: 플랫폼별 유저 VS */}
+                    <div className="glass-card-info w-full p-3">
+                        <p className="text-[10px] text-white/35 uppercase tracking-widest mb-2">{t('main.recentUsers')}</p>
+                        <div className="flex items-center justify-between mb-2 px-1">
+                            <div className="flex flex-col items-center gap-1.5">
+                                <div className="w-7 h-7 rounded-md bg-white/10 flex items-center justify-center">
+                                    <img src={lichessLogoImg} alt="Lichess" className="w-4 h-4 object-contain" style={{ filter: 'brightness(0) invert(1)' }} />
+                                </div>
+                                <span className="text-lg font-black text-white leading-none">{platformStats.lichessCount.toLocaleString()}</span>
+                                <span className="text-[10px] text-white/35 uppercase tracking-wider leading-none">Lichess</span>
+                            </div>
+                            <span className="text-xl font-black text-white/15 pb-1">VS</span>
+                            <div className="flex flex-col items-center gap-1.5">
+                                <div className="w-7 h-7 rounded-md bg-white/10 flex items-center justify-center">
+                                    <img src={chesscomLogoImg} alt="Chess.com" className="w-4 h-4 object-contain" />
+                                </div>
+                                <span className="text-lg font-black text-white leading-none">{platformStats.chesscomCount.toLocaleString()}</span>
+                                <span className="text-[10px] text-white/35 uppercase tracking-wider leading-none">Chess.com</span>
+                            </div>
+                        </div>
+                        {(() => {
+                            const total = platformStats.totalCount;
+                            const lichessPct = total > 0 ? Math.round((platformStats.lichessCount / total) * 100) : 50;
+                            const chesscomPct = 100 - lichessPct;
+                            const isEmpty = total === 0;
+                            return (
+                                <>
+                                    <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden flex">
+                                        {!isEmpty && (
+                                            <>
+                                                <div className="h-full bg-white/60 transition-all duration-700" style={{ width: `${lichessPct}%` }} />
+                                                <div className="h-full bg-[#81b64c]/80 transition-all duration-700" style={{ width: `${chesscomPct}%` }} />
+                                            </>
+                                        )}
+                                    </div>
+                                    <div className="flex justify-between mt-0.5">
+                                        <span className="text-[10px] text-white/30">{isEmpty ? '-' : `${lichessPct}%`}</span>
+                                        <span className="text-[10px] text-white/30">{isEmpty ? '-' : `${chesscomPct}%`}</span>
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
+
+                    {/* 카드 2: 최근 소식 */}
                     <div
+                        className="glass-card-info w-full p-4 cursor-pointer hover:bg-white/[0.07] transition"
                         onClick={() => navigate('/news')}
-                        className="glass-card-info flex-1 p-5 cursor-pointer hover:bg-white/[0.07] transition text-left"
                     >
-                        <p className="text-xs text-white/35 uppercase tracking-widest mb-2">{t('main.recentNews')}</p>
+                        <p className="text-[11px] text-white/35 uppercase tracking-widest mb-2">{t('main.recentNews')}</p>
                         {recentNews ? (
-                            <>
-                                <p className="text-sm text-white/80 font-medium leading-snug mb-2 line-clamp-2">{recentNews.title}</p>
-                                <span className="text-xs text-[#86ABD7] hover:underline">{t('main.viewMore')}</span>
-                            </>
+                            <div className="group">
+                                <p className="text-[13px] text-white/80 font-medium leading-snug mb-1.5 line-clamp-2 group-hover:text-white transition">{recentNews.title}</p>
+                                <span className="text-xs text-[#86ABD7]">{t('main.viewMore')}</span>
+                            </div>
                         ) : (
                             <p className="text-xs text-white/25">{t('common.noData')}</p>
                         )}
                     </div>
+
                 </div>
             </main>
 
@@ -483,32 +512,61 @@ function Main() {
                 </div>
             </div>
 
-            {/* ── Community & Support ── */}
+            {/* ── 서비스 소개 섹션 ── */}
             <div className="w-full bg-[#070d1a] border-t border-white/5">
-                <div className="flex flex-col sm:flex-row gap-12 pt-12 pb-16 px-4 md:px-8 max-w-5xl mx-auto text-white">
-                    <div className="flex-1">
-                        <h2 className="text-xl font-bold mb-4">{t('main.discordLink')}</h2>
+                <div className="max-w-5xl mx-auto px-4 md:px-8 pt-20 pb-24 text-white">
+                    <h2 className="text-2xl md:text-3xl font-bold mb-6">ChessLadder</h2>
+                    <p className="text-white/55 text-base leading-relaxed mb-4 max-w-2xl">
+                        ChessLadder의 모든 티어 및 통계 데이터는 <span className="text-white font-semibold">레이팅 게임(Rated Game)</span> 기록만을 기반으로 산출됩니다. 비공식 게임이나 일반 게임은 반영되지 않습니다.
+                    </p>
+                    <p className="text-white/55 text-base leading-relaxed max-w-2xl">
+                        현재 아래 두 플랫폼과 연동을 지원합니다.
+                    </p>
+                    <div className="flex items-center gap-6 mt-6">
+                        <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center">
+                                <img src={lichessLogoImg} alt="Lichess" className="w-4 h-4 object-contain" style={{ filter: 'brightness(0) invert(1)' }} />
+                            </div>
+                            <span className="text-white/70 text-sm font-medium">Lichess</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center">
+                                <img src={chesscomLogoImg} alt="Chess.com" className="w-4 h-4 object-contain rounded-sm" />
+                            </div>
+                            <span className="text-white/70 text-sm font-medium">Chess.com</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── 커뮤니티 & 지원 ── */}
+            <div className="w-full bg-[#070d1a] border-t border-white/5">
+                <div className="flex flex-col sm:flex-row gap-8 pt-12 pb-16 px-4 md:px-8 max-w-5xl mx-auto text-white">
+                    <div className="flex-1 bg-[#5865F2]/10 border border-[#5865F2]/20 rounded-2xl p-6">
+                        <h2 className="text-base font-bold mb-1">{t('main.discordLink')}</h2>
+                        <p className="text-xs text-white/40 mb-4">{t('main.discordDesc') || '개발 소식과 커뮤니티에 참여하세요'}</p>
                         <a
                             href="https://discord.gg/8VkKJte5sz"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold py-2.5 px-6 rounded-full transition text-sm"
+                            className="inline-flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold py-2 px-5 rounded-full transition text-sm"
                         >
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.211.375-.444.864-.607 1.25a18.27 18.27 0 0 0-5.487 0c-.163-.386-.395-.875-.607-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.975 14.975 0 0 0 1.293-2.1a.07.07 0 0 0-.038-.098a13.11 13.11 0 0 1-1.872-.892a.072.072 0 0 1-.007-.12a10.15 10.15 0 0 0 .372-.294a.074.074 0 0 1 .076-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .076.01c.12.098.246.198.373.294a.072.072 0 0 1-.006.12a12.98 12.98 0 0 1-1.873.892a.07.07 0 0 0-.037.099a14.992 14.992 0 0 0 1.293 2.1a.074.074 0 0 0 .084.028a19.963 19.963 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.057c.5-4.569-.838-8.54-3.549-12.267a.06.06 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-.965-2.157-2.156c0-1.193.966-2.157 2.157-2.157c1.193 0 2.157.964 2.157 2.157c0 1.19-.964 2.156-2.157 2.156zm7.975 0c-1.183 0-2.157-.965-2.157-2.156c0-1.193.966-2.157 2.157-2.157c1.193 0 2.157.964 2.157 2.157c0 1.19-.964 2.156-2.157 2.156z"/>
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.444.864-.607 1.25a18.27 18.27 0 0 0-5.487 0c-.163-.386-.395-.875-.607-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
                             </svg>
                             {t('main.joinDiscord')}
                         </a>
                     </div>
-                    <div className="flex-1">
-                        <h2 className="text-xl font-bold mb-4">{t('main.buyMeCoffee')}</h2>
+                    <div className="flex-1 bg-yellow-400/5 border border-yellow-400/15 rounded-2xl p-6">
+                        <h2 className="text-base font-bold mb-1">{t('main.buyMeCoffee')}</h2>
+                        <p className="text-xs text-white/40 mb-4">{t('main.coffeeDesc') || '서버 운영을 도와주세요 ☕'}</p>
                         <a
                             href="https://buymeacoffee.com/4n5rud"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 bg-white/8 border border-white/12 hover:bg-white/12 text-white font-semibold py-2.5 px-6 rounded-full transition text-sm"
+                            className="inline-flex items-center gap-2 bg-yellow-400/15 border border-yellow-400/25 hover:bg-yellow-400/25 text-yellow-300 font-semibold py-2 px-5 rounded-full transition text-sm"
                         >
-                            <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/>
                             </svg>
                             Buy Me a Coffee

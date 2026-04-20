@@ -89,12 +89,11 @@ export async function initializeAuthFromRefresh(): Promise<User | null> {
       return null;
     }
 
-    // GET /api/auth/refresh (Authorization 헤더 없음, 쿠키만 사용)
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    // POST /api/auth/refresh?provider=... (쿠키만 사용)
+    const provider = useAuthStore.getState().user?.platform ?? 'LICHESS';
+    const response = await fetch(`${API_BASE_URL}/auth/refresh?provider=${provider}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
     });
 
@@ -156,12 +155,11 @@ export async function handleOAuthSuccess() {
     
     // 방법 2: 쿠키를 못 읽으면 /api/auth/refresh로 토큰 취득 (credentials 자동 포함)
     if (!accessToken) {
-      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // refresh 쿠키 자동 포함
+      const provider = useAuthStore.getState().user?.platform ?? 'LICHESS';
+      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh?provider=${provider}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
       });
 
       if (refreshResponse.ok) {
@@ -192,19 +190,17 @@ export async function handleOAuthSuccess() {
 
 /**
  * Step 7-3: 토큰 갱신
- * GET /api/auth/refresh
+ * POST /api/auth/refresh?provider=LICHESS|CHESSCOM
  * refreshToken 쿠키가 자동으로 포함됨 (credentials: 'include')
  */
 export async function refreshAccessToken(): Promise<boolean> {
   try {
-    // api() 함수는 이미 credentials: 'include' 처리 및 Authorization 헤더 추가 처리함
-    await api('/auth/refresh', {
-      method: 'GET',
+    const provider = useAuthStore.getState().user?.platform ?? 'LICHESS';
+    await api(`/auth/refresh?provider=${provider}`, {
+      method: 'POST',
     });
-
-    // 새 Access Token이 Set-Cookie로 자동 저장됨
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

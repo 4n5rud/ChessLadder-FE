@@ -50,8 +50,8 @@ const getTierColor = (rating: number, thresholds: Record<string, number> = DEFAU
         case 'KNIGHT': return '#3b82f6'; // Blue
         case 'BISHOP': return '#a855f7'; // Purple
         case 'ROOK': return '#ef4444'; // Red
-        case 'QUEEN': return '#f59e0b'; // Amber
-        case 'KING': return '#f59e0b'; // Amber
+        case 'QUEEN': return '#fb923c'; // Orange
+        case 'KING': return '#f59e0b'; // Gold/Amber
         default: return '#3b82f6';
       }
     }

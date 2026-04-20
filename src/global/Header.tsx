@@ -1,76 +1,65 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { logout, getCurrentUser, initializeAuth } from '../api/authService';
-import { getUserProfile } from '../api/userService';
+import { getUserCard, type UserCardResponse } from '../api/userService';
 import { getOAuthUrl, getChesscomOAuthUrl } from '../api/oauthService';
 import { useLanguage, type Language } from '../context/LanguageContext';
 import { useAuthStore } from '../store/authStore';
+import UserSearchBar from '../components/UserSearchBar';
 import knightLogo from '../assets/images/tier/knight.png';
 import lichessLogoImg from '../assets/images/logo/lichess-logo.png';
 import chesscomLogoImg from '../assets/images/logo/chesscom-logo.png';
 
-interface User {
-  id?: string | number;
-  username?: string;
-  lichessId?: string;
-  title?: string;
-  [key: string]: any;
-}
-
 const Header = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { t, language, setLanguage } = useLanguage();
     const [isLogged, setIsLogged] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoginLoading, setIsLoginLoading] = useState(false);
     const [isChesscomLoginLoading, setIsChesscomLoginLoading] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [user, setUser] = useState<User | null>(null);
-    const [profileImage, setProfileImage] = useState<string | null>(null);
-    const [bannerImage, setBannerImage] = useState<string | null>(null);
+    const [cardInfo, setCardInfo] = useState<UserCardResponse | null>(null);
+    const storeUser = useAuthStore((state) => state.user);
+
+    const isProfileRoute = location.pathname === '/profile' || location.pathname.startsWith('/profile/');
+    const queryPlatform = new URLSearchParams(location.search).get('platform');
+    const headerSearchPlatform: 'LICHESS' | 'CHESSCOM' =
+        queryPlatform?.toUpperCase() === 'CHESSCOM'
+            ? 'CHESSCOM'
+            : (storeUser?.platform === 'CHESSCOM' ? 'CHESSCOM' : 'LICHESS');
+
+    const loadCard = async () => {
+        try {
+            const card = await getUserCard();
+            if (card) setCardInfo(card);
+        } catch {
+            // 무시
+        }
+    };
 
     // 로그인 상태 확인
     useEffect(() => {
         const checkLoginStatus = async () => {
             try {
-                // /api/auth/me 호출 (401이면 자동으로 refresh)
                 const userData = await initializeAuth();
-                
                 if (userData) {
-                    // 로그인 성공 - Header local state와 Zustand store 모두 저장
-                    setUser(userData);
                     setIsLogged(true);
                     useAuthStore.getState().setUser(userData);
+                    await loadCard();
                 } else {
-                    // 비로그인
                     setIsLogged(false);
-                    setUser(null);
+                    setCardInfo(null);
                     useAuthStore.getState().clearUser();
                 }
-                
-                // 프로필 이미지 로드
-                if (userData) {
-                    try {
-                        const profileData = await getUserProfile();
-                        if (profileData?.profile_image) {
-                            setProfileImage(`${profileData.profile_image}?t=${Date.now()}`);
-                        }
-                        if (profileData?.banner_image) {
-                            setBannerImage(`${profileData.banner_image}?t=${Date.now()}`);
-                        }
-                    } catch (error) {
-                        // 프로필 이미지 로드 실패 (무시)
-                    }
-                }
-            } catch (error) {
+            } catch {
                 setIsLogged(false);
-                setUser(null);
+                setCardInfo(null);
                 useAuthStore.getState().clearUser();
             } finally {
                 setIsLoading(false);
             }
         };
-
         checkLoginStatus();
     }, []);
 
@@ -124,25 +113,11 @@ const Header = () => {
 
     const handleMenuToggle = async () => {
         if (!isMenuOpen && isLogged) {
-            // 메뉴를 열 때 최신 사용자 정보 다시 가져오기
             try {
-                const currentUserData = await getCurrentUser();
-                setUser(currentUserData);
-                
-                // 프로필을 조회하면서 이미지 가져오기
-                try {
-                    const profileData = await getUserProfile();
-                    if (profileData?.profile_image) {
-                        setProfileImage(`${profileData.profile_image}?t=${Date.now()}`);
-                    }
-                    if (profileData?.banner_image) {
-                        setBannerImage(`${profileData.banner_image}?t=${Date.now()}`);
-                    }
-                } catch (error) {
-                    // 프로필 이미지 로드 실패 (사용자 입장에서 로그 숨김)
-                }
-            } catch (error) {
-                // 사용자 정보 갱신 실패 (사용자 입장에서 로그 숨김)
+                await getCurrentUser();
+                await loadCard();
+            } catch {
+                // 무시
             }
         }
         setIsMenuOpen(!isMenuOpen);
@@ -159,6 +134,12 @@ const Header = () => {
                 <img src={knightLogo} alt="ChessLadder Logo" width="32" height="32"/>
                 <h1 className="text-lg md:text-xl font-bold header-title text-white whitespace-nowrap">ChessLadder</h1>
             </Link>
+
+            {isProfileRoute && (
+                <div className="flex-1 min-w-0 max-w-md">
+                    <UserSearchBar defaultPlatform={headerSearchPlatform} />
+                </div>
+            )}
 
             {/* 메뉴 버튼 (모바일과 데스크톱 공용) */}
             <div className="ml-auto flex items-center">
@@ -186,40 +167,50 @@ const Header = () => {
                                 <>
                                     {isLogged ? (
                                         <>
-                                            {/* 배너 배경 오버레이 (로그인 상태일 때만) */}
-                                            <div 
-                                                className="relative h-32 bg-white/5"
+                                            {/* 배너 + 유저 정보 */}
+                                            <div
+                                                className="relative h-32 bg-[#0a1120]"
                                                 style={{
-                                                    backgroundImage: bannerImage ? `url(${bannerImage})` : 'none',
+                                                    backgroundImage: cardInfo?.bannerImageUrl ? `url(${cardInfo.bannerImageUrl})` : 'none',
                                                     backgroundSize: 'cover',
                                                     backgroundPosition: 'center',
                                                 }}
                                             >
-                                                <div className="absolute inset-0 bg-black/40 pointer-events-none"></div>
+                                                <div className="absolute inset-0 bg-black/50 pointer-events-none" />
                                                 <div className="relative p-4 flex items-center gap-3 h-full">
+                                                    {/* 프로필 이미지 */}
                                                     <div className="flex-shrink-0">
-                                                        {profileImage ? (
-                                                            <img 
-                                                                src={profileImage} 
-                                                                alt="Profile" 
-                                                                className="w-16 h-16 rounded-full border-2 border-white object-cover"
+                                                        {cardInfo?.profileImageUrl ? (
+                                                            <img
+                                                                src={cardInfo.profileImageUrl}
+                                                                alt="Profile"
+                                                                className="w-14 h-14 rounded-xl border-2 border-white/30 object-cover shadow-lg"
                                                                 onError={(e) => {
-                                                                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ccc" width="100" height="100"/%3E%3Ctext x="50" y="50" font-size="60" fill="%23999" text-anchor="middle" dy=".3em"%3E%3F%3C/text%3E%3C/svg%3E';
+                                                                    (e.target as HTMLImageElement).style.display = 'none';
                                                                 }}
                                                             />
                                                         ) : (
-                                                            <div className="w-16 h-16 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center">
-                                                                <span className="text-gray-600">?</span>
+                                                            <div className="w-14 h-14 rounded-xl border-2 border-white/20 bg-white/10 flex items-center justify-center">
+                                                                <span className="text-white/40 text-xl">♟</span>
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="flex-1">
-                                                        <p className="text-white font-bold text-lg drop-shadow">
-                                                            {user?.user?.username || user?.username || t('profile.user')}
+                                                    {/* 유저 이름 + 플랫폼 배지 */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-white font-bold text-base drop-shadow truncate mb-1.5">
+                                                            {cardInfo?.username || t('profile.user')}
                                                         </p>
-                                                        <p className="text-white/60 text-xs font-medium drop-shadow mt-1">
-                                                            {user?.platform === 'CHESSCOM' ? '♟ Chess.com' : '♟ Lichess'}
-                                                        </p>
+                                                        {cardInfo?.platform === 'CHESSCOM' ? (
+                                                            <div className="inline-flex items-center gap-1.5 bg-[#81B64C] rounded-full px-2.5 py-1 shadow-sm">
+                                                                <img src={chesscomLogoImg} alt="Chess.com" className="w-3.5 h-3.5 object-contain rounded-sm" />
+                                                                <span className="text-white text-[11px] font-bold leading-none">Chess.com</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="inline-flex items-center gap-1.5 bg-white rounded-full px-2.5 py-1 shadow-sm">
+                                                                <img src={lichessLogoImg} alt="Lichess" className="w-3.5 h-3.5 object-contain" />
+                                                                <span className="text-black text-[11px] font-bold leading-none">Lichess</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

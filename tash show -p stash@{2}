@@ -1,0 +1,34 @@
+[1mdiff --git a/public/news/manifest.json b/public/news/manifest.json[m
+[1mindex 1d0c351..d0be605 100644[m
+[1m--- a/public/news/manifest.json[m
+[1m+++ b/public/news/manifest.json[m
+[36m@@ -8,5 +8,5 @@[m
+     "006-imageAndDescriptionError.md",[m
+     "007-chesscom-oauth-coming.md"[m
+   ],[m
+[31m-  "updated": "2026-03-27T11:10:47.045Z"[m
+[32m+[m[32m  "updated": "2026-04-20T03:04:38.892Z"[m
+ }[m
+\ No newline at end of file[m
+[1mdiff --git a/src/api/userService.ts b/src/api/userService.ts[m
+[1mindex 3d3796d..008cbe3 100644[m
+[1m--- a/src/api/userService.ts[m
+[1m+++ b/src/api/userService.ts[m
+[36m@@ -329,6 +329,17 @@[m [mexport const getFirstMoveStats = async (gameType: string = 'RAPID'): Promise<Fir[m
+   }[m
+ };[m
+ [m
+[32m+[m[32mexport interface RatingHistoryEntry {[m
+[32m+[m[32m  yearMonth: string;[m
+[32m+[m[32m  rating: number;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mexport interface RatingHistoryResponse {[m
+[32m+[m[32m  data: RatingHistoryEntry[];[m
+[32m+[m[32m  from?: string;[m
+[32m+[m[32m  to?: string;[m
+[32m+[m[32m}[m
+[32m+[m
+ /**[m
+  * 사용자 계정을 삭제합니다.[m
+  */[m
