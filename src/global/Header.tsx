@@ -21,6 +21,7 @@ const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [cardInfo, setCardInfo] = useState<UserCardResponse | null>(null);
     const storeUser = useAuthStore((state) => state.user);
+    const setUser = useAuthStore((state) => state.setUser);
 
     const isProfileRoute = location.pathname === '/profile' || location.pathname.startsWith('/profile/');
     const queryPlatform = new URLSearchParams(location.search).get('platform');

@@ -17,7 +17,6 @@ function DonutChart({ wins, losses, draws }: SideData) {
   const total = wins + losses + draws;
   const winPct  = total > 0 ? (wins  / total) * 100 : 0;
   const drawPct = total > 0 ? (draws / total) * 100 : 0;
-  const lossPct = total > 0 ? (losses / total) * 100 : 0;
 
   const isEmpty = total === 0;
 
