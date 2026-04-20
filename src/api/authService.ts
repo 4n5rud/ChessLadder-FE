@@ -6,9 +6,7 @@
 import { useAuthStore } from '../store/authStore';
 import { api } from './apiClient';
 
-const API_BASE_URL = import.meta.env.DEV 
-  ? 'http://localhost:8080/api' 
-  : (import.meta.env.VITE_API_BASE_URL || '/api');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export interface User {
   id?: string | number;

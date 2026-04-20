@@ -235,9 +235,10 @@ export const getChesscomSummary = getPlatformSummary;
 
 export const getRanking = async (
   _gameType: string,
-  _page = 0
+  _page = 0,
+  _platform: 'LICHESS' | 'CHESSCOM' = 'LICHESS'
 ): Promise<RankingApiResponse> => {
-  const res = await api(`/rank/ranking?gameType=${encodeURIComponent(_gameType)}&page=${_page}`);
+  const res = await api(`/rank/ranking?gameType=${encodeURIComponent(_gameType)}&page=${_page}&platform=${_platform}`);
   const data: any = res && typeof res === 'object' ? res.data ?? res : res;
 
   const rankingArray: any[] = data.entries ?? data.ranking ?? data.users ?? data.ranking_users ?? data.rankingList ?? [];

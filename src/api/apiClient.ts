@@ -3,10 +3,9 @@
 
 import { useAuthStore } from '../store/authStore';
 
-// 개발 환경에서는 localhost:8080, 프로덕션에서는 Vercel 환경변수 사용
-const API_BASE_URL = import.meta.env.DEV 
-  ? 'http://localhost:8080/api' 
-  : (import.meta.env.VITE_API_BASE_URL || '/api');
+// 개발: vite proxy가 /api → localhost:8080으로 포워딩 (CORS 우회)
+// 프로덕션: VITE_API_BASE_URL 환경변수 또는 /api 상대경로
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 /**
  * 쿠키에서 값 읽기

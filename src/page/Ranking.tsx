@@ -140,6 +140,7 @@ export default function Ranking() {
   const navigate = useNavigate();
   const storeUser = useAuthStore((state) => state.user);
 
+  const [selectedPlatform, setSelectedPlatform] = useState<'LICHESS' | 'CHESSCOM'>('LICHESS');
   const [users, setUsers] = useState<RankingUser[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -160,7 +161,7 @@ export default function Ranking() {
       try {
         setLoading(true);
         setError(null);
-        const response = await getRanking(selectedGameType, currentPage - 1);
+        const response = await getRanking(selectedGameType, currentPage - 1, selectedPlatform);
         setUsers(response.users.filter(u => u.rank > 0));
         setTotalPages(response.total_pages);
         setMyRank(response.my_rank ?? null);
@@ -174,7 +175,7 @@ export default function Ranking() {
       }
     };
     fetchRanking();
-  }, [currentPage, selectedGameType, t]);
+  }, [currentPage, selectedGameType, selectedPlatform, t]);
 
   const handleUserClick = (username: string) => navigate(`/profile/${username}`);
 
@@ -209,6 +210,11 @@ export default function Ranking() {
     setCurrentPage(1);
   };
 
+  const handlePlatformChange = (platform: 'LICHESS' | 'CHESSCOM') => {
+    setSelectedPlatform(platform);
+    setCurrentPage(1);
+  };
+
   const myTierInfo = myRating !== null ? getTierWithSubTier(myRating) : null;
 
   return (
@@ -226,6 +232,24 @@ export default function Ranking() {
             <p className="text-white/35 text-sm">
               {t('common.rankingDescription') || 'Browse the top chess players'}
             </p>
+          </div>
+
+          {/* Platform 탭 */}
+          <div className="flex gap-1 mb-6 p-1 bg-white/5 border border-white/10 rounded-xl w-fit">
+            {([['LICHESS', lichessLogoImg, 'Lichess'], ['CHESSCOM', chesscomLogoImg, 'Chess.com']] as const).map(([pl, logo, label]) => (
+              <button
+                key={pl}
+                onClick={() => handlePlatformChange(pl)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                  selectedPlatform === pl
+                    ? 'bg-white/15 text-white'
+                    : 'text-white/45 hover:text-white/70'
+                }`}
+              >
+                <img src={logo} alt={label} className="w-4 h-4 object-contain" />
+                {label}
+              </button>
+            ))}
           </div>
 
           {/* Game Type 탭 */}
