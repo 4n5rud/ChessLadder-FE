@@ -517,10 +517,10 @@ function Main() {
                 <div className="max-w-5xl mx-auto px-4 md:px-8 pt-20 pb-24 text-white">
                     <h2 className="text-2xl md:text-3xl font-bold mb-6">ChessLadder</h2>
                     <p className="text-white/55 text-base leading-relaxed mb-4 max-w-2xl">
-                        ChessLadder의 모든 티어 및 통계 데이터는 <span className="text-white font-semibold">레이팅 게임(Rated Game)</span> 기록만을 기반으로 산출됩니다. 비공식 게임이나 일반 게임은 반영되지 않습니다.
+                        {t('main.ratedGameDesc')}
                     </p>
                     <p className="text-white/55 text-base leading-relaxed max-w-2xl">
-                        현재 아래 두 플랫폼과 연동을 지원합니다.
+                        {t('main.platformSupport')}
                     </p>
                     <div className="flex items-center gap-6 mt-6">
                         <div className="flex items-center gap-2">

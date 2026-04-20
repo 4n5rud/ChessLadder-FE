@@ -109,8 +109,8 @@ const translations: Translations = {
     'main.title': 'ChessLadder',
     'main.welcome': 'ChessLadder에 오신 것을 환영합니다',
     'main.tagline': '체스 레이팅의 새로운 기준',
-    'main.loginWithLichess': 'Lichess 계정으로 로그인하기',
-    'main.loginWithChesscom': 'Chess.com 계정으로 로그인하기',
+    'main.loginWithLichess': 'Lichess 계정으로 로그인',
+    'main.loginWithChesscom': 'Chess.com 계정으로 로그인',
     'main.discordLink': '디스코드',
     'main.discordDesc': '개발 소식과 커뮤니티에 참여하세요',
     'main.coffeeDesc': '서버 운영을 도와주세요 ☕',
@@ -135,6 +135,8 @@ const translations: Translations = {
     'main.ratingRange': '레이팅 범위',
     'main.joinDiscord': 'Discord 참여하기',
     'main.buyMeCoffee': '개발자에게 커피 한잔 사주기',
+    'main.ratedGameDesc': 'ChessLadder의 모든 티어 및 통계 데이터는 레이팅 게임(Rated Game) 기록만을 기반으로 산출됩니다. 비공식 게임이나 일반 게임은 반영되지 않습니다.',
+    'main.platformSupport': '현재 아래 두 플랫폼과 연동을 지원합니다.',
 
     // Footer
     'footer.betaTest': '현재 베타 테스트 중입니다',
@@ -324,6 +326,8 @@ const translations: Translations = {
     'main.ratingRange': 'Rating Range',
     'main.joinDiscord': 'Join Discord',
     'main.buyMeCoffee': 'Buy Developer a Coffee',
+    'main.ratedGameDesc': 'All tier and stats data on ChessLadder is calculated based on Rated Game records only. Casual or unrated games are not reflected.',
+    'main.platformSupport': 'We currently support integration with the following two platforms.',
 
     // Footer
     'footer.betaTest': 'Currently in Beta Test',

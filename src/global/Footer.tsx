@@ -5,28 +5,6 @@ const Footer = () => {
     const { t } = useLanguage();
     return (
         <footer className="w-full bg-white text-[#0a1f33]">
-            {/* 공사장 테이프 베타 배너 */}
-            <div className="w-full bg-yellow-300 border-t-4 border-b-4 border-yellow-400 py-2 md:py-3 overflow-hidden">
-                <div className="max-w-6xl mx-auto px-3 md:px-4">
-                    <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3 justify-center">
-                        <div className="hidden md:flex gap-1">
-                            <div className="w-4 h-4 bg-yellow-400 rotate-45"></div>
-                            <div className="w-4 h-4 bg-black rotate-45"></div>
-                            <div className="w-4 h-4 bg-yellow-400 rotate-45"></div>
-                            <div className="w-4 h-4 bg-black rotate-45"></div>
-                        </div>
-                        <span className="font-black text-base md:text-lg text-black">{t('footer.betaTest')}</span>
-                        <span className="text-xs md:text-sm font-bold text-black text-center">{t('footer.reportIssue')} <a href="https://discord.gg/8VkKJte5sz" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-70">{t('footer.discord')}</a> {t('footer.reportSuffix')}</span>
-                        <div className="hidden md:flex gap-1">
-                            <div className="w-4 h-4 bg-black rotate-45"></div>
-                            <div className="w-4 h-4 bg-yellow-400 rotate-45"></div>
-                            <div className="w-4 h-4 bg-black rotate-45"></div>
-                            <div className="w-4 h-4 bg-yellow-400 rotate-45"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div className="py-8 md:py-12">
                 <div className="max-w-6xl mx-auto px-3 md:px-4">
                     {/* 상단 - 링크 그룹 */}

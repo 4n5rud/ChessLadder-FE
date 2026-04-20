@@ -27,11 +27,11 @@ const fetchOAuthUrl = async (path: string) => {
   }
 };
 
-/** GET /login/oauth2/lichess/url */
-export const getOAuthUrl = () => fetchOAuthUrl('/login/oauth2/lichess/url');
+/** GET /api/oauth/lichess/url */
+export const getOAuthUrl = () => fetchOAuthUrl('/api/oauth/lichess/url');
 
-/** GET /login/oauth2/chesscom/url */
-export const getChesscomOAuthUrl = () => fetchOAuthUrl('/login/oauth2/chesscom/url');
+/** GET /api/oauth/chesscom/url */
+export const getChesscomOAuthUrl = () => fetchOAuthUrl('/api/oauth/chesscom/url');
 
 /** POST /api/auth/logout */
 export const logout = async () => {
