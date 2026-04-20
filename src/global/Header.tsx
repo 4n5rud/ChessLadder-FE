@@ -2,11 +2,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { logout, getCurrentUser, initializeAuth } from '../api/authService';
 import { getUserProfile } from '../api/userService';
-import { getOAuthUrl } from '../api/oauthService';
+import { getOAuthUrl, getChesscomOAuthUrl } from '../api/oauthService';
 import { useLanguage, type Language } from '../context/LanguageContext';
 import { useAuthStore } from '../store/authStore';
 import knightLogo from '../assets/images/tier/knight.png';
 import lichessLogoImg from '../assets/images/logo/lichess-logo.png';
+import chesscomLogoImg from '../assets/images/logo/chesscom-logo.png';
 
 interface User {
   id?: string | number;
@@ -22,6 +23,7 @@ const Header = () => {
     const [isLogged, setIsLogged] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoginLoading, setIsLoginLoading] = useState(false);
+    const [isChesscomLoginLoading, setIsChesscomLoginLoading] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [user, setUser] = useState<User | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -89,24 +91,29 @@ const Header = () => {
         }
     };
 
-    // 명세서 Step 2: OAuth URL 요청
     const handleLichessLogin = async () => {
         if (isLoginLoading) return;
-        
         try {
             setIsLoginLoading(true);
             const result = await getOAuthUrl();
-            
-            if (!result.success || !result.oauth_url) {
-                throw new Error(t('main.loginFailAlert'));
-            }
-            
-            // Step 3: Lichess로 리다이렉트
+            if (!result.success || !result.oauth_url) throw new Error(t('main.loginFailAlert'));
+            sessionStorage.setItem('oauth_platform', 'LICHESS');
             window.location.href = result.oauth_url;
-            
         } catch (error: any) {
-            // 로그인 실패 (사용자에게 표시 안 함)
             setIsLoginLoading(false);
+        }
+    };
+
+    const handleChesscomLogin = async () => {
+        if (isChesscomLoginLoading) return;
+        try {
+            setIsChesscomLoginLoading(true);
+            const result = await getChesscomOAuthUrl();
+            if (!result.success || !result.oauth_url) throw new Error(t('main.loginFailAlert'));
+            sessionStorage.setItem('oauth_platform', 'CHESSCOM');
+            window.location.href = result.oauth_url;
+        } catch (error: any) {
+            setIsChesscomLoginLoading(false);
         }
     };
 
@@ -147,24 +154,18 @@ const Header = () => {
     };
 
     return (
-        <header className="relative sticky top-0 border-b border-gray-300 pb-1 pt-1 px-4 md:px-8 lg:px-30 w-full bg-white flex items-center gap-2 md:gap-8 h-14 min-h-0 z-50">
+        <header className="relative sticky top-0 border-b border-white/8 pb-1 pt-1 px-4 md:px-8 lg:px-30 w-full bg-[#070d1a] flex items-center gap-2 md:gap-8 h-14 min-h-0 z-50">
             <Link to="/" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition flex-shrink-0">
                 <img src={knightLogo} alt="ChessLadder Logo" width="32" height="32"/>
-                <h1 className="text-lg md:text-xl font-bold header-title text-[#2F639D] whitespace-nowrap">ChessLadder</h1>
+                <h1 className="text-lg md:text-xl font-bold header-title text-white whitespace-nowrap">ChessLadder</h1>
             </Link>
 
-            <div className="items-center flex-shrink-0 hidden md:flex gap-6 lg:gap-20 ml-auto text-[#2F639D] font-semibold transition text-sm md:text-base">
-                <Link to="/page1" className="hover:text-[#1f4170] transition">{t('header.home')}</Link>
-                <Link to="/news" className="hover:text-[#1f4170] transition">{t('header.news')}</Link>
-                <Link to="/ranking" className="hover:text-[#1f4170] transition">{t('header.ranking')}</Link>
-            </div>
-            
             {/* 메뉴 버튼 (모바일과 데스크톱 공용) */}
             <div className="ml-auto flex items-center">
                 <div className="relative">
                     <button 
                         onClick={handleMenuToggle}
-                        className="px-3 py-2 text-[#2F639D] hover:text-[#1f4170] transition"
+                        className="px-3 py-2 text-white/60 hover:text-white transition"
                         title={t('header.menu')}
                         disabled={isLoading}
                     >
@@ -175,11 +176,11 @@ const Header = () => {
                     
                     {/* 드롭다운 메뉴 */}
                     {isMenuOpen && (
-                        <div className="fixed top-14 right-4 md:right-6 w-72 md:w-80 rounded-lg shadow-xl border border-gray-200 z-[9999] overflow-hidden bg-white">
+                        <div className="fixed top-14 right-4 md:right-6 w-72 md:w-80 rounded-lg shadow-2xl border border-white/10 z-[9999] overflow-hidden bg-[#0d1626]">
                             {isLoading ? (
                                 <div className="p-4 flex flex-col items-center justify-center min-h-40">
                                     <div className="w-10 h-10 border-4 border-[#2F639D] border-t-transparent rounded-full animate-spin"></div>
-                                    <p className="text-gray-500 mt-3 text-sm">{t('common.loading')}</p>
+                                    <p className="text-white/40 mt-3 text-sm">{t('common.loading')}</p>
                                 </div>
                             ) : (
                                 <>
@@ -187,7 +188,7 @@ const Header = () => {
                                         <>
                                             {/* 배너 배경 오버레이 (로그인 상태일 때만) */}
                                             <div 
-                                                className="relative h-32 bg-gray-100"
+                                                className="relative h-32 bg-white/5"
                                                 style={{
                                                     backgroundImage: bannerImage ? `url(${bannerImage})` : 'none',
                                                     backgroundSize: 'cover',
@@ -216,79 +217,89 @@ const Header = () => {
                                                         <p className="text-white font-bold text-lg drop-shadow">
                                                             {user?.user?.username || user?.username || t('profile.user')}
                                                         </p>
+                                                        <p className="text-white/60 text-xs font-medium drop-shadow mt-1">
+                                                            {user?.platform === 'CHESSCOM' ? '♟ Chess.com' : '♟ Lichess'}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
                                             
-                                            <div className="py-2 border-b border-gray-100">
+                                            <div className="py-2 border-b border-white/8">
                                                 <button
                                                     onClick={handleProfileClick}
-                                                    className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                                    className="w-full text-left px-4 py-3 text-white/75 hover:bg-white/8 transition font-medium"
                                                 >
                                                     {t('header.myProfile')}
                                                 </button>
                                                 <button
                                                     onClick={handleLogout}
-                                                    className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                                    className="w-full text-left px-4 py-3 text-white/75 hover:bg-white/8 transition font-medium"
                                                 >
                                                     {t('header.logout')}
                                                 </button>
                                             </div>
                                         </>
                                     ) : (
-                                        <div className="p-4 flex flex-col items-center gap-4 border-b border-gray-100">
-                                            <p className="text-gray-500 text-sm text-center">{t('main.loginRequired')}</p>
-                                            <button 
-                                                onClick={() => {
-                                                    setIsMenuOpen(false);
-                                                    handleLichessLogin();
-                                                }}
+                                        <div className="p-4 flex flex-col items-center gap-3 border-b border-white/8">
+                                            <p className="text-white/40 text-sm text-center">{t('main.loginRequired')}</p>
+                                            {/* Lichess 로그인 */}
+                                            <button
+                                                onClick={() => { setIsMenuOpen(false); handleLichessLogin(); }}
                                                 disabled={isLoginLoading}
-                                                className="flex items-center gap-2 bg-white text-black font-bold py-2 px-5 rounded-full shadow-md hover:bg-[#e6e6e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full flex items-center justify-center gap-2 bg-white text-black font-bold py-2 px-5 rounded-full shadow-md hover:bg-[#e6e6e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <img src={lichessLogoImg} alt="Lichess Logo" className="w-6 h-6" />
                                                 {isLoginLoading ? t('profile.loading') : t('main.loginWithLichess')}
+                                            </button>
+                                            {/* Chess.com 로그인 */}
+                                            <button
+                                                onClick={() => { setIsMenuOpen(false); handleChesscomLogin(); }}
+                                                disabled={isChesscomLoginLoading}
+                                                className="w-full flex items-center justify-center gap-2 bg-[#81B64C] text-white font-bold py-2 px-5 rounded-full shadow-md hover:bg-[#6a9e3a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <img src={chesscomLogoImg} alt="Chess.com Logo" className="w-7 h-7 object-contain" />
+                                                {isChesscomLoginLoading ? t('profile.loading') : t('main.loginWithChesscom')}
                                             </button>
                                         </div>
                                     )}
 
                                     {/* 네비게이션 (항상 표시) */}
-                                    <div className="py-2 border-b border-gray-100">
-                                        <Link 
-                                            to="/page1" 
+                                    <div className="py-2 border-b border-white/8">
+                                        <Link
+                                            to="/"
                                             onClick={() => setIsMenuOpen(false)}
-                                            className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                            className="block w-full text-left px-4 py-3 text-white/75 hover:bg-white/8 transition font-medium"
                                         >
                                             {t('header.home')}
                                         </Link>
-                                        <Link 
-                                            to="/news" 
+                                        <Link
+                                            to="/news"
                                             onClick={() => setIsMenuOpen(false)}
-                                            className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                            className="block w-full text-left px-4 py-3 text-white/75 hover:bg-white/8 transition font-medium"
                                         >
                                             {t('header.news')}
                                         </Link>
-                                        <Link 
-                                            to="/ranking" 
+                                        <Link
+                                            to="/ranking"
                                             onClick={() => setIsMenuOpen(false)}
-                                            className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 transition font-medium"
+                                            className="block w-full text-left px-4 py-3 text-white/75 hover:bg-white/8 transition font-medium"
                                         >
                                             {t('header.ranking')}
                                         </Link>
                                     </div>
 
                                     {/* 언어 선택 (항상 표시) */}
-                                    <div className="p-4 bg-gray-50">
-                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                                    <div className="p-4 bg-[#060c18] border-t border-white/8">
+                                        <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3">
                                             {t('header.changeLanguage')}
                                         </p>
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => handleLanguageChange('KR')}
                                                 className={`flex-1 py-2.5 text-center text-sm font-bold rounded-lg transition ${
-                                                    language === 'KR' 
-                                                        ? 'bg-[#2F639D] text-white shadow-md' 
-                                                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                                                    language === 'KR'
+                                                        ? 'bg-[#2F639D] text-white'
+                                                        : 'bg-white/8 text-white/60 hover:bg-white/12 border border-white/15'
                                                 }`}
                                             >
                                                 한국어
@@ -296,9 +307,9 @@ const Header = () => {
                                             <button
                                                 onClick={() => handleLanguageChange('EN')}
                                                 className={`flex-1 py-2.5 text-center text-sm font-bold rounded-lg transition ${
-                                                    language === 'EN' 
-                                                        ? 'bg-[#2F639D] text-white shadow-md' 
-                                                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                                                    language === 'EN'
+                                                        ? 'bg-[#2F639D] text-white'
+                                                        : 'bg-white/8 text-white/60 hover:bg-white/12 border border-white/15'
                                                 }`}
                                             >
                                                 English

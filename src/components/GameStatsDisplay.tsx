@@ -7,7 +7,7 @@ interface GameStatsDisplayProps {
   summaryLoaded: boolean;
 }
 
-const GameStatsDisplay = ({ profile, userPerf, summaryLoaded }: GameStatsDisplayProps) => {
+const GameStatsDisplay = ({ profile, userPerf: _userPerf, summaryLoaded }: GameStatsDisplayProps) => {
   const { language } = useLanguage();
 
   if (!profile) return null;

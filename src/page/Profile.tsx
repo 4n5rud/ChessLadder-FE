@@ -2,26 +2,30 @@ import Header from "../global/Header";
 import Footer from "../global/Footer";
 import { useState, useEffect, useRef } from "react";
 import type { ReactElement } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toPng } from 'html-to-image';
-import { getCurrentUser } from "../api/authService";
-import { getUploadUrl, completeUpload } from "../api/imageService";
+import { initializeAuth } from "../api/authService";
+import { useAuthStore } from "../store/authStore";
+import { getUploadUrl, completeUpload, validateImageFile, validateImageDimensions } from "../api/imageService";
 import type { UserImageType } from "../api/imageService";
-import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, forceRefreshStats, deleteAccount, getColorStats, getFirstMoveStats } from "../api/userService";
-import type { ProfileResponse, DailyStreakDto, UserPerfResponse, ColorStatsResponse, FirstMoveResponse } from "../api/userService";
-import { useRatingHistory } from "../api/queries";
+import { getUserProfile, updateUserDescription, getUserStreak, getUserPerf, forceRefreshStats, deleteAccount, getColorStats, getFirstMoveStats, getLichessSummary, getChesscomSummary, getRatingHistory } from "../api/userService";
+import type { ProfileResponse, DailyStreakDto, UserPerfResponse, ColorStatsResponse, FirstMoveResponse, RatingHistoryResponse } from "../api/userService";
 import { useLanguage } from "../context/LanguageContext";
-import RatingHistoryChart from "../components/RatingHistoryChart";
+import MonthlyRatingHistoryChart from "../components/MonthlyRatingHistoryChart";
 import { TierSection } from "../components/TierSection";
 import ProfileCard from "../components/ProfileCard";
 import { GameTypeButtons } from "../components/GameTypeButtons";
 import ColorStatsChart from "../components/ColorStatsChart";
 import FirstMoveStatsChart from "../components/FirstMoveStatsChart";
+import GameStatsDisplay from "../components/GameStatsDisplay";
 import lichessLogoImg from "../assets/images/logo/lichess-logo.png";
 import "./Profile.css";
 
 const Profile = () => {
     const { t, language } = useLanguage();
+    const navigate = useNavigate();
+    const user = useAuthStore((state) => state.user);
     const [bannerImage, setBannerImage] = useState<string | null>(null);
     const [profileImage, setProfileImage] = useState<string | null>(null);
     const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -32,6 +36,8 @@ const Profile = () => {
     const [savingDescription, setSavingDescription] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deletingAccount, setDeletingAccount] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [showError, setShowError] = useState(false);
     
     // 게임 타입 관련 상태
     const [selectedGameType, setSelectedGameType] = useState<string>('RAPID');
@@ -45,56 +51,14 @@ const Profile = () => {
         'CLASSICAL': 'Classical'
     };
     
-    // 티어별 색상 정의
+    // 티어별 색상 — 티어 정체성을 은은하게 표현
     const tierColorScheme: { [key: string]: { mainColor: string; lightBg: string; darkBg: string; borderColor: string; lightText: string; darkText: string } } = {
-        'PAWN': { 
-            mainColor: '#aecdb1',
-            lightBg: '#f0f8f3',
-            darkBg: '#dce8e0',
-            borderColor: '#aecdb1',
-            lightText: '#5a7a68',
-            darkText: '#2d4037'
-        },
-        'KNIGHT': { 
-            mainColor: '#87abd6',
-            lightBg: '#f0f5fb',
-            darkBg: '#d8e5f0',
-            borderColor: '#87abd6',
-            lightText: '#3d6a96',
-            darkText: '#1e3a52'
-        },
-        'BISHOP': { 
-            mainColor: '#ae97d7',
-            lightBg: '#f5f1fb',
-            darkBg: '#e5d8f0',
-            borderColor: '#ae97d7',
-            lightText: '#6b4fa5',
-            darkText: '#38245a'
-        },
-        'ROOK': { 
-            mainColor: '#e7ada8',
-            lightBg: '#fdf4f2',
-            darkBg: '#f0dcd8',
-            borderColor: '#e7ada8',
-            lightText: '#a5544a',
-            darkText: '#5a2a22'
-        },
-        'QUEEN': { 
-            mainColor: '#edae6c',
-            lightBg: '#fef9f2',
-            darkBg: '#f5e0d4',
-            borderColor: '#edae6c',
-            lightText: '#b87a36',
-            darkText: '#6a431a'
-        },
-        'KING': { 
-            mainColor: '#edae6c',
-            lightBg: '#fef9f2',
-            darkBg: '#f5e0d4',
-            borderColor: '#edae6c',
-            lightText: '#b87a36',
-            darkText: '#6a431a'
-        }
+        'PAWN':   { mainColor: 'rgba(150,155,165,0.75)', lightBg: 'rgba(150,155,165,0.06)', darkBg: 'rgba(150,155,165,0.10)', borderColor: 'rgba(150,155,165,0.20)', lightText: 'rgba(180,185,195,0.65)', darkText: 'rgba(200,205,215,1)' },
+        'KNIGHT': { mainColor: 'rgba(80,160,100,0.80)',  lightBg: 'rgba(80,160,100,0.06)',  darkBg: 'rgba(80,160,100,0.11)',  borderColor: 'rgba(80,160,100,0.22)',  lightText: 'rgba(100,180,120,0.65)', darkText: 'rgba(130,210,150,1)'  },
+        'BISHOP': { mainColor: 'rgba(60,145,195,0.80)',  lightBg: 'rgba(60,145,195,0.06)',  darkBg: 'rgba(60,145,195,0.11)',  borderColor: 'rgba(60,145,195,0.22)',  lightText: 'rgba(80,165,215,0.65)', darkText: 'rgba(110,190,240,1)'  },
+        'ROOK':   { mainColor: 'rgba(47,99,157,0.90)',   lightBg: 'rgba(47,99,157,0.07)',   darkBg: 'rgba(47,99,157,0.13)',   borderColor: 'rgba(47,99,157,0.27)',   lightText: 'rgba(74,130,200,0.65)', darkText: 'rgba(100,160,230,1)'  },
+        'QUEEN':  { mainColor: 'rgba(130,75,185,0.80)',  lightBg: 'rgba(130,75,185,0.06)',  darkBg: 'rgba(130,75,185,0.11)',  borderColor: 'rgba(130,75,185,0.23)',  lightText: 'rgba(155,100,210,0.65)', darkText: 'rgba(185,135,240,1)' },
+        'KING':   { mainColor: 'rgba(195,155,55,0.82)',  lightBg: 'rgba(195,155,55,0.07)',  darkBg: 'rgba(195,155,55,0.11)',  borderColor: 'rgba(195,155,55,0.23)',  lightText: 'rgba(210,170,80,0.65)', darkText: 'rgba(235,195,100,1)'  },
     };
     
     // 티어별 프로모션 임계값 정의
@@ -129,14 +93,15 @@ const Profile = () => {
         }
         return 'PAWN';
     };
-    
+
     // 스트릭 관련 상태
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [availableYears, setAvailableYears] = useState<number[]>([]);
     const [streakMap, setStreakMap] = useState<Map<string, DailyStreakDto>>(new Map());
     
     // 레이팅 히스토리 관련 상태
-    const [ratingHistory, setRatingHistory] = useState<any[]>([]);
+    const [ratingHistoryResponse, setRatingHistoryResponse] = useState<RatingHistoryResponse | null>(null);
+    const [loadingRatingHistory, setLoadingRatingHistory] = useState(false);
     
     // 티어 관련 상태
     const [userPerf, setUserPerf] = useState<UserPerfResponse | null>(null);
@@ -154,6 +119,10 @@ const Profile = () => {
     const [firstMoveStats, setFirstMoveStats] = useState<FirstMoveResponse | null>(null);
     const [loadingFirstMoveStats, setLoadingFirstMoveStats] = useState(false);
 
+    // 데이터 로드 완료 플래그 (로딩 전: ? 표시)
+    const [summaryLoaded, setSummaryLoaded] = useState(false);
+    const [streakLoaded, setStreakLoaded] = useState(false);
+
     const cardRef = useRef<HTMLDivElement>(null);
     const previewRef = useRef<HTMLDivElement>(null);
     const [isExporting, setIsExporting] = useState(false);
@@ -165,6 +134,16 @@ const Profile = () => {
             previewRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }, [showPreview]);
+
+    // 에러 메시지 자동 사라짐
+    useEffect(() => {
+        if (showError) {
+            const timer = setTimeout(() => {
+                setShowError(false);
+            }, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [showError]);
 
     const handleExportCard = async () => {
         if (!cardRef.current) return;
@@ -196,61 +175,90 @@ const Profile = () => {
     // 남은 시간 업데이트 (1초마다)
     useEffect(() => {
         if (!lastRefreshTime) return;
-        
+
         const interval = setInterval(() => {
             const now = Date.now();
             const elapsed = now - lastRefreshTime;
             const remaining = Math.max(0, REFRESH_COOLDOWN - elapsed);
             setRemainingTime(remaining);
-            
+
             if (remaining === 0) {
                 clearInterval(interval);
             }
         }, 1000);
-        
+
         return () => clearInterval(interval);
     }, [lastRefreshTime]);
+
+    // 인증 체크: 로그인이 안 되어 있으면 홈으로 리다이렉트
+    useEffect(() => {
+        if (!user) {
+            navigate('/', { replace: true });
+        }
+    }, [user, navigate]);
+
     useEffect(() => {
         const fetchUserAndImages = async () => {
             try {
-                await getCurrentUser();
-                
+                // 먼저 인증 상태 초기화 (store 업데이트)
+                await initializeAuth();
+
                 // 프로필 정보 조회
                 const profileData = await getUserProfile();
 
                 // 이미지 강제 갱신을 위해 타임스탬프 추가
                 if (profileData) {
                     const timestamp = Date.now();
-                    if (profileData.profile_image) {
-                        profileData.profile_image = `${profileData.profile_image}?t=${timestamp}`;
+                    if (profileData.profileImageUrl) {
+                        profileData.profileImageUrl = `${profileData.profileImageUrl}?t=${timestamp}`;
+                        profileData.profile_image = profileData.profileImageUrl;
                     }
-                    if (profileData.banner_image) {
-                        profileData.banner_image = `${profileData.banner_image}?t=${timestamp}`;
+                    if (profileData.bannerImageUrl) {
+                        profileData.bannerImageUrl = `${profileData.bannerImageUrl}?t=${timestamp}`;
+                        profileData.banner_image = profileData.bannerImageUrl;
                     }
                 }
 
-                // 프로필 데이터 수신
-                setProfile(profileData);
-                setDescription(profileData?.description || '');
-                
-                // lichessCreatedAt부터 현재 년도까지의 년도 배열 생성
-                if (profileData?.lichessCreatedAt) {
-                    const lichessYear = new Date(profileData.lichessCreatedAt).getFullYear();
-                    const currentYear = new Date().getFullYear();
-                    const years: number[] = [];
-                    for (let year = lichessYear; year <= currentYear; year++) {
-                        years.push(year);
+                // 요약 통계 병합
+                let summary: Partial<ProfileResponse> = {};
+                try {
+                    if (profileData?.platform === 'CHESSCOM') {
+                        summary = await getChesscomSummary();
+                    } else {
+                        summary = await getLichessSummary();
                     }
-                    setAvailableYears(years);
-                    setSelectedYear(currentYear);
+                } catch (_) {
+                    // 요약 통계 조회 실패 시 기본값 사용
                 }
-                
+
+                const mergedProfile: ProfileResponse = { ...profileData, ...summary };
+
+                // 프로필 데이터 수신
+                setProfile(mergedProfile);
+                setDescription(mergedProfile?.description || '');
+                setSummaryLoaded(true);
+
+                // 년도 배열 생성
+                const currentYear = new Date().getFullYear();
+                const buildYears = (startYear: number) => {
+                    const years: number[] = [];
+                    for (let y = startYear; y <= currentYear; y++) years.push(y);
+                    return years;
+                };
+
+                // platformJoinedAt 기반 연도 범위 설정 (성공적으로 받아온 경우)
+                const startYear = profileData?.platformJoinedAt
+                    ? new Date(profileData.platformJoinedAt).getFullYear()
+                    : currentYear - 2; // 없으면 기본 3년
+                setAvailableYears(buildYears(startYear));
+                setSelectedYear(currentYear);
+
                 // 프로필과 배너 이미지를 profileData에서 직접 가져오기
-                if (profileData?.profile_image) {
-                    setProfileImage(profileData.profile_image);
+                if (profileData?.profileImageUrl) {
+                    setProfileImage(profileData.profileImageUrl);
                 }
-                if (profileData?.banner_image) {
-                    setBannerImage(profileData.banner_image);
+                if (profileData?.bannerImageUrl) {
+                    setBannerImage(profileData.bannerImageUrl);
                 }
             } catch (error) {
                 // 사용자 데이터 조회 실패
@@ -262,87 +270,76 @@ const Profile = () => {
     // QueryClient 인스턴스 접근
     const queryClient = useQueryClient();
 
-    // 게임 타입 변경 시 레이팅 히스토리와 티어 정보 조회
-    const { data: ratingHistoryData, isLoading: isLoadingRatingHistoryQuery } = useRatingHistory(
-        profile?.lichessId || '',
-        selectedGameType
-    );
-
-    // ratingHistoryData가 업데이트되면 ratingHistory 상태 동기화
     useEffect(() => {
-        if (ratingHistoryData) {
-            setRatingHistory(ratingHistoryData);
-        }
-    }, [ratingHistoryData]);
+        // platform이 결정된 이후에만 호출
+        if (!profile?.platform) return;
 
-    useEffect(() => {
         const fetchGameTypeData = async () => {
             setLoadingPerf(true);
             setLoadingColorStats(true);
             setLoadingFirstMoveStats(true);
+            setLoadingRatingHistory(true);
             try {
-                const [perfData, colorData, firstMoveData] = await Promise.all([
+                const [perfData, colorData, firstMoveData, ratingHistData] = await Promise.all([
                     getUserPerf(selectedGameType),
                     getColorStats(selectedGameType),
-                    getFirstMoveStats(selectedGameType)
+                    getFirstMoveStats(selectedGameType),
+                    getRatingHistory(selectedGameType)
                 ]);
-                
-                // perf 데이터 수신
+                // API 응답에서 data가 빈 배열이면 null 반환됨
                 setUserPerf(perfData);
                 setColorStats(colorData);
                 setFirstMoveStats(firstMoveData);
+                setRatingHistoryResponse(ratingHistData && ratingHistData.data.length > 0 ? ratingHistData : null);
             } catch (error) {
-                // 성능 데이터 조회 실패
-                // 에러 시 기본 uncertain 상태
-                setUserPerf({
-                    rating: 0,
-                    gamesPlayed: 0,
-                    prov: true,
-                    all: 0, rated: 0, wins: 0, losses: 0, draws: 0,
-                    tour: 0, berserk: 0, opAvg: 0, seconds: 0, disconnects: 0,
-                    highestRating: 0, lowestRating: 0,
-                    maxStreak: 0, maxLossStreak: 0,
-                    uncertain: true
-                });
+                setUserPerf(null);
                 setColorStats(null);
                 setFirstMoveStats(null);
+                setRatingHistoryResponse(null);
             } finally {
                 setLoadingPerf(false);
                 setLoadingColorStats(false);
                 setLoadingFirstMoveStats(false);
+                setLoadingRatingHistory(false);
             }
         };
-        
-        fetchGameTypeData();
-    }, [selectedGameType]);
 
-    // 년도 변경 시 스트릭 데이터 조회
+        fetchGameTypeData();
+    }, [selectedGameType, profile?.platform]);
+
+    // 년도 변경 시 스트릭 데이터 조회 (profile.platform 이 결정된 이후에만 실행)
     useEffect(() => {
         const fetchStreak = async () => {
             try {
-                const streakData = await getUserStreak(selectedYear);
-                if (!streakData || !streakData.daily_streak_dto) {
+                const streakData = await getUserStreak(selectedYear, profile?.platform);
+                if (!streakData) {
                     setStreakMap(new Map());
                     return;
                 }
-                
+
+                // 선택된 연도의 days 찾기
+                const selectedYearData = streakData.years?.find(y => y.year === selectedYear);
+                const days = selectedYearData?.days ?? [];
+
                 const map = new Map<string, DailyStreakDto>();
-                if (Array.isArray(streakData.daily_streak_dto)) {
-                    streakData.daily_streak_dto.forEach((daily: DailyStreakDto) => {
+                if (Array.isArray(days)) {
+                    days.forEach((daily: DailyStreakDto) => {
                         map.set(daily.date, daily);
                     });
                 }
                 setStreakMap(map);
+                setStreakLoaded(true);
             } catch (error) {
-                // 스트릭 데이터 조회 실패
                 setStreakMap(new Map());
+                setStreakLoaded(true);
             }
         };
-        
-        if (selectedYear) {
+
+        setStreakLoaded(false);
+        if (selectedYear && profile?.platform) {
             fetchStreak();
         }
-    }, [selectedYear]);
+    }, [selectedYear, profile?.platform]);
 
     const handleImageUpload = async (
         e: React.ChangeEvent<HTMLInputElement>,
@@ -350,15 +347,35 @@ const Profile = () => {
     ) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        
+
         if (type === 'BANNER') setLoadingBanner(true);
         if (type === 'PROFILE') setLoadingProfile(true);
-        
+
         try {
+            // 유효성 검사 1: 기본 검사 (크기, 형식)
+            const basicError = validateImageFile(file);
+            if (basicError) {
+                setErrorMessage(basicError.message);
+                setShowError(true);
+                if (type === 'BANNER') setLoadingBanner(false);
+                if (type === 'PROFILE') setLoadingProfile(false);
+                return;
+            }
+
+            // 유효성 검사 2: 해상도 검사
+            const dimensionError = await validateImageDimensions(file);
+            if (dimensionError) {
+                setErrorMessage(dimensionError.message);
+                setShowError(true);
+                if (type === 'BANNER') setLoadingBanner(false);
+                if (type === 'PROFILE') setLoadingProfile(false);
+                return;
+            }
+
             // 1. Presigned URL 취득
             const result = await getUploadUrl(type, file.type);
             const { uploadUrl, contentType } = result;
-            
+
             // 2. Cloudflare R2에 파일 직접 업로드
             const uploadResponse = await fetch(uploadUrl, {
                 method: 'PUT',
@@ -367,38 +384,42 @@ const Profile = () => {
                     'Content-Type': contentType,
                 },
             });
-            
+
             if (!uploadResponse.ok) {
-                throw new Error(`Upload failed: ${uploadResponse.status}`);
+                throw new Error(`업로드 실패: ${uploadResponse.status}`);
             }
-            
+
             // 3. 백엔드에 업로드 완료 알림 (DB에 저장)
             await completeUpload(type);
-            
+
             // 업로드 완료 후 프로필 데이터 재조회
             const updatedProfile = await getUserProfile();
-            
+
             // 이미지 강제 갱신을 위해 타임스탬프 추가
             if (updatedProfile) {
                 const timestamp = Date.now();
-                if (updatedProfile.profile_image) {
-                    updatedProfile.profile_image = `${updatedProfile.profile_image}?t=${timestamp}`;
+                if (updatedProfile.profileImageUrl) {
+                    updatedProfile.profileImageUrl = `${updatedProfile.profileImageUrl}?t=${timestamp}`;
+                    updatedProfile.profile_image = updatedProfile.profileImageUrl;
                 }
-                if (updatedProfile.banner_image) {
-                    updatedProfile.banner_image = `${updatedProfile.banner_image}?t=${timestamp}`;
+                if (updatedProfile.bannerImageUrl) {
+                    updatedProfile.bannerImageUrl = `${updatedProfile.bannerImageUrl}?t=${timestamp}`;
+                    updatedProfile.banner_image = updatedProfile.bannerImageUrl;
                 }
             }
 
             setProfile(updatedProfile);
-            
-            if (updatedProfile?.profile_image) {
-                setProfileImage(updatedProfile.profile_image);
+
+            if (updatedProfile?.profileImageUrl) {
+                setProfileImage(updatedProfile.profileImageUrl);
             }
-            if (updatedProfile?.banner_image) {
-                setBannerImage(updatedProfile.banner_image);
+            if (updatedProfile?.bannerImageUrl) {
+                setBannerImage(updatedProfile.bannerImageUrl);
             }
         } catch (error) {
-            // 에러 처리 (사용자에게 표시 안 함)
+            const errorMsg = error instanceof Error ? error.message : '이미지 업로드 중 오류가 발생했습니다.';
+            setErrorMessage(errorMsg);
+            setShowError(true);
         } finally {
             if (type === 'BANNER') setLoadingBanner(false);
             if (type === 'PROFILE') setLoadingProfile(false);
@@ -409,24 +430,26 @@ const Profile = () => {
         setSavingDescription(true);
         try {
             await updateUserDescription(description);
-            
+
             // 자기소개 업데이트 후 프로필 데이터 재조회
             const updatedProfile = await getUserProfile();
-            
+
             // 이미지 타임스탬프 유지 또는 갱신
             if (updatedProfile) {
                 const timestamp = Date.now();
-                if (updatedProfile.profile_image) {
-                    updatedProfile.profile_image = `${updatedProfile.profile_image}?t=${timestamp}`;
+                if (updatedProfile.profileImageUrl) {
+                    updatedProfile.profileImageUrl = `${updatedProfile.profileImageUrl}?t=${timestamp}`;
+                    updatedProfile.profile_image = updatedProfile.profileImageUrl;
                 }
-                if (updatedProfile.banner_image) {
-                    updatedProfile.banner_image = `${updatedProfile.banner_image}?t=${timestamp}`;
+                if (updatedProfile.bannerImageUrl) {
+                    updatedProfile.bannerImageUrl = `${updatedProfile.bannerImageUrl}?t=${timestamp}`;
+                    updatedProfile.banner_image = updatedProfile.bannerImageUrl;
                 }
             }
 
             setProfile(updatedProfile);
             setDescription(updatedProfile?.description || '');
-            
+
             setIsEditingDescription(false);
         } catch (error) {
             // 에러 처리 (사용자에게 표시 안 함)
@@ -477,30 +500,41 @@ const Profile = () => {
     };
 
     return (
-        <div className="profile-page" style={{
-            backgroundColor: userPerf
-                ? userPerf.uncertain 
-                    ? '#f3f4f6'
-                    : tierColorScheme[getTierFromRating(userPerf.rating)].lightBg
-                : tierColorScheme['KING'].lightBg
-        }}>
+        <div className="min-h-screen bg-[#070d1a]">
             <Header />
-            
+
+            {/* 에러 토스트 메시지 */}
+            {showError && errorMessage && (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="bg-red-500/90 backdrop-blur-sm border border-red-400/30 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-md">
+                        <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm font-medium">{errorMessage}</span>
+                    </div>
+                </div>
+            )}
+
             {/* 배너 이미지 */}
-            <div 
+            <div
                 className="w-full relative group banner-section z-0"
                 style={bannerImage ? {
-                    height: window.innerWidth < 768 ? '200px' : '380px',
+                    height: window.innerWidth < 768 ? '400px' : '650px',
                     backgroundImage: `url(${bannerImage})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
                 } : {
-                    height: window.innerWidth < 768 ? '200px' : '380px',
-                    backgroundColor: userPerf 
-                        ? userPerf.uncertain 
-                            ? '#e5e7eb'
-                            : tierColorScheme[getTierFromRating(userPerf.rating)].mainColor
-                        : tierColorScheme['KING'].mainColor,
+                    height: window.innerWidth < 768 ? '400px' : '650px',
+                    backgroundImage: userPerf
+                        ? userPerf.uncertain
+                            ? 'none'
+                            : `linear-gradient(135deg, ${tierColorScheme[getTierFromRating(userPerf.rating)].darkBg}, rgba(7,13,26,0.95))`
+                        : `linear-gradient(135deg, ${tierColorScheme['KING'].darkBg}, rgba(7,13,26,0.95))`,
+                    backgroundColor: userPerf
+                        ? userPerf.uncertain
+                            ? '#1a1a24'
+                            : 'transparent'
+                        : 'transparent',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
                 }}
@@ -523,8 +557,8 @@ const Profile = () => {
             </div>
 
             {/* 프로필 섹션 */}
-            <div className="max-w-6xl mx-auto px-3 md:px-6 -mt-10 md:-mt-20 relative z-10 mb-8">
-                <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 md:p-8 shadow-lg card-section card-hover">
+            <div className="max-w-6xl mx-auto px-3 md:px-6 -mt-14 md:-mt-24 relative z-10 mb-8">
+                <div className="bg-[#070d1a]/95 border border-white/20 rounded-2xl p-4 md:p-8 card-section card-hover backdrop-blur-md">
                     <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-start md:items-start">
                         {/* 프로필 이미지 */}
                         <div className="flex flex-col items-center gap-4 flex-shrink-0 w-full md:w-auto">
@@ -558,14 +592,14 @@ const Profile = () => {
 
                         {/* 프로필 정보 */}
                         <div className="flex-1 w-full md:w-auto">
-                            <h1 className="text-2xl md:text-4xl font-black text-gray-900 mb-2">
+                            <h1 className="text-2xl md:text-4xl font-black text-white mb-2">
                                 {profile?.username || 'User'}
                             </h1>
                             <div className="text-[10px] md:text-xs font-normal uppercase tracking-wider mb-6 flex flex-col md:flex-row gap-2 md:gap-4">
-                                <p className="text-gray-500 opacity-60 whitespace-nowrap">
+                                <p className="text-white/40 whitespace-nowrap">
                                     {language === 'KR' ? '체스래더 가입일' : 'ChessLadder Joined'}: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '-'}
                                 </p>
-                                <p className="text-gray-500 opacity-60 whitespace-nowrap">
+                                <p className="text-white/40 whitespace-nowrap">
                                     {t('profile.lichessJoinDate')}: {profile?.lichessCreatedAt ? new Date(profile.lichessCreatedAt).toLocaleDateString() : '-'}
                                 </p>
                             </div>
@@ -573,12 +607,12 @@ const Profile = () => {
                             {/* Lichess 프로필 이동 버튼 + 강제 갱신 버튼 */}
                             <div className="mb-6 flex flex-col items-start gap-4">
                                 <div className="flex gap-2 flex-wrap">
-                                    {profile?.lichessId && (
+                                    {profile?.platform !== 'CHESSCOM' && profile?.lichessId && (
                                         <a
                                             href={`https://lichess.org/@/${profile.lichessId}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center justify-center w-10 h-10 bg-white border-2 border-black rounded-lg hover:shadow-lg transition hover:scale-105"
+                                            className="inline-flex items-center justify-center w-10 h-10 bg-white/10 border border-white/20 rounded-lg hover:shadow-lg transition hover:scale-105"
                                         >
                                             <img
                                                 src={lichessLogoImg}
@@ -590,7 +624,7 @@ const Profile = () => {
                                     <button
                                         onClick={handleForceRefresh}
                                         disabled={refreshing || remainingTime > 0}
-                                        className="inline-flex items-center justify-center px-4 py-2 bg-white border-2 border-black rounded-lg hover:shadow-lg transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm"
+                                        className="inline-flex items-center justify-center px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg hover:shadow-lg transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm"
                                         title={remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}${t('profile.availableAfter')}` : t('profile.fetchFromLichess')}
                                     >
                                         {refreshing ? t('profile.refreshing') : remainingTime > 0 ? `${Math.ceil(remainingTime / 1000)}${t('profile.waitSeconds')}` : t('profile.dataRefresh')}
@@ -626,13 +660,13 @@ const Profile = () => {
                                 {showPreview && (
                                     <div 
                                         ref={previewRef}
-                                        className="w-full max-w-[750px] bg-white rounded-[32px] p-8 border-2 border-gray-100 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300 z-50 overflow-hidden"
+                                        className="w-full max-w-[750px] bg-[#0d1626] rounded-[32px] p-8 border border-white/10 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300 z-50 overflow-hidden"
                                     >
                                         <div className="flex flex-col gap-6">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <h2 className="text-xl font-black text-gray-900 mb-1">{language === 'KR' ? '프로필 카드 미리보기' : 'Profile Card Preview'}</h2>
-                                                    <p className="text-xs text-gray-500 font-medium">
+                                                    <h2 className="text-xl font-black text-white mb-1">{language === 'KR' ? '프로필 카드 미리보기' : 'Profile Card Preview'}</h2>
+                                                    <p className="text-xs text-white/40 font-medium">
                                                         {language === 'KR' 
                                                             ? `현재 선택된 [${selectedGameType.toUpperCase()}] 타입 기준 미리보기입니다.` 
                                                             : `Preview for the currently selected [${selectedGameType.toUpperCase()}] type.`}
@@ -640,13 +674,13 @@ const Profile = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="flex justify-center bg-gray-50/50 p-8 rounded-[24px] border border-gray-200 overflow-x-auto shadow-inner">
+                                            <div className="flex justify-center bg-white/3 p-8 rounded-[24px] border border-white/8 overflow-x-auto shadow-inner">
                                                 <div style={{ width: '595px', height: '637px' }}>
                                                     {profile && userPerf && (
-                                                        <ProfileCard 
+                                                        <ProfileCard
                                                             profile={profile}
                                                             userPerf={userPerf}
-                                                            ratingHistory={ratingHistory}
+                                                            ratingHistory={[]}
                                                             streakMap={streakMap}
                                                             selectedYear={selectedYear}
                                                             gameType={selectedGameType}
@@ -670,7 +704,7 @@ const Profile = () => {
                                             value={description}
                                             onChange={(e) => setDescription(e.target.value)}
                                             placeholder={t('profile.enterDescription')}
-                                            className="w-full p-3 border-2 rounded-lg text-sm focus:outline-none focus:ring-2 bg-white"
+                                            className="w-full p-3 border-2 rounded-lg text-sm focus:outline-none focus:ring-2 bg-white/5 text-white placeholder-white/30"
                                             style={{
                                                 borderColor: userPerf 
                                                     ? userPerf.uncertain
@@ -700,7 +734,7 @@ const Profile = () => {
                                                     setIsEditingDescription(false);
                                                     setDescription(profile?.description || '');
                                                 }}
-                                                className="px-4 py-2 bg-gray-200 text-gray-700 font-bold text-sm rounded-lg hover:bg-gray-300 transition"
+                                                className="px-4 py-2 bg-white/10 text-white/70 font-bold text-sm rounded-lg hover:bg-white/15 transition"
                                             >
                                                 {t('profile.cancel')}
                                             </button>
@@ -709,26 +743,14 @@ const Profile = () => {
                                 ) : (
                                     <div className="flex items-start gap-4">
                                         <div className="flex-1">
-                                            <p className="text-gray-700 text-sm leading-relaxed p-4 rounded-lg border-2"
-                                                style={{
-                                                    backgroundColor: userPerf 
-                                                        ? userPerf.uncertain
-                                                            ? '#f3f4f6'
-                                                            : tierColorScheme[getTierFromRating(userPerf.rating)]?.lightBg || tierColorScheme['KING'].lightBg
-                                                        : tierColorScheme['KING'].lightBg,
-                                                    borderColor: userPerf 
-                                                        ? userPerf.uncertain
-                                                            ? '#9ca3af'
-                                                            : tierColorScheme[getTierFromRating(userPerf.rating)]?.mainColor || tierColorScheme['KING'].mainColor
-                                                        : tierColorScheme['KING'].mainColor
-                                                }}
+                                            <p className="text-white/70 text-sm leading-relaxed p-4 rounded-lg border bg-white/5 border-white/10"
                                             >
                                                 {description || t('profile.noDescription')}
                                             </p>
                                         </div>
                                         <button
                                             onClick={() => setIsEditingDescription(true)}
-                                            className="px-3 py-1.5 text-gray-600 hover:text-gray-900 font-medium text-sm border-2 rounded transition flex-shrink-0"
+                                            className="px-3 py-1.5 text-white/70 hover:text-white font-medium text-sm border-2 rounded transition flex-shrink-0"
                                             style={{
                                                 borderColor: userPerf 
                                                     ? userPerf.uncertain
@@ -744,58 +766,20 @@ const Profile = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* 게임 통계 (프로필 섹션 하단) */}
+                    <GameStatsDisplay profile={profile} userPerf={userPerf} summaryLoaded={summaryLoaded} />
                 </div>
             </div>
 
-            {/* 게임 통계 섹션 */}
-            {profile && (
-                <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('profile.gameStatistics')}</h2>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.totalGames')}</p>
-                            <p className="text-4xl font-black text-gray-800">{profile.allGames}</p>
-                            <p className="text-xs text-gray-600 mt-2">{t('profile.games')}</p>
-                        </div>
-                        <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.ratedGames')}</p>
-                            <p className="text-4xl font-black text-gray-800">{profile.ratedGames}</p>
-                            <p className="text-xs text-gray-600 mt-2">{t('profile.games')}</p>
-                        </div>
-                        <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.winRate')}</p>
-                            <p className="text-4xl font-black text-gray-800">
-                                {(profile?.allGames ?? 0) > 0 ? (((profile?.wins ?? 0) / (profile?.allGames ?? 1)) * 100).toFixed(1) : '0.0'}%
-                            </p>
-                            <p className="text-xs text-gray-600 mt-2">{profile.wins}{language === 'KR' ? '승' : 'W'}</p>
-                        </div>
-                        <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.wins')}</p>
-                            <p className="text-4xl font-black text-green-600">{profile.wins}</p>
-                            <p className="text-xs text-gray-600 mt-2">{t('profile.games')}</p>
-                        </div>
-                        <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.losses')}</p>
-                            <p className="text-4xl font-black text-red-600">{profile.losses}</p>
-                            <p className="text-xs text-gray-600 mt-2">{t('profile.games')}</p>
-                        </div>
-                        <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                            <p className="text-gray-700 text-xs font-semibold mb-2 uppercase tracking-wide">{t('profile.draws')}</p>
-                            <p className="text-4xl font-black text-gray-600">{profile.draws}</p>
-                            <p className="text-xs text-gray-600 mt-2">{t('profile.games')}</p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* 플레이 활동 섹션 - 게임타입 바로 하단 */}
+            {/* 플레이 활동 섹션 */}
             <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 text-animate">{t('profile.gameActivityRecord')}</h2>
+                    <h2 className="text-2xl font-bold text-white text-animate">{t('profile.gameActivityRecord')}</h2>
                     <select
                         value={selectedYear}
                         onChange={(e) => setSelectedYear(Number(e.target.value))}
-                        className="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:border-blue-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                        className="px-4 py-2 bg-white/5 border border-white/15 rounded-lg text-white text-sm font-medium focus:outline-none transition"
                     >
                         {availableYears.map((year) => (
                             <option key={year} value={year}>
@@ -804,13 +788,11 @@ const Profile = () => {
                         ))}
                     </select>
                 </div>
-                
-                <div className={`rounded-lg p-4 md:p-8 shadow-lg card-section card-hover overflow-x-auto ${
-                    userPerf?.uncertain ? 'bg-gray-100 border-2 border-gray-300' : 'bg-blue-50 border-2 border-blue-200'
-                }`}>
-                    <p className="text-gray-700 text-sm font-bold uppercase tracking-wider mb-6 text-animate">{selectedYear}{language === 'KR' ? '년' : ''} {t('profile.activityStatus')}</p>
+
+                <div className="rounded-lg p-4 md:p-8 card-section card-hover overflow-x-auto bg-white/4 border border-white/8">
+                    <p className="text-white/60 text-sm font-bold uppercase tracking-wider mb-6 text-animate">{selectedYear}{language === 'KR' ? '년' : ''} {t('profile.activityStatus')}</p>
                     <div className="pb-6 min-w-full">
-                        <div className="flex gap-0 mb-3 text-xs text-gray-600 font-bold uppercase w-full px-1">
+                        <div className="flex gap-0 mb-3 text-xs text-white/60 font-bold uppercase w-full px-1">
                             {['profile.monthJan', 'profile.monthFeb', 'profile.monthMar', 'profile.monthApr', 'profile.monthMay', 'profile.monthJun', 'profile.monthJul', 'profile.monthAug', 'profile.monthSep', 'profile.monthOct', 'profile.monthNov', 'profile.monthDec'].map((monthKey) => (
                                 <div key={monthKey} className="flex-1 text-center">
                                     {t(monthKey)}
@@ -823,9 +805,9 @@ const Profile = () => {
                                 const year = selectedYear;
                                 const firstDay = new Date(year, 0, 1);
                                 const lastDay = new Date(year, 11, 31);
-                                
+
                                 let currentDate = new Date(firstDay);
-                                
+
                                 let weekCount = 0;
                                 while (currentDate <= lastDay) {
                                     weeks.push(
@@ -833,15 +815,15 @@ const Profile = () => {
                                             {Array.from({ length: 7 }).map((_, day) => {
                                                 const date = new Date(currentDate);
                                                 date.setDate(date.getDate() + day);
-                                                
+
                                                 const dateStr = date.toISOString().split('T')[0];
-                                                
+
                                                 if (date < firstDay || date > lastDay) {
                                                     return <div key={dateStr} className="w-4 h-4"></div>;
                                                 }
-                                                
+
                                                 const dailyData = streakMap.get(dateStr);
-                                                
+
                                                 let activity = 0;
                                                 if (dailyData) {
                                                     const total = dailyData.total ?? 0;
@@ -851,36 +833,42 @@ const Profile = () => {
                                                     else if (total <= 8) activity = 3;
                                                     else activity = 4;
                                                 }
-                                                
-                                                const colors = userPerf?.uncertain ? [
-                                                    'bg-gray-300 border-gray-400',
-                                                    'bg-gray-400 border-gray-500',
-                                                    'bg-gray-500 border-gray-600',
-                                                    'bg-gray-600 border-gray-700',
-                                                    'bg-gray-700 border-gray-800'
-                                                ] : [
-                                                    'bg-gray-200 border-gray-300',
-                                                    'bg-blue-300 border-blue-400',
-                                                    'bg-blue-500 border-blue-600',
-                                                    'bg-blue-700 border-blue-800',
-                                                    'bg-indigo-900 border-indigo-950'
+
+                                                // 어두운 배경에 자연스럽게 녹아드는 색상
+                                                const colorStyles = [
+                                                    'rgba(255,255,255,0.06)',  // 0: 없음
+                                                    'rgba(47,99,157,0.30)',    // 1: 1-2게임
+                                                    'rgba(47,99,157,0.52)',    // 2: 3-5게임
+                                                    'rgba(47,99,157,0.74)',    // 3: 6-8게임
+                                                    'rgba(47,99,157,0.95)',    // 4: 9+게임
                                                 ];
-                                                
+                                                const borderStyles = [
+                                                    'rgba(255,255,255,0.08)',
+                                                    'rgba(47,99,157,0.40)',
+                                                    'rgba(47,99,157,0.65)',
+                                                    'rgba(47,99,157,0.88)',
+                                                    'rgba(74,143,212,0.90)',
+                                                ];
+
                                                 return (
                                                     <div
                                                         key={dateStr}
-                                                        className={`w-4 h-4 rounded-sm border ${colors[activity]} cursor-help transition hover:ring-2 hover:ring-offset-1 ${userPerf?.uncertain ? 'hover:ring-gray-400' : 'hover:ring-blue-400'}`}
-                                                        title={dailyData ? `${dateStr} • ${dailyData.total}게임: ${dailyData.win}승 ${dailyData.lose}패 ${dailyData.draw}무\n마지막 레이팅: ${dailyData.last_rating ?? dailyData.lastRating ?? '-'}` : '데이터 없음'}
+                                                        style={{
+                                                            backgroundColor: colorStyles[activity],
+                                                            borderColor: borderStyles[activity],
+                                                        }}
+                                                        className="w-4 h-4 rounded-sm border cursor-help transition hover:brightness-125"
+                                                        title={dailyData ? `${dateStr} • ${dailyData.total}게임: ${dailyData.win}승 ${dailyData.lose}패 ${dailyData.draw}무` : '데이터 없음'}
                                                     />
                                                 );
                                             })}
                                         </div>
                                     );
-                                    
+
                                     currentDate.setDate(currentDate.getDate() + 7);
                                     weekCount++;
                                 }
-                                
+
                                 return weeks;
                             })()}
                         </div>
@@ -908,7 +896,7 @@ const Profile = () => {
                         const year = selectedYear;
                         const firstDay = new Date(year, 0, 1);
                         const lastDay = new Date(year, 11, 31);
-                        
+
                         let maxStreak = 0;
                         let currentStreak = 0;
                         let tempDate = new Date(firstDay);
@@ -916,47 +904,70 @@ const Profile = () => {
                         while (tempDate <= lastDay) {
                             const dateStr = tempDate.toISOString().split('T')[0];
                             const dailyData = streakMap.get(dateStr);
-                            
+
                             if (dailyData && dailyData.total > 0) {
                                 currentStreak++;
                                 maxStreak = Math.max(maxStreak, currentStreak);
                             } else {
                                 currentStreak = 0;
                             }
-                            
+
                             tempDate.setDate(tempDate.getDate() + 1);
                         }
 
-                        const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : '0.0';
+                        const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : null;
+
+                        const streakTier = userPerf && !userPerf.uncertain ? getTierFromRating(userPerf.rating) : 'PAWN';
+                        const stc = tierColorScheme[streakTier];
 
                         return (
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg p-6 border-2 border-blue-400 shadow-md hover:shadow-lg transition transform hover:scale-105">
+                                {/* Max Streak — tier 색상으로 강조 */}
+                                <div
+                                    className="rounded-lg p-6 border transition hover:brightness-110"
+                                    style={{ backgroundColor: stc.darkBg, borderColor: stc.borderColor }}
+                                >
                                     <div className="text-center">
-                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.consecutiveDays')}</p>
-                                        <p className="text-5xl font-black text-blue-700 leading-none mb-1">{maxStreak}</p>
-                                        <p className="text-xs text-gray-600 font-medium">일</p>
+                                        <p className="text-xs font-semibold mb-3 uppercase tracking-wide" style={{ color: stc.lightText }}>{t('profile.consecutiveDays')}</p>
+                                        <p className="text-5xl font-black leading-none mb-1" style={{ color: stc.darkText }}>{streakLoaded ? maxStreak : '?'}</p>
+                                        <p className="text-xs text-white/40 font-medium">일</p>
                                     </div>
                                 </div>
-                                <div className="bg-gray-50 rounded-lg p-6 border border-gray-300">
+                                {/* Active Days */}
+                                <div
+                                    className="rounded-lg p-6 border"
+                                    style={{ backgroundColor: stc.lightBg, borderColor: stc.borderColor }}
+                                >
                                     <div className="text-center">
-                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.activeDays')}</p>
-                                        <p className="text-4xl font-black text-gray-800 leading-none mb-1">{activeDays}</p>
-                                        <p className="text-xs text-gray-600 font-medium">일</p>
+                                        <p className="text-white/60 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.activeDays')}</p>
+                                        <p className="text-4xl font-black text-white leading-none mb-1">{streakLoaded ? activeDays : '?'}</p>
+                                        <p className="text-xs text-white/40 font-medium">일</p>
                                     </div>
                                 </div>
-                                <div className="bg-gray-50 rounded-lg p-6 border border-gray-300">
+                                {/* Total Games */}
+                                <div
+                                    className="rounded-lg p-6 border"
+                                    style={{ backgroundColor: stc.lightBg, borderColor: stc.borderColor }}
+                                >
                                     <div className="text-center">
-                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.totalPlayGames')}</p>
-                                        <p className="text-4xl font-black text-gray-800 leading-none mb-1">{totalGames}</p>
-                                        <p className="text-xs text-gray-600 font-medium">게임</p>
+                                        <p className="text-white/60 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.totalPlayGames')}</p>
+                                        <p className="text-4xl font-black text-white leading-none mb-1">{streakLoaded ? totalGames : '?'}</p>
+                                        <p className="text-xs text-white/40 font-medium">게임</p>
                                     </div>
                                 </div>
-                                <div className="bg-gray-50 rounded-lg p-6 border border-gray-300">
+                                {/* Win Rate */}
+                                <div
+                                    className="rounded-lg p-6 border"
+                                    style={{ backgroundColor: stc.lightBg, borderColor: stc.borderColor }}
+                                >
                                     <div className="text-center">
-                                        <p className="text-gray-700 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.winRate')}</p>
-                                        <p className="text-4xl font-black text-gray-800 leading-none mb-1">{winRate}%</p>
-                                        <p className="text-xs text-gray-600 font-medium">{totalWins}승 {totalLoses}패</p>
+                                        <p className="text-white/60 text-xs font-semibold mb-3 uppercase tracking-wide">{t('profile.winRate')}</p>
+                                        <p className="text-4xl font-black text-white leading-none mb-1">
+                                            {streakLoaded ? (winRate !== null ? `${winRate}%` : '0.0%') : '?'}
+                                        </p>
+                                        <p className="text-xs text-white/40 font-medium">
+                                            {streakLoaded ? `${totalWins}승 ${totalLoses}패` : '-'}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -965,77 +976,81 @@ const Profile = () => {
                 </div>
             </div>
 
-            {/* 게임 타입 선택 버튼 - 플레이 활동 바로 하단 */}
-            <GameTypeButtons 
-                gameTypes={gameTypes}
-                selectedGameType={selectedGameType}
-                gameTypeDisplayNames={gameTypeDisplayNames}
-                onGameTypeChange={setSelectedGameType}
-            />
+            {/* 게임 타입 선택 버튼 */}
+            <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8">
+                <GameTypeButtons
+                    gameTypes={gameTypes}
+                    selectedGameType={selectedGameType}
+                    gameTypeDisplayNames={gameTypeDisplayNames}
+                    onGameTypeChange={setSelectedGameType}
+                />
+            </div>
 
             {/* 티어 섹션 */}
-            <TierSection 
-                userPerf={userPerf}
-                loadingPerf={loadingPerf}
-                tierColorScheme={tierColorScheme}
-                promotionThresholds={promotionThresholds}
-                convertSubTierToRoman={convertSubTierToRoman}
-            />
+            <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
+                <TierSection
+                    userPerf={userPerf}
+                    loadingPerf={loadingPerf}
+                    tierColorScheme={tierColorScheme}
+                    promotionThresholds={promotionThresholds}
+                    convertSubTierToRoman={convertSubTierToRoman}
+                    platform={profile?.platform as 'LICHESS' | 'CHESSCOM' | undefined}
+                />
+            </div>
 
             {/* 레이팅 히스토리 섹션 */}
-            <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 text-animate">{t('profile.ratingHistory')}</h2>
-                
-                <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-lg card-section card-hover">
-                    {isLoadingRatingHistoryQuery ? (
+            <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
+                <div className="flex flex-col gap-1 mb-6">
+                    <h2 className="text-3xl md:text-4xl font-bold text-white text-animate">{language === 'KR' ? '레이팅 진행 추세' : 'Rating Progress Trend'}</h2>
+                    <div className="w-16 h-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-transparent rounded-full"></div>
+                </div>
+                <div className="bg-white/4 border border-white/8 rounded-lg p-8 card-section card-hover">
+                    {loadingRatingHistory ? (
                         <div className="flex items-center justify-center h-80">
-                            <p className="text-gray-500 text-sm">{t('profile.dataLoading')}</p>
+                            <p className="text-white/40 text-sm">{t('profile.dataLoading')}</p>
                         </div>
-                    ) : ratingHistory.length > 0 ? (
+                    ) : ratingHistoryResponse && ratingHistoryResponse.data.length > 0 ? (
                         <div className="h-[450px]">
-                            <RatingHistoryChart 
-                                ratingHistory={ratingHistory} 
+                            <MonthlyRatingHistoryChart
+                                ratingHistory={ratingHistoryResponse}
                                 tierThresholds={promotionThresholds}
+                                isLoading={loadingRatingHistory}
                             />
                         </div>
                     ) : (
                         <div className="flex items-center justify-center h-80">
-                            <p className="text-gray-500 text-sm">{gameTypeDisplayNames[selectedGameType]} {t('profile.noRatingData')}</p>
+                            <p className="text-white/40 text-sm">{gameTypeDisplayNames[selectedGameType]} {t('profile.noRatingData')}</p>
                         </div>
                     )}
                 </div>
             </div>
 
             {/* 색깔별 게임 통계 섹션 */}
-            <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 text-animate">{language === 'KR' ? '색깔별 게임 통계' : 'Color Game Stats'}</h2>
+            <div className="max-w-6xl mx-auto px-6 mb-12 section-spacing">
+                <div className="flex flex-col gap-1 mb-8">
+                    <h2 className="text-3xl md:text-4xl font-bold text-white text-animate">{language === 'KR' ? '색깔별 게임 통계' : 'Color Game Statistics'}</h2>
+                    <div className="w-16 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-transparent rounded-full"></div>
+                </div>
                 {colorStats ? (
                     <ColorStatsChart data={colorStats} isLoading={loadingColorStats} />
-                ) : loadingColorStats ? (
-                    <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm animate-pulse">
-                        <div className="h-6 bg-gray-200 rounded mb-4"></div>
-                        <div className="h-96 bg-gray-200 rounded"></div>
-                    </div>
                 ) : (
-                    <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                        <p className="text-gray-500 text-center">{language === 'KR' ? '데이터가 없습니다.' : 'No data available'}</p>
+                    <div className="bg-gradient-to-br from-[#0d1626]/80 to-[#070d1a]/50 border border-white/10 rounded-2xl p-8">
+                        <p className="text-white/40 text-center h-96 flex items-center justify-center">{language === 'KR' ? '데이터가 없습니다.' : 'No data available'}</p>
                     </div>
                 )}
             </div>
 
             {/* 첫 수 통계 섹션 */}
-            <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 text-animate">{language === 'KR' ? '첫 수 통계' : 'First Move Stats'}</h2>
+            <div className="max-w-6xl mx-auto px-6 mb-12 section-spacing">
+                <div className="flex flex-col gap-1 mb-8">
+                    <h2 className="text-3xl md:text-4xl font-bold text-white text-animate">{language === 'KR' ? '첫 수 통계' : 'First Move Statistics'}</h2>
+                    <div className="w-16 h-1 bg-gradient-to-r from-purple-500 via-blue-500 to-transparent rounded-full"></div>
+                </div>
                 {firstMoveStats ? (
                     <FirstMoveStatsChart data={firstMoveStats} isLoading={loadingFirstMoveStats} />
-                ) : loadingFirstMoveStats ? (
-                    <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm animate-pulse">
-                        <div className="h-6 bg-gray-200 rounded mb-4"></div>
-                        <div className="h-96 bg-gray-200 rounded"></div>
-                    </div>
                 ) : (
-                    <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
-                        <p className="text-gray-500 text-center">{language === 'KR' ? '데이터가 없습니다.' : 'No data available'}</p>
+                    <div className="bg-gradient-to-br from-[#0d1626]/80 to-[#070d1a]/50 border border-white/10 rounded-2xl p-8">
+                        <p className="text-white/40 text-center h-96 flex items-center justify-center">{language === 'KR' ? '데이터가 없습니다.' : 'No data available'}</p>
                     </div>
                 )}
             </div>
@@ -1046,7 +1061,7 @@ const Profile = () => {
                     <ProfileCard
                         profile={profile}
                         userPerf={userPerf}
-                        ratingHistory={ratingHistory}
+                        ratingHistory={[]}
                         streakMap={streakMap}
                         selectedYear={selectedYear}
                         gameType={selectedGameType}
@@ -1059,11 +1074,11 @@ const Profile = () => {
 
             {/* 회원 탈퇴 섹션 */}
             <div className="max-w-6xl mx-auto px-6 mb-8 section-spacing">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-bold text-red-700 mb-1">{t('profile.deleteAccount')}</h3>
-                            <p className="text-sm text-red-600">{t('profile.deleteAccountWarning')}</p>
+                            <h3 className="text-lg font-bold text-red-400 mb-1">{t('profile.deleteAccount')}</h3>
+                            <p className="text-sm text-red-400/80">{t('profile.deleteAccountWarning')}</p>
                         </div>
                         <button
                             onClick={() => {
@@ -1080,16 +1095,16 @@ const Profile = () => {
             {/* 회원 탈퇴 확인 다이얼로그 */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-8 max-w-sm w-full mx-4 shadow-xl">
-                        <h3 className="text-xl font-bold text-red-700 mb-4">{t('profile.deleteAccountConfirm')}</h3>
-                        <p className="text-gray-700 text-sm mb-6">{t('profile.deleteAccountWarning')}</p>
+                    <div className="bg-[#0d1626] border border-white/15 rounded-lg p-8 max-w-sm w-full mx-4 shadow-xl">
+                        <h3 className="text-xl font-bold text-red-400 mb-4">{t('profile.deleteAccountConfirm')}</h3>
+                        <p className="text-white/70 text-sm mb-6">{t('profile.deleteAccountWarning')}</p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => {
                                     setShowDeleteConfirm(false);
                                 }}
                                 disabled={deletingAccount}
-                                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 font-bold text-sm rounded-lg hover:bg-gray-400 transition disabled:opacity-50"
+                                className="flex-1 px-4 py-2 bg-white/10 text-white/70 font-bold text-sm rounded-lg hover:bg-white/15 transition disabled:opacity-50"
                             >
                                 {t('profile.deleteAccountNo')}
                             </button>
