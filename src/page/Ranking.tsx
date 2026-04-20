@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuthStore } from '../store/authStore';
 import { getRanking, type RankingUserResponse } from '../api/userService';
 import { getOAuthUrl, getChesscomOAuthUrl } from '../api/oauthService';
+import { logout as authLogout } from '../api/authService';
 import lichessLogoImg from '../assets/images/logo/lichess-logo.png';
 import chesscomLogoImg from '../assets/images/logo/chesscom-logo.png';
 
@@ -121,10 +122,12 @@ function UserRow({ user, onClick }: { user: RankingUser; onClick: () => void }) 
         </div>
       </div>
 
-      <div className="flex-shrink-0 flex items-center gap-2 relative z-10">
-        <div className="flex flex-col items-center">
-          <img src={tierImage} alt={tierInfo.tier} className="w-8 h-8 object-contain" />
-          <p className="text-xs font-black leading-none" style={{ color: tierColor.mainColor }}>{roman}</p>
+      <div className="flex-shrink-0 flex items-center gap-3 relative z-10">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg" style={{ backgroundColor: tierColor.borderColor }}>
+          <img src={tierImage} alt={tierInfo.tier} className="w-6 h-6 object-contain" />
+          <span className="text-xs font-black tracking-wide" style={{ color: tierColor.mainColor }}>
+            {tierInfo.tier} {roman}
+          </span>
         </div>
         <div className="text-right">
           <p className="text-sm font-black text-white">{user.rating}</p>
@@ -179,10 +182,11 @@ export default function Ranking() {
 
   const handleUserClick = (username: string) => navigate(`/profile/${username}?platform=${selectedPlatform}`);
 
-  const handleLichessLogin = async () => {
+  const handleLichessLogin = async (switchPlatform = false) => {
     if (isLichessLoading) return;
     try {
       setIsLichessLoading(true);
+      if (switchPlatform) await authLogout();
       const res = await getOAuthUrl();
       if (!res.success || !res.oauth_url) throw new Error();
       sessionStorage.setItem('oauth_platform', 'LICHESS');
@@ -192,10 +196,11 @@ export default function Ranking() {
     }
   };
 
-  const handleChesscomLogin = async () => {
+  const handleChesscomLogin = async (switchPlatform = false) => {
     if (isChesscomLoading) return;
     try {
       setIsChesscomLoading(true);
+      if (switchPlatform) await authLogout();
       const res = await getChesscomOAuthUrl();
       if (!res.success || !res.oauth_url) throw new Error();
       sessionStorage.setItem('oauth_platform', 'CHESSCOM');
@@ -216,6 +221,7 @@ export default function Ranking() {
   };
 
   const myTierInfo = myRating !== null ? getTierWithSubTier(myRating) : null;
+  const isViewingOtherPlatform = !!storeUser && storeUser.platform !== selectedPlatform;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#070d1a]">
@@ -292,26 +298,44 @@ export default function Ranking() {
                     {t('common.yourRanking') || 'YOUR RANKING'}
                   </h2>
 
-                  {!isLoggedInUser ? (
-                    /* 비로그인 */
+                  {isViewingOtherPlatform ? (
+                    /* 다른 플랫폼 열람 중 */
                     <div className="space-y-3">
                       <p className="text-xs text-white/50 leading-relaxed mb-4">
-                        {t('ranking.loginPrompt') || '로그인해서 내 랭킹을 확인해보세요!'}
+                        {selectedPlatform === 'LICHESS'
+                          ? t('ranking.switchToLichess')
+                          : t('ranking.switchToChesscom')}
                       </p>
-                      {(!storeUser || storeUser.platform === 'LICHESS') && (
-                        <button onClick={handleLichessLogin} disabled={isLichessLoading}
+                      {selectedPlatform === 'LICHESS' ? (
+                        <button onClick={() => handleLichessLogin(true)} disabled={isLichessLoading}
                           className="w-full flex items-center gap-2 bg-white text-black font-semibold py-2.5 px-4 rounded-full hover:bg-gray-100 transition text-sm disabled:opacity-50">
                           <img src={lichessLogoImg} alt="Lichess" className="w-5 h-5" />
                           {isLichessLoading ? t('profile.loading') : t('main.loginWithLichess')}
                         </button>
-                      )}
-                      {(!storeUser || storeUser.platform === 'CHESSCOM') && (
-                        <button onClick={handleChesscomLogin} disabled={isChesscomLoading}
+                      ) : (
+                        <button onClick={() => handleChesscomLogin(true)} disabled={isChesscomLoading}
                           className="w-full flex items-center gap-2 bg-[#81B64C] text-white font-semibold py-2.5 px-4 rounded-full hover:bg-[#70a33e] transition text-sm disabled:opacity-50">
                           <img src={chesscomLogoImg} alt="Chess.com" className="w-5 h-5" />
                           {isChesscomLoading ? t('profile.loading') : t('main.loginWithChesscom')}
                         </button>
                       )}
+                    </div>
+                  ) : !isLoggedInUser ? (
+                    /* 비로그인 */
+                    <div className="space-y-3">
+                      <p className="text-xs text-white/50 leading-relaxed mb-4">
+                        {t('ranking.loginPrompt')}
+                      </p>
+                      <button onClick={() => handleLichessLogin()} disabled={isLichessLoading}
+                        className="w-full flex items-center gap-2 bg-white text-black font-semibold py-2.5 px-4 rounded-full hover:bg-gray-100 transition text-sm disabled:opacity-50">
+                        <img src={lichessLogoImg} alt="Lichess" className="w-5 h-5" />
+                        {isLichessLoading ? t('profile.loading') : t('main.loginWithLichess')}
+                      </button>
+                      <button onClick={() => handleChesscomLogin()} disabled={isChesscomLoading}
+                        className="w-full flex items-center gap-2 bg-[#81B64C] text-white font-semibold py-2.5 px-4 rounded-full hover:bg-[#70a33e] transition text-sm disabled:opacity-50">
+                        <img src={chesscomLogoImg} alt="Chess.com" className="w-5 h-5" />
+                        {isChesscomLoading ? t('profile.loading') : t('main.loginWithChesscom')}
+                      </button>
                     </div>
                   ) : isUnrated ? (
                     /* 언레이팅 */
@@ -321,24 +345,36 @@ export default function Ranking() {
                     </div>
                   ) : myRank !== null && myRating !== null && myTierInfo ? (
                     /* 랭킹 정보 */
-                    <div className="space-y-5">
-                      <div className="text-center pb-4 border-b border-white/10">
-                        <p className="text-xs text-white/35 uppercase tracking-widest mb-1">Rank</p>
-                        <p className="text-4xl font-black text-white">#{myRank}</p>
-                      </div>
-                      <div className="text-center pb-4 border-b border-white/10">
-                        <p className="text-xs text-white/35 uppercase tracking-widest mb-1">Rating</p>
-                        <p className="text-3xl font-black text-white">{myRating}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-white/35 uppercase tracking-widest mb-3">Tier</p>
-                        <div className="flex justify-center items-center gap-2">
-                          <img src={tierImages[myTierInfo.tier]} alt={myTierInfo.tier} className="w-10 h-10 object-contain" />
-                          <span className="text-2xl font-black text-white">{ROMAN[myTierInfo.subTier]}</span>
+                    <div className="space-y-4">
+                      {/* Tier 카드 — 메인 포커스 */}
+                      <div
+                        className="relative rounded-2xl overflow-hidden p-5 flex flex-col items-center gap-3"
+                        style={{ background: `linear-gradient(135deg, ${tierColorScheme[myTierInfo.tier]?.borderColor}, transparent)`, border: `1px solid ${tierColorScheme[myTierInfo.tier]?.borderColor}` }}
+                      >
+                        <img
+                          src={tierImages[myTierInfo.tier]}
+                          alt={myTierInfo.tier}
+                          className="w-16 h-16 object-contain drop-shadow-lg"
+                        />
+                        <div className="text-center">
+                          <p className="text-xs font-bold tracking-[0.2em] uppercase mb-0.5"
+                            style={{ color: tierColorScheme[myTierInfo.tier]?.mainColor }}>
+                            {myTierInfo.tier}
+                          </p>
+                          <p className="text-3xl font-black text-white leading-none">{ROMAN[myTierInfo.subTier]}</p>
                         </div>
-                        <p className="text-xs text-white/40 mt-1" style={{ color: tierColorScheme[myTierInfo.tier]?.mainColor }}>
-                          {myTierInfo.tier}
-                        </p>
+                      </div>
+
+                      {/* Rank / Rating */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-xl bg-white/[0.05] border border-white/10 p-3 text-center">
+                          <p className="text-[10px] text-white/35 uppercase tracking-widest mb-1">Rank</p>
+                          <p className="text-2xl font-black text-white">#{myRank}</p>
+                        </div>
+                        <div className="rounded-xl bg-white/[0.05] border border-white/10 p-3 text-center">
+                          <p className="text-[10px] text-white/35 uppercase tracking-widest mb-1">Rating</p>
+                          <p className="text-2xl font-black text-white">{myRating}</p>
+                        </div>
                       </div>
                     </div>
                   ) : null}
