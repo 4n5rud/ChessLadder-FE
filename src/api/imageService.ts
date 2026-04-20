@@ -109,7 +109,7 @@ export const getImageUrl = async (type: UserImageType): Promise<string> => {
   // URL이 상대 경로인 경우 API 기반 URL과 결합
   const finalUrl = imageUrl.startsWith('http') 
     ? imageUrl 
-    : `${import.meta.env.VITE_API_BASE_URL}/${imageUrl}`;
+    : `${import.meta.env.VITE_API_BASE_URL || '/api'}/${imageUrl}`;
   
   return finalUrl;
 };
