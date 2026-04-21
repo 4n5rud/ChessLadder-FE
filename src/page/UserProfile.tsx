@@ -434,7 +434,7 @@ const UserProfile = () => {
                   </h1>
                   <div className="text-[10px] md:text-xs font-normal uppercase tracking-wider mb-5 flex flex-col md:flex-row gap-2 md:gap-4">
                     <p className="text-white/40 whitespace-nowrap">
-                      {isKR ? 'ChessMate 가입' : 'ChessMate joined'}:{' '}
+                      {isKR ? 'ChessLadder 가입' : 'ChessLadder joined'}:{' '}
                       {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '-'}
                     </p>
                     <p className="text-white/40 whitespace-nowrap">

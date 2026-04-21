@@ -98,8 +98,8 @@ export function TierSystemSection() {
     return (
         <div className="w-full" style={{background: 'linear-gradient(to bottom, transparent 0%, #0a1f33 10%, #0a1f33 100%)'}}>
             <div className="flex flex-col pt-100 pb-20 px-4 max-w-6xl mx-auto text-white">
-                <h2 className="text-4xl font-bold mb-4">ChessMate 티어 시스템</h2>
-                <p className="text-lg mb-8 text-white/90 font-semibold">ChessMate는 기존의 지루한 레이팅 시스템에서 벗어난 6가지의 티어 시스템을 제공해요</p>
+                <h2 className="text-4xl font-bold mb-4">ChessLadder 티어 시스템</h2>
+                <p className="text-lg mb-8 text-white/90 font-semibold">ChessLadder는 기존의 지루한 레이팅 시스템에서 벗어난 6가지의 티어 시스템을 제공해요</p>
                 
                 {/* Tier icons - Button Style */}
                 <div className="flex flex-row justify-between gap-4 mb-12 w-full flex-wrap">

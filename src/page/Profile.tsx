@@ -415,25 +415,9 @@ const Profile = () => {
         try {
             await updateUserDescription(description);
 
-            // 자기소개 업데이트 후 프로필 데이터 재조회
-            const updatedProfile = await getUserProfile();
-
-            // 이미지 타임스탬프 유지 또는 갱신
-            if (updatedProfile) {
-                const timestamp = Date.now();
-                if (updatedProfile.profileImageUrl) {
-                    updatedProfile.profileImageUrl = `${updatedProfile.profileImageUrl}?t=${timestamp}`;
-                    updatedProfile.profile_image = updatedProfile.profileImageUrl;
-                }
-                if (updatedProfile.bannerImageUrl) {
-                    updatedProfile.bannerImageUrl = `${updatedProfile.bannerImageUrl}?t=${timestamp}`;
-                    updatedProfile.banner_image = updatedProfile.bannerImageUrl;
-                }
-            }
-
-            setProfile(updatedProfile);
-            setDescription(updatedProfile?.description || '');
-
+            // description만 현재 profile 상태에 덮어씌움 (통계 초기화 방지)
+            setProfile(prev => prev ? { ...prev, description } : prev);
+            setDescription(description);
             setIsEditingDescription(false);
         } catch (error) {
             // 에러 처리 (사용자에게 표시 안 함)
