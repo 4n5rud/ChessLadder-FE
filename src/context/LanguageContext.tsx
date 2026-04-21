@@ -168,6 +168,8 @@ const translations: Translations = {
     'ranking.unrated': '게임을 더 하여 레이팅을 얻어보세요!',
     'ranking.notRated': '아직 레이팅을 얻지 못했습니다.',
     'ranking.playMoreGames': '더 많은 게임을 진행하여 정식 레이팅을 얻어보세요!',
+    'ranking.notInRanking': '랭킹에 없음',
+    'ranking.notInRankingDesc': '이 게임 타입의 데이터가 없어 랭킹에 표시되지 않습니다.',
 
     // UserProfile - 타인 프로필 페이지 추가 키
     'profile.streakDays': '일 연속',
@@ -361,6 +363,8 @@ const translations: Translations = {
     'ranking.unrated': 'Play more games to get your rating!',
     'ranking.notRated': 'You haven\'t gotten a rating yet.',
     'ranking.playMoreGames': 'Play more games to unlock your official rating!',
+    'ranking.notInRanking': 'Not in ranking',
+    'ranking.notInRankingDesc': 'No data for this game type — you\'re not on the leaderboard yet.',
 
     // UserProfile - public profile page additional keys
     'profile.streakDays': 'day streak',

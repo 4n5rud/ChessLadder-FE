@@ -343,7 +343,22 @@ export default function Ranking() {
                       <p className="text-sm text-white/60">{t('ranking.notRated')}</p>
                       <p className="text-xs text-white/35">{t('ranking.playMoreGames')}</p>
                     </div>
-                  ) : myRank !== null && myRating !== null && myTierInfo ? (
+                  ) : myRank === 0 || myRating === 0 || myRank === null ? (
+                    /* 해당 게임 타입 랭킹 없음 */
+                    <div className="flex flex-col items-center gap-3 py-4 text-center">
+                      <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-2xl opacity-40">
+                        ?
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-white/50">
+                          {t('ranking.notInRanking')}
+                        </p>
+                        <p className="text-xs text-white/30 mt-1 leading-relaxed">
+                          {t('ranking.notInRankingDesc')}
+                        </p>
+                      </div>
+                    </div>
+                  ) : myRating !== null && myTierInfo ? (
                     /* 랭킹 정보 */
                     <div className="space-y-4">
                       {/* Tier 카드 — 메인 포커스 */}

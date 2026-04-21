@@ -10,45 +10,63 @@ interface TierSectionProps {
     platform?: 'LICHESS' | 'CHESSCOM';
 }
 
-const getRatingTier = (rating: number, thresholds: Record<string, number>): string => {
-    const sorted = Object.entries(thresholds).sort(([, a], [, b]) => b - a);
-    for (const [tier, min] of sorted) {
-        if (rating >= min) return tier;
-    }
-    return 'PAWN';
+type TierRanges = Record<string, { subTiers: Record<number, [number, number]> }>;
+
+const LICHESS_TIER_RANGES: TierRanges = {
+    PAWN:   { subTiers: { 5:[400,500],   4:[501,600],  3:[601,700],  2:[701,800],  1:[801,900]   } },
+    KNIGHT: { subTiers: { 5:[901,960],   4:[961,1020], 3:[1021,1080],2:[1081,1140],1:[1141,1200] } },
+    BISHOP: { subTiers: { 5:[1201,1260], 4:[1261,1320],3:[1321,1380],2:[1381,1440],1:[1441,1500] } },
+    ROOK:   { subTiers: { 5:[1501,1560], 4:[1561,1620],3:[1621,1680],2:[1681,1740],1:[1741,1800] } },
+    QUEEN:  { subTiers: { 5:[1801,1860], 4:[1861,1920],3:[1921,1980],2:[1981,2040],1:[2041,2100] } },
+    KING:   { subTiers: { 5:[2101,2220], 4:[2221,2340],3:[2341,2460],2:[2461,2580],1:[2581,2700] } },
 };
 
-const getTierWithSubTier = (rating: number, thresholds: Record<string, number>, platform?: 'LICHESS' | 'CHESSCOM'): string => {
-    const tier = getRatingTier(rating, thresholds);
-
-    const lichessTierRanges: Record<string, { subTiers: Record<number, [number, number]> }> = {
-        PAWN:   { subTiers: { 5:[400,500],  4:[501,600],  3:[601,700],  2:[701,800],  1:[801,900]  } },
-        KNIGHT: { subTiers: { 5:[901,960],  4:[961,1020], 3:[1021,1080],2:[1081,1140],1:[1141,1200]} },
-        BISHOP: { subTiers: { 5:[1201,1260],4:[1261,1320],3:[1321,1380],2:[1381,1440],1:[1441,1500]} },
-        ROOK:   { subTiers: { 5:[1501,1560],4:[1561,1620],3:[1621,1680],2:[1681,1740],1:[1741,1800]} },
-        QUEEN:  { subTiers: { 5:[1801,1860],4:[1861,1920],3:[1921,1980],2:[1981,2040],1:[2041,2100]} },
-        KING:   { subTiers: { 5:[2101,2220],4:[2221,2340],3:[2341,2460],2:[2461,2580],1:[2581,2700]} },
-    };
-
-    const chesscomTierRanges: Record<string, { subTiers: Record<number, [number, number]> }> = {
-        PAWN:   { subTiers: { 5:[100,220],   4:[221,340],  3:[341,460],  2:[461,580],  1:[581,700]   } },
-        KNIGHT: { subTiers: { 5:[701,780],   4:[781,860],  3:[861,940],  2:[941,1020], 1:[1021,1100] } },
-        BISHOP: { subTiers: { 5:[1101,1180], 4:[1181,1260],3:[1261,1340],2:[1341,1420],1:[1421,1500] } },
-        ROOK:   { subTiers: { 5:[1501,1560],4:[1561,1620],3:[1621,1680],2:[1681,1740],1:[1741,1800] } },
-        QUEEN:  { subTiers: { 5:[1801,1880],4:[1881,1960],3:[1961,2040],2:[2041,2120],1:[2121,2200] } },
-        KING:   { subTiers: { 5:[2201,2320],4:[2321,2440],3:[2441,2560],2:[2561,2680],1:[2681,2800] } },
-    };
-
-    const tierRanges = platform === 'CHESSCOM' ? chesscomTierRanges : lichessTierRanges;
-    const roman: Record<string, string> = { '1':'I','2':'II','3':'III','4':'IV','5':'V' };
-    const data = tierRanges[tier];
-    if (!data) return tier;
-    let sub = 5;
-    for (const [s, [mn, mx]] of Object.entries(data.subTiers)) {
-        if (rating >= mn && rating <= mx) { sub = parseInt(s); break; }
-    }
-    return `${tier} ${roman[sub]}`;
+const CHESSCOM_TIER_RANGES: TierRanges = {
+    PAWN:   { subTiers: { 5:[100,220],   4:[221,340],  3:[341,460],  2:[461,580],  1:[581,700]   } },
+    KNIGHT: { subTiers: { 5:[701,780],   4:[781,860],  3:[861,940],  2:[941,1020], 1:[1021,1100] } },
+    BISHOP: { subTiers: { 5:[1101,1180], 4:[1181,1260],3:[1261,1340],2:[1341,1420],1:[1421,1500] } },
+    ROOK:   { subTiers: { 5:[1501,1560], 4:[1561,1620],3:[1621,1680],2:[1681,1740],1:[1741,1800] } },
+    QUEEN:  { subTiers: { 5:[1801,1880], 4:[1881,1960],3:[1961,2040],2:[2041,2120],1:[2121,2200] } },
+    KING:   { subTiers: { 5:[2201,2320], 4:[2321,2440],3:[2441,2560],2:[2561,2680],1:[2681,2800] } },
 };
+
+const TIER_ORDER = ['PAWN', 'KNIGHT', 'BISHOP', 'ROOK', 'QUEEN', 'KING'] as const;
+const SUB_ROMAN: Record<number, string> = { 1:'I', 2:'II', 3:'III', 4:'IV', 5:'V' };
+
+interface TierInfo {
+    tier: string;
+    subNum: number;
+    subRoman: string;
+    levelMin: number;
+    levelMax: number;
+}
+
+const getPlatformTierInfo = (rating: number, platform?: 'LICHESS' | 'CHESSCOM'): TierInfo => {
+    const ranges = platform === 'CHESSCOM' ? CHESSCOM_TIER_RANGES : LICHESS_TIER_RANGES;
+
+    for (const tier of TIER_ORDER) {
+        const data = ranges[tier];
+        if (!data) continue;
+        for (let sub = 1; sub <= 5; sub++) {
+            const range = data.subTiers[sub];
+            if (!range) continue;
+            const [mn, mx] = range;
+            if (rating >= mn && rating <= mx) {
+                return { tier, subNum: sub, subRoman: SUB_ROMAN[sub], levelMin: mn, levelMax: mx };
+            }
+        }
+    }
+
+    // Above max → clamp to KING I at 100%
+    const kingData = ranges['KING']?.subTiers[1];
+    if (kingData && rating > kingData[1]) {
+        return { tier: 'KING', subNum: 1, subRoman: 'I', levelMin: kingData[0], levelMax: kingData[1] };
+    }
+    // Below minimum → PAWN V
+    const pawnV = ranges['PAWN']?.subTiers[5];
+    return { tier: 'PAWN', subNum: 5, subRoman: 'V', levelMin: pawnV?.[0] ?? 0, levelMax: pawnV?.[1] ?? 100 };
+};
+
 
 // 다음 레벨 계산 함수
 const getNextLevel = (_currentRating: number, currentTier: string, currentSub: string, tierRanges: Record<string, any>) => {
@@ -81,7 +99,7 @@ const getNextLevel = (_currentRating: number, currentTier: string, currentSub: s
 export const TierSection = ({
     userPerf,
     loadingPerf,
-    promotionThresholds,
+    promotionThresholds: _promotionThresholds,
     tierColorScheme,
     platform,
 }: TierSectionProps) => {
@@ -120,41 +138,16 @@ export const TierSection = ({
         );
     }
 
-    const mainTier = getRatingTier(userPerf.rating, promotionThresholds);
-    const tierWithSubTier = getTierWithSubTier(userPerf.rating, promotionThresholds, platform);
+    const tierInfo = getPlatformTierInfo(userPerf.rating, platform);
+    const { tier: mainTier, subRoman: currentSub, levelMin, levelMax } = tierInfo;
 
-    // Lichess 티어 범위
-    const lichessTierRanges: Record<string, any> = {
-        PAWN:   { subTiers: { 5:[400,500],  4:[501,600],  3:[601,700],  2:[701,800],  1:[801,900]  } },
-        KNIGHT: { subTiers: { 5:[901,960],  4:[961,1020], 3:[1021,1080],2:[1081,1140],1:[1141,1200]} },
-        BISHOP: { subTiers: { 5:[1201,1260],4:[1261,1320],3:[1321,1380],2:[1381,1440],1:[1441,1500]} },
-        ROOK:   { subTiers: { 5:[1501,1560],4:[1561,1620],3:[1621,1680],2:[1681,1740],1:[1741,1800]} },
-        QUEEN:  { subTiers: { 5:[1801,1860],4:[1861,1920],3:[1921,1980],2:[1981,2040],1:[2041,2100]} },
-        KING:   { subTiers: { 5:[2101,2220],4:[2221,2340],3:[2341,2460],2:[2461,2580],1:[2581,2700]} },
-    };
-
-    // Chess.com 티어 범위
-    const chesscomTierRanges: Record<string, any> = {
-        PAWN:   { subTiers: { 5:[100,220],   4:[221,340],  3:[341,460],  2:[461,580],  1:[581,700]   } },
-        KNIGHT: { subTiers: { 5:[701,780],   4:[781,860],  3:[861,940],  2:[941,1020], 1:[1021,1100] } },
-        BISHOP: { subTiers: { 5:[1101,1180], 4:[1181,1260],3:[1261,1340],2:[1341,1420],1:[1421,1500] } },
-        ROOK:   { subTiers: { 5:[1501,1560],4:[1561,1620],3:[1621,1680],2:[1681,1740],1:[1741,1800] } },
-        QUEEN:  { subTiers: { 5:[1801,1880],4:[1881,1960],3:[1961,2040],2:[2041,2120],1:[2121,2200] } },
-        KING:   { subTiers: { 5:[2201,2320],4:[2321,2440],3:[2441,2560],2:[2561,2680],1:[2681,2800] } },
-    };
-
-    // 플랫폼에 따라 다른 tierRanges 선택
-    const tierRanges = platform === 'CHESSCOM' ? chesscomTierRanges : lichessTierRanges;
-
-    const parts = tierWithSubTier.split(' ');
-    const currentSub = parts[1] || 'V';
+    const tierRanges = platform === 'CHESSCOM' ? CHESSCOM_TIER_RANGES : LICHESS_TIER_RANGES;
 
     const { nextTier, nextSub, nextMin } = getNextLevel(userPerf.rating, mainTier, currentSub, tierRanges);
 
     const remaining = Math.max(nextMin - userPerf.rating, 0);
-    const currentLevelData = tierRanges[mainTier].subTiers[parseInt(currentSub === 'I' ? '1' : currentSub === 'II' ? '2' : currentSub === 'III' ? '3' : currentSub === 'IV' ? '4' : '5')];
-    const levelRange = currentLevelData[1] - currentLevelData[0];
-    const currentProgress = userPerf.rating - currentLevelData[0];
+    const levelRange = levelMax - levelMin;
+    const currentProgress = userPerf.rating - levelMin;
     const pct = Math.min(Math.max((currentProgress / levelRange) * 100, 0), 100);
 
     const tierNameMap: Record<string, string> = {

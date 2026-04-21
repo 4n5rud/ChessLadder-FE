@@ -26,6 +26,7 @@ interface ProfileCardProps {
     promotionThresholds: any;
     convertSubTierToRoman: (subTier: string) => string;
     cardRef?: React.RefObject<HTMLDivElement | null>;
+    platform?: 'LICHESS' | 'CHESSCOM';
 }
 
 // SVG placeholder for failed image loads
@@ -35,16 +36,57 @@ const PLACEHOLDER_SVG =
 const BANNER_PLACEHOLDER_SVG =
     'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 width%3D%22700%22 height%3D%22224%22 viewBox%3D%220 0 700 224%22%3E%3Crect width%3D%22700%22 height%3D%22224%22 fill%3D%22%230d1626%22%2F%3E%3C%2Fsvg%3E';
 
+const LICHESS_RANGES: Record<string, [number, number][]> = {
+    PAWN:   [[400,500],[501,600],[601,700],[701,800],[801,900]],
+    KNIGHT: [[901,960],[961,1020],[1021,1080],[1081,1140],[1141,1200]],
+    BISHOP: [[1201,1260],[1261,1320],[1321,1380],[1381,1440],[1441,1500]],
+    ROOK:   [[1501,1560],[1561,1620],[1621,1680],[1681,1740],[1741,1800]],
+    QUEEN:  [[1801,1860],[1861,1920],[1921,1980],[1981,2040],[2041,2100]],
+    KING:   [[2101,2220],[2221,2340],[2341,2460],[2461,2580],[2581,2700]],
+};
+const CHESSCOM_RANGES: Record<string, [number, number][]> = {
+    PAWN:   [[100,220],[221,340],[341,460],[461,580],[581,700]],
+    KNIGHT: [[701,780],[781,860],[861,940],[941,1020],[1021,1100]],
+    BISHOP: [[1101,1180],[1181,1260],[1261,1340],[1341,1420],[1421,1500]],
+    ROOK:   [[1501,1560],[1561,1620],[1621,1680],[1681,1740],[1741,1800]],
+    QUEEN:  [[1801,1880],[1881,1960],[1961,2040],[2041,2120],[2121,2200]],
+    KING:   [[2201,2320],[2321,2440],[2441,2560],[2561,2680],[2681,2800]],
+};
+const TIER_ORDER_CARD = ['PAWN','KNIGHT','BISHOP','ROOK','QUEEN','KING'];
+const ROMAN_MAP: Record<number, string> = {1:'I',2:'II',3:'III',4:'IV',5:'V'};
+
+function getTierInfoForCard(rating: number, platform?: 'LICHESS' | 'CHESSCOM'): { tier: string; subRoman: string } {
+    const ranges = platform === 'CHESSCOM' ? CHESSCOM_RANGES : LICHESS_RANGES;
+    for (const tier of TIER_ORDER_CARD) {
+        const subs = ranges[tier];
+        if (!subs) continue;
+        for (let i = 0; i < subs.length; i++) {
+            const [mn, mx] = subs[i];
+            if (rating >= mn && rating <= mx) {
+                // PAWN arrays: index 0 = [400,500] = lowest = subTier 5 (V)
+                // index 4 = [801,900] = highest = subTier 1 (I)
+                const subNum5to1 = 5 - i;
+                return { tier, subRoman: ROMAN_MAP[subNum5to1] };
+            }
+        }
+    }
+    // Above max → KING I
+    const lastKing = platform === 'CHESSCOM' ? CHESSCOM_RANGES['KING'] : LICHESS_RANGES['KING'];
+    if (lastKing && rating > lastKing[lastKing.length - 1][1]) return { tier: 'KING', subRoman: 'I' };
+    return { tier: 'PAWN', subRoman: 'V' };
+}
+
 const ProfileCard: React.FC<ProfileCardProps> = ({
     profile,
     userPerf,
-    ratingHistory: _ratingHistory,
-    streakMap: _streakMap,
+    ratingHistory,
+    streakMap,
     selectedYear: _selectedYear,
     gameType,
-    promotionThresholds,
-    convertSubTierToRoman,
-    cardRef
+    promotionThresholds: _promotionThresholds,
+    convertSubTierToRoman: _convertSubTierToRoman,
+    cardRef,
+    platform,
 }) => {
     const [profileImgSrc, setProfileImgSrc] = useState<string>(
         profile.profile_image || PLACEHOLDER_SVG
@@ -62,17 +104,9 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         });
     };
 
-    const getTier = (rating: number): string => {
-        const tiers = Object.entries(promotionThresholds).sort(([, a], [, b]) => (b as number) - (a as number));
-        for (const [tier, minRating] of tiers) {
-            if (rating >= (minRating as number)) {
-                return tier;
-            }
-        }
-        return 'PAWN';
-    };
-
-    const currentTier = userPerf.uncertain ? 'UNRATED' : getTier(userPerf.rating);
+    const { tier: currentTier, subRoman: _cardSub } = userPerf.uncertain
+        ? { tier: 'UNRATED', subRoman: '' }
+        : getTierInfoForCard(userPerf.rating, platform);
 
     // 티어별 색상 (은은하게)
     const tierColorScheme: Record<string, { primary: string; glow: string; text: string }> = {
@@ -108,26 +142,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         return null;
     };
 
-    const getSubTier = (rating: number): string => {
-        const tier = getTier(rating);
-        const ranges: Record<string, [number, number]> = {
-            'PAWN':   [400, 900],
-            'KNIGHT': [901, 1200],
-            'BISHOP': [1201, 1500],
-            'ROOK':   [1501, 1800],
-            'QUEEN':  [1801, 2100],
-            'KING':   [2101, 2700]
-        };
-        const range = ranges[tier];
-        if (!range) return '';
-        const [min, max] = range;
-        const size = (max - min) / 5;
-        const sub = Math.ceil((rating - min) / size);
-        return String(Math.max(1, Math.min(5, 6 - sub)));
-    };
-
-    const subTier = userPerf.uncertain ? '' : getSubTier(userPerf.rating);
-    const romanSubTier = convertSubTierToRoman(subTier);
+    const romanSubTier = _cardSub;
 
     // 카드 통계는 선택된 게임 타입(userPerf) 기준으로만 계산
     const typedGames = userPerf.gamesPlayed ?? 0;
@@ -139,6 +154,43 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         : '0.0';
 
     const gameTypeLabel = gameType.toUpperCase();
+
+    // Streak: count consecutive days with hasGame=true up to today
+    const currentStreak = (() => {
+        if (!streakMap || streakMap.size === 0) return 0;
+        const today = new Date();
+        let streak = 0;
+        for (let i = 0; i < 365; i++) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            const key = d.toISOString().slice(0, 10);
+            const entry = streakMap.get(key);
+            if (entry && (entry as any).hasGame !== undefined ? (entry as any).hasGame : entry && entry.total > 0) {
+                streak++;
+            } else if (i > 0) {
+                break;
+            }
+        }
+        return streak;
+    })();
+
+    // Sparkline from ratingHistory (last 12 months)
+    const sparklinePoints = (() => {
+        const data = ratingHistory ?? [];
+        if (data.length < 2) return null;
+        const ratings = data.map((d: any) => d.rating as number);
+        const mn = Math.min(...ratings);
+        const mx = Math.max(...ratings);
+        const range = mx - mn || 1;
+        const W = 120, H = 32, pad = 2;
+        const pts = ratings.map((r, i) => {
+            const x = pad + (i / (ratings.length - 1)) * (W - pad * 2);
+            const y = (H - pad) - ((r - mn) / range) * (H - pad * 2);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        const trend = ratings[ratings.length - 1] >= ratings[0];
+        return { pts, W, H, trend, last: ratings[ratings.length - 1], first: ratings[0] };
+    })();
 
     return (
         <div
@@ -262,6 +314,45 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                             <span className="text-[10px] text-white/35 uppercase tracking-widest">rating</span>
                         </div>
                         <span className="text-[10px] text-white/35 uppercase tracking-widest mt-1">{currentTier}</span>
+
+                        {/* Streak & Sparkline */}
+                        <div className="mt-3 w-full flex flex-col gap-1.5">
+                            {/* Streak */}
+                            <div
+                                className="flex items-center justify-between px-2.5 py-1.5 rounded-lg"
+                                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+                            >
+                                <span className="text-[9px] text-white/30 uppercase tracking-widest font-black">Streak</span>
+                                <span className="text-sm font-black" style={{ color: currentStreak > 0 ? '#fb923c' : 'rgba(255,255,255,0.35)' }}>
+                                    {currentStreak > 0 ? `🔥 ${currentStreak}d` : '—'}
+                                </span>
+                            </div>
+                            {/* Sparkline */}
+                            {sparklinePoints && (
+                                <div
+                                    className="px-2.5 py-1.5 rounded-lg"
+                                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+                                >
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-[9px] text-white/30 uppercase tracking-widest font-black">Rating Trend</span>
+                                        <span className="text-[9px] font-black" style={{ color: sparklinePoints.trend ? '#4ade80' : '#f87171' }}>
+                                            {sparklinePoints.trend ? '▲' : '▼'} {Math.abs(sparklinePoints.last - sparklinePoints.first)}
+                                        </span>
+                                    </div>
+                                    <svg width={sparklinePoints.W} height={sparklinePoints.H} viewBox={`0 0 ${sparklinePoints.W} ${sparklinePoints.H}`} style={{ display: 'block', width: '100%' }}>
+                                        <polyline
+                                            points={sparklinePoints.pts}
+                                            fill="none"
+                                            stroke={sparklinePoints.trend ? '#4ade80' : '#f87171'}
+                                            strokeWidth="1.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            opacity="0.7"
+                                        />
+                                    </svg>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div className="col-span-3 grid grid-cols-2 gap-3">

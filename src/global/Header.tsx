@@ -23,7 +23,6 @@ const Header = () => {
     const storeUser = useAuthStore((state) => state.user);
     const setUser = useAuthStore((state) => state.setUser);
 
-    const isProfileRoute = location.pathname === '/profile' || location.pathname.startsWith('/profile/');
     const queryPlatform = new URLSearchParams(location.search).get('platform');
     const headerSearchPlatform: 'LICHESS' | 'CHESSCOM' =
         queryPlatform?.toUpperCase() === 'CHESSCOM'
@@ -136,11 +135,34 @@ const Header = () => {
                 <h1 className="text-lg md:text-xl font-bold header-title text-white whitespace-nowrap">ChessLadder</h1>
             </Link>
 
-            {isProfileRoute && (
-                <div className="flex-1 min-w-0 max-w-md">
-                    <UserSearchBar defaultPlatform={headerSearchPlatform} />
-                </div>
-            )}
+            {/* 데스크톱 네비게이션 링크 */}
+            <nav className="hidden md:flex items-center gap-1 flex-shrink-0">
+                {[
+                    { to: '/', label: t('header.home') },
+                    { to: '/news', label: t('header.news') },
+                    { to: '/ranking', label: t('header.ranking') },
+                ].map(({ to, label }) => {
+                    const isActive = location.pathname === to;
+                    return (
+                        <Link
+                            key={to}
+                            to={to}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition whitespace-nowrap ${
+                                isActive
+                                    ? 'bg-white/10 text-white border border-white/15'
+                                    : 'text-white/50 hover:text-white/80 hover:bg-white/6'
+                            }`}
+                        >
+                            {label}
+                        </Link>
+                    );
+                })}
+            </nav>
+
+            {/* 검색바 - 항상 표시 */}
+            <div className="flex-1 min-w-0">
+                <UserSearchBar defaultPlatform={headerSearchPlatform} />
+            </div>
 
             {/* 메뉴 버튼 (모바일과 데스크톱 공용) */}
             <div className="ml-auto flex items-center">

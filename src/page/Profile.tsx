@@ -506,20 +506,20 @@ const Profile = () => {
                     <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-start md:items-start">
                         {/* 프로필 이미지 */}
                         <div className="flex flex-col items-center gap-4 flex-shrink-0 w-full md:w-auto">
-                            <div className="relative group">
+                            <div className="flex flex-col items-center gap-2">
                                 <img
                                     src={profileImage || 'https://via.placeholder.com/140'}
                                     alt="프로필 사진"
                                     className="w-24 h-24 md:w-36 md:h-36 rounded-2xl border-4 object-cover shadow-lg profile-image profile-image-hover"
                                     style={{
-                                        borderColor: userPerf 
+                                        borderColor: userPerf
                                             ? userPerf.uncertain
                                                 ? '#9ca3af'
                                                 : tierColorScheme[getTierFromRating(userPerf.rating)]?.mainColor || tierColorScheme['KING'].mainColor
                                             : tierColorScheme['KING'].mainColor
                                     }}
                                 />
-                                <label className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/20 rounded-2xl transition cursor-pointer group">
+                                <label className={`cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-white/10 border border-white/20 hover:bg-white/15 text-white/80 hover:text-white font-bold text-xs rounded-lg transition shadow-md ${loadingProfile ? 'opacity-50 pointer-events-none' : ''}`}>
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -527,9 +527,11 @@ const Profile = () => {
                                         className="hidden"
                                         disabled={loadingProfile}
                                     />
-                                    <div className={`px-3 py-1.5 bg-white/90 backdrop-blur-sm text-gray-700 font-bold text-xs rounded-lg transition shadow-md ${loadingProfile ? 'opacity-50' : 'opacity-0 group-hover:opacity-100'}`}>
-                                        {loadingProfile ? t('profile.uploading').substring(0, 2) : t('profile.profileImageEdit')}
-                                    </div>
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    {loadingProfile ? t('profile.uploading') : t('profile.profileImageEdit')}
                                 </label>
                             </div>
                         </div>
@@ -628,13 +630,13 @@ const Profile = () => {
                                                         <ProfileCard
                                                             profile={profile}
                                                             userPerf={userPerf}
-                                                            ratingHistory={[]}
+                                                            ratingHistory={ratingHistoryResponse?.data ?? []}
                                                             streakMap={streakMap}
                                                             selectedYear={selectedYear}
                                                             gameType={selectedGameType}
                                                             promotionThresholds={promotionThresholds}
                                                             convertSubTierToRoman={convertSubTierToRoman}
-                                                            // 미리보기 용이므로 Ref는 연결하지 않음 (추출은 숨겨진 카드로 수행)
+                                                            platform={profile.platform}
                                                         />
                                                     )}
                                                 </div>
@@ -1052,13 +1054,14 @@ const Profile = () => {
                     <ProfileCard
                         profile={profile}
                         userPerf={userPerf}
-                        ratingHistory={[]}
+                        ratingHistory={ratingHistoryResponse?.data ?? []}
                         streakMap={streakMap}
                         selectedYear={selectedYear}
                         gameType={selectedGameType}
                         promotionThresholds={promotionThresholds}
                         convertSubTierToRoman={convertSubTierToRoman}
                         cardRef={cardRef}
+                        platform={profile.platform}
                     />
                 )}
             </div>
