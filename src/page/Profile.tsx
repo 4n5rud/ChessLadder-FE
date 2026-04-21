@@ -392,7 +392,13 @@ const Profile = () => {
                 }
             }
 
-            setProfile(updatedProfile);
+            setProfile(prev => prev ? {
+                ...prev,
+                profileImageUrl: updatedProfile?.profileImageUrl ?? prev.profileImageUrl,
+                profile_image:   updatedProfile?.profileImageUrl ?? prev.profile_image,
+                bannerImageUrl:  updatedProfile?.bannerImageUrl  ?? prev.bannerImageUrl,
+                banner_image:    updatedProfile?.bannerImageUrl  ?? prev.banner_image,
+            } : updatedProfile);
 
             if (updatedProfile?.profileImageUrl) {
                 setProfileImage(updatedProfile.profileImageUrl);
