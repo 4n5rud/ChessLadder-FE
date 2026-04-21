@@ -13,6 +13,7 @@ import {
 } from 'chart.js';
 import type { RatingHistoryResponse } from '../api/userService';
 import { useLanguage } from '../context/LanguageContext';
+import { getTierInfo, getPromotionThresholds } from '../utils/tierUtils';
 
 ChartJS.register(
   CategoryScale,
@@ -129,30 +130,20 @@ function formatPeriod(from: string, to: string, isKR: boolean): string {
 /** 메인 티어 이름 반환 */
 function getTierForRating(
   rating: number,
-  thresholds: Record<string, number>
+  _thresholds: Record<string, number>,
+  platform?: 'LICHESS' | 'CHESSCOM'
 ): string {
-  const sorted = Object.entries(thresholds).sort(([, a], [, b]) => b - a);
-  return sorted.find(([, min]) => rating >= min)?.[0] ?? 'PAWN';
+  return getTierInfo(rating, platform).tier;
 }
 
 /** "Knight III" 형식의 티어+서브티어 문자열 반환 */
 function getTierWithSubTier(
   rating: number,
-  thresholds: Record<string, number>,
+  _thresholds: Record<string, number>,
   platform?: 'LICHESS' | 'CHESSCOM'
 ): string {
-  const tier = getTierForRating(rating, thresholds);
-  const subTiers = platform === 'CHESSCOM'
-    ? CHESSCOM_SUBTIERS[tier]
-    : LICHESS_SUBTIERS[tier];
-
-  if (!subTiers) return TIER_CONFIG[tier]?.label ?? tier;
-
-  let sub = 5;
-  for (const [s, [mn, mx]] of Object.entries(subTiers)) {
-    if (rating >= mn && rating <= mx) { sub = parseInt(s); break; }
-  }
-  return `${TIER_CONFIG[tier]?.label ?? tier} ${ROMAN[sub] ?? 'V'}`;
+  const info = getTierInfo(rating, platform);
+  return `${TIER_CONFIG[info.tier]?.label ?? info.tier} ${info.subRoman}`;
 }
 
 // ── 컴포넌트 ──────────────────────────────────────────────────────────
@@ -191,7 +182,7 @@ const MonthlyRatingHistoryChart = ({
 
     const current    = ratings[ratings.length - 1];
     const change     = current - ratings[0];
-    const tierKey    = getTierForRating(current, tierThresholds);
+    const tierKey    = getTierForRating(current, tierThresholds, platform);
     const tierLabel  = getTierWithSubTier(current, tierThresholds, platform);
     const period     = formatPeriod(
       ratingHistory.from || sorted[0].yearMonth,
@@ -204,7 +195,8 @@ const MonthlyRatingHistoryChart = ({
     const minRating = Math.min(...ratings);
     const maxRating = Math.max(...ratings);
 
-    const tierLines = Object.entries(tierThresholds)
+    const effectiveThresholds = getPromotionThresholds(platform);
+    const tierLines = Object.entries(effectiveThresholds)
       .filter(([, v]) => v >= minRating - 100 && v <= maxRating + 300)
       .map(([name, value]) => ({
         label: `__tier__${name}`,
@@ -233,7 +225,7 @@ const MonthlyRatingHistoryChart = ({
           pointRadius: 4,
           pointHitRadius: 16,
           pointBackgroundColor: ratings.map(
-            (r) => TIER_CONFIG[getTierForRating(r, tierThresholds)]?.color ?? 'white'
+            (r) => TIER_CONFIG[getTierForRating(r, tierThresholds, platform)]?.color ?? 'white'
           ),
           pointBorderColor: 'rgba(8, 15, 28, 0.8)',
           pointBorderWidth: 1.5,
@@ -241,7 +233,7 @@ const MonthlyRatingHistoryChart = ({
           pointHoverBorderColor: 'rgba(255,255,255,0.6)',
           pointHoverBorderWidth: 2,
           pointHoverBackgroundColor: ratings.map(
-            (r) => TIER_CONFIG[getTierForRating(r, tierThresholds)]?.color ?? 'white'
+            (r) => TIER_CONFIG[getTierForRating(r, tierThresholds, platform)]?.color ?? 'white'
           ),
           borderWidth: 1.5,
           order: 0,

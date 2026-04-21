@@ -37,6 +37,7 @@ import rookImg   from '../assets/images/tier/rook.png';
 import queenImg  from '../assets/images/tier/queen.png';
 import kingImg   from '../assets/images/tier/king.png';
 import './Profile.css';
+import { getTierName } from '../utils/tierUtils';
 
 // ── 공유 상수 ─────────────────────────────────────────────────────────────────
 
@@ -59,12 +60,8 @@ const PROMOTION_THRESHOLDS: { [key: string]: number } = {
 const convertSubTierToRoman = (subTier: string): string =>
   ({ '1': 'I', '2': 'II', '3': 'III', '4': 'IV', '5': 'V' }[subTier] ?? subTier);
 
-const getTierFromRating = (rating: number): string => {
-  const tiers = Object.entries(PROMOTION_THRESHOLDS).sort(([, a], [, b]) => b - a);
-  for (const [tier, min] of tiers) {
-    if (rating >= min) return tier;
-  }
-  return 'PAWN';
+const getTierFromRating = (rating: number, platform?: 'LICHESS' | 'CHESSCOM'): string => {
+  return getTierName(rating, platform);
 };
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
@@ -372,7 +369,7 @@ const UserProfile = () => {
   }
 
   const tierKey = userPerf && !userPerf.uncertain
-    ? getTierFromRating(userPerf.rating)
+    ? getTierFromRating(userPerf.rating, platform)
     : 'PAWN';
   const stc = TIER_COLOR_SCHEME[tierKey];
 
@@ -550,7 +547,7 @@ const UserProfile = () => {
                 let cur = new Date(firstDay);
                 let wk  = 0;
                 const _tc = userPerf && !userPerf.uncertain
-                  ? TIER_COLOR_SCHEME[getTierFromRating(userPerf.rating)].mainColor
+                  ? TIER_COLOR_SCHEME[getTierFromRating(userPerf.rating, platform)].mainColor
                   : TIER_COLOR_SCHEME['PAWN'].mainColor;
                 const _bc = _tc.replace(/,\s*1\)$/, '');
                 const colorStyles = [

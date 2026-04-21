@@ -1,5 +1,6 @@
 import type { UserPerfResponse } from "../api/userService";
 import { useLanguage } from "../context/LanguageContext";
+import { getTierInfo, getTierRanges, TIER_COLOR_SCHEME, type Platform } from "../utils/tierUtils";
 
 interface TierSectionProps {
     userPerf: UserPerfResponse | null;
@@ -7,65 +8,8 @@ interface TierSectionProps {
     tierColorScheme: Record<string, any>;
     promotionThresholds: { [key: string]: number };
     convertSubTierToRoman: (subTier: string) => string;
-    platform?: 'LICHESS' | 'CHESSCOM';
+    platform?: Platform;
 }
-
-type TierRanges = Record<string, { subTiers: Record<number, [number, number]> }>;
-
-const LICHESS_TIER_RANGES: TierRanges = {
-    PAWN:   { subTiers: { 5:[400,500],   4:[501,600],  3:[601,700],  2:[701,800],  1:[801,900]   } },
-    KNIGHT: { subTiers: { 5:[901,960],   4:[961,1020], 3:[1021,1080],2:[1081,1140],1:[1141,1200] } },
-    BISHOP: { subTiers: { 5:[1201,1260], 4:[1261,1320],3:[1321,1380],2:[1381,1440],1:[1441,1500] } },
-    ROOK:   { subTiers: { 5:[1501,1560], 4:[1561,1620],3:[1621,1680],2:[1681,1740],1:[1741,1800] } },
-    QUEEN:  { subTiers: { 5:[1801,1860], 4:[1861,1920],3:[1921,1980],2:[1981,2040],1:[2041,2100] } },
-    KING:   { subTiers: { 5:[2101,2220], 4:[2221,2340],3:[2341,2460],2:[2461,2580],1:[2581,2700] } },
-};
-
-const CHESSCOM_TIER_RANGES: TierRanges = {
-    PAWN:   { subTiers: { 5:[100,220],   4:[221,340],  3:[341,460],  2:[461,580],  1:[581,700]   } },
-    KNIGHT: { subTiers: { 5:[701,780],   4:[781,860],  3:[861,940],  2:[941,1020], 1:[1021,1100] } },
-    BISHOP: { subTiers: { 5:[1101,1180], 4:[1181,1260],3:[1261,1340],2:[1341,1420],1:[1421,1500] } },
-    ROOK:   { subTiers: { 5:[1501,1560], 4:[1561,1620],3:[1621,1680],2:[1681,1740],1:[1741,1800] } },
-    QUEEN:  { subTiers: { 5:[1801,1880], 4:[1881,1960],3:[1961,2040],2:[2041,2120],1:[2121,2200] } },
-    KING:   { subTiers: { 5:[2201,2320], 4:[2321,2440],3:[2441,2560],2:[2561,2680],1:[2681,2800] } },
-};
-
-const TIER_ORDER = ['PAWN', 'KNIGHT', 'BISHOP', 'ROOK', 'QUEEN', 'KING'] as const;
-const SUB_ROMAN: Record<number, string> = { 1:'I', 2:'II', 3:'III', 4:'IV', 5:'V' };
-
-interface TierInfo {
-    tier: string;
-    subNum: number;
-    subRoman: string;
-    levelMin: number;
-    levelMax: number;
-}
-
-const getPlatformTierInfo = (rating: number, platform?: 'LICHESS' | 'CHESSCOM'): TierInfo => {
-    const ranges = platform === 'CHESSCOM' ? CHESSCOM_TIER_RANGES : LICHESS_TIER_RANGES;
-
-    for (const tier of TIER_ORDER) {
-        const data = ranges[tier];
-        if (!data) continue;
-        for (let sub = 1; sub <= 5; sub++) {
-            const range = data.subTiers[sub];
-            if (!range) continue;
-            const [mn, mx] = range;
-            if (rating >= mn && rating <= mx) {
-                return { tier, subNum: sub, subRoman: SUB_ROMAN[sub], levelMin: mn, levelMax: mx };
-            }
-        }
-    }
-
-    // Above max → clamp to KING I at 100%
-    const kingData = ranges['KING']?.subTiers[1];
-    if (kingData && rating > kingData[1]) {
-        return { tier: 'KING', subNum: 1, subRoman: 'I', levelMin: kingData[0], levelMax: kingData[1] };
-    }
-    // Below minimum → PAWN V
-    const pawnV = ranges['PAWN']?.subTiers[5];
-    return { tier: 'PAWN', subNum: 5, subRoman: 'V', levelMin: pawnV?.[0] ?? 0, levelMax: pawnV?.[1] ?? 100 };
-};
 
 
 // 다음 레벨 계산 함수
@@ -138,10 +82,10 @@ export const TierSection = ({
         );
     }
 
-    const tierInfo = getPlatformTierInfo(userPerf.rating, platform);
+    const tierInfo = getTierInfo(userPerf.rating, platform);
     const { tier: mainTier, subRoman: currentSub, levelMin, levelMax } = tierInfo;
 
-    const tierRanges = platform === 'CHESSCOM' ? CHESSCOM_TIER_RANGES : LICHESS_TIER_RANGES;
+    const tierRanges = getTierRanges(platform);
 
     const { nextTier, nextSub, nextMin } = getNextLevel(userPerf.rating, mainTier, currentSub, tierRanges);
 
@@ -158,8 +102,7 @@ export const TierSection = ({
 
     const cap = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 
-    // 현재 티어의 색상 스키마 가져오기
-    const tierColors = tierColorScheme[mainTier] || tierColorScheme['KING'];
+    const tierColors = TIER_COLOR_SCHEME[mainTier as keyof typeof TIER_COLOR_SCHEME] || TIER_COLOR_SCHEME['KING'];
     const mainSolid = opaque(tierColors.mainColor);
     const textSolid = opaque(tierColors.darkText);
     const softSolid = opaque(tierColors.lightText);

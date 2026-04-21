@@ -9,6 +9,7 @@ import { getOAuthUrl, getChesscomOAuthUrl } from '../api/oauthService';
 import { logout as authLogout } from '../api/authService';
 import lichessLogoImg from '../assets/images/logo/lichess-logo.png';
 import chesscomLogoImg from '../assets/images/logo/chesscom-logo.png';
+import { getTierInfo, TIER_COLOR_SCHEME, type Platform } from '../utils/tierUtils';
 
 // 게임 타입 이미지 import
 import rapidImg from '../assets/images/logo/game/rapid.webp';
@@ -29,50 +30,9 @@ type GameType = typeof GAME_TYPES[number];
 
 interface RankingUser extends RankingUserResponse {}
 
-const promotionThresholds: { [key: string]: number } = {
-  'PAWN': 400,
-  'KNIGHT': 901,
-  'BISHOP': 1201,
-  'ROOK': 1501,
-  'QUEEN': 1801,
-  'KING': 2101
-};
-
-const tierColorScheme: { [key: string]: { mainColor: string; borderColor: string } } = {
-  'PAWN':   { mainColor: 'rgba(34,197,94,0.85)',   borderColor: 'rgba(34,197,94,0.25)'   },
-  'KNIGHT': { mainColor: 'rgba(59,130,246,0.85)',  borderColor: 'rgba(59,130,246,0.25)'  },
-  'BISHOP': { mainColor: 'rgba(168,85,247,0.80)',  borderColor: 'rgba(168,85,247,0.25)'  },
-  'ROOK':   { mainColor: 'rgba(239,68,68,0.85)',   borderColor: 'rgba(239,68,68,0.25)'   },
-  'QUEEN':  { mainColor: 'rgba(255,140,0,0.85)',   borderColor: 'rgba(255,140,0,0.25)'   },
-  'KING':   { mainColor: 'rgba(255,215,0,0.85)',   borderColor: 'rgba(255,215,0,0.28)'   },
-};
-
 const tierImages: { [key: string]: string } = {
   'PAWN': pawnImg, 'KNIGHT': knightImg, 'BISHOP': bishopImg,
   'ROOK': rookImg, 'QUEEN': queenImg,   'KING': kingImg
-};
-
-const getTierWithSubTier = (rating: number): { tier: string; subTier: number } => {
-  const tierRanges: { [key: string]: { subTiers: { [key: number]: [number, number] } } } = {
-    'PAWN':   { subTiers: { 5:[400,500],  4:[501,600],  3:[601,700],  2:[701,800],  1:[801,900]  } },
-    'KNIGHT': { subTiers: { 5:[901,960],  4:[961,1020], 3:[1021,1080],2:[1081,1140],1:[1141,1200]} },
-    'BISHOP': { subTiers: { 5:[1201,1260],4:[1261,1320],3:[1321,1380],2:[1381,1440],1:[1441,1500]} },
-    'ROOK':   { subTiers: { 5:[1501,1560],4:[1561,1620],3:[1621,1680],2:[1681,1740],1:[1741,1800]} },
-    'QUEEN':  { subTiers: { 5:[1801,1860],4:[1861,1920],3:[1921,1980],2:[1981,2040],1:[2041,2100]} },
-    'KING':   { subTiers: { 5:[2101,2220],4:[2221,2340],3:[2341,2460],2:[2461,2580],1:[2581,2700]} },
-  };
-
-  const tiers = Object.entries(promotionThresholds).sort(([, a], [, b]) => b - a);
-  let tier = 'PAWN';
-  for (const [t, minRating] of tiers) {
-    if (rating >= minRating) { tier = t; break; }
-  }
-
-  let subTier = 5;
-  for (const [sub, range] of Object.entries(tierRanges[tier].subTiers)) {
-    if (rating >= range[0] && rating <= range[1]) { subTier = parseInt(sub); break; }
-  }
-  return { tier, subTier };
 };
 
 const getGameTypeImage = (gameType: GameType): string => {
@@ -80,13 +40,10 @@ const getGameTypeImage = (gameType: GameType): string => {
   return map[gameType];
 };
 
-const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V'];
-
-function UserRow({ user, onClick }: { user: RankingUser; onClick: () => void }) {
-  const tierInfo = getTierWithSubTier(user.rating);
-  const tierColor = tierColorScheme[tierInfo.tier] || tierColorScheme['PAWN'];
+function UserRow({ user, platform, onClick }: { user: RankingUser; platform: Platform; onClick: () => void }) {
+  const tierInfo = getTierInfo(user.rating, platform);
+  const tierColor = TIER_COLOR_SCHEME[tierInfo.tier] || TIER_COLOR_SCHEME['PAWN'];
   const tierImage = tierImages[tierInfo.tier] || tierImages['PAWN'];
-  const roman = ROMAN[tierInfo.subTier] || '';
 
   return (
     <div
@@ -126,7 +83,7 @@ function UserRow({ user, onClick }: { user: RankingUser; onClick: () => void }) 
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg" style={{ backgroundColor: tierColor.borderColor }}>
           <img src={tierImage} alt={tierInfo.tier} className="w-6 h-6 object-contain" />
           <span className="text-xs font-black tracking-wide" style={{ color: tierColor.mainColor }}>
-            {tierInfo.tier} {roman}
+            {tierInfo.tier} {tierInfo.subRoman}
           </span>
         </div>
         <div className="text-right">
@@ -220,7 +177,7 @@ export default function Ranking() {
     setCurrentPage(1);
   };
 
-  const myTierInfo = myRating !== null ? getTierWithSubTier(myRating) : null;
+  const myTierInfo = myRating !== null ? getTierInfo(myRating, selectedPlatform) : null;
   const isViewingOtherPlatform = !!storeUser && storeUser.platform !== selectedPlatform;
 
   return (
@@ -364,7 +321,7 @@ export default function Ranking() {
                       {/* Tier 카드 — 메인 포커스 */}
                       <div
                         className="relative rounded-2xl overflow-hidden p-5 flex flex-col items-center gap-3"
-                        style={{ background: `linear-gradient(135deg, ${tierColorScheme[myTierInfo.tier]?.borderColor}, transparent)`, border: `1px solid ${tierColorScheme[myTierInfo.tier]?.borderColor}` }}
+                        style={{ background: `linear-gradient(135deg, ${TIER_COLOR_SCHEME[myTierInfo.tier]?.borderColor}, transparent)`, border: `1px solid ${TIER_COLOR_SCHEME[myTierInfo.tier]?.borderColor}` }}
                       >
                         <img
                           src={tierImages[myTierInfo.tier]}
@@ -373,10 +330,10 @@ export default function Ranking() {
                         />
                         <div className="text-center">
                           <p className="text-xs font-bold tracking-[0.2em] uppercase mb-0.5"
-                            style={{ color: tierColorScheme[myTierInfo.tier]?.mainColor }}>
+                            style={{ color: TIER_COLOR_SCHEME[myTierInfo.tier]?.mainColor }}>
                             {myTierInfo.tier}
                           </p>
-                          <p className="text-3xl font-black text-white leading-none">{ROMAN[myTierInfo.subTier]}</p>
+                          <p className="text-3xl font-black text-white leading-none">{myTierInfo.subRoman}</p>
                         </div>
                       </div>
 
@@ -399,7 +356,7 @@ export default function Ranking() {
               {/* 오른쪽: 랭킹 리스트 */}
               <div className="flex-grow space-y-2">
                 {users.map((user) => (
-                  <UserRow key={user.id} user={user} onClick={() => handleUserClick(user.username)} />
+                  <UserRow key={user.id} user={user} platform={selectedPlatform} onClick={() => handleUserClick(user.username)} />
                 ))}
 
                 {users.length === 0 && (

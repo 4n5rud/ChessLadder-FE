@@ -20,6 +20,7 @@ import FirstMoveStatsChart from "../components/FirstMoveStatsChart";
 import GameStatsDisplay from "../components/GameStatsDisplay";
 import lichessLogoImg from "../assets/images/logo/lichess-logo.png";
 import "./Profile.css";
+import { getTierName } from "../utils/tierUtils";
 
 const Profile = () => {
     const { t, language } = useLanguage();
@@ -60,38 +61,19 @@ const Profile = () => {
         'KING':   { mainColor: 'rgba(255,215,0,0.85)',   lightBg: 'rgba(255,215,0,0.07)',   darkBg: 'rgba(255,215,0,0.11)',   borderColor: 'rgba(255,215,0,0.23)',   lightText: 'rgba(234,179,8,0.65)',  darkText: 'rgba(253,224,71,1)'   },
     };
     
-    // 티어별 프로모션 임계값 정의
+    // 티어별 프로모션 임계값 정의 (하위 호환용 — TierSection에 prop으로 전달)
     const promotionThresholds: { [key: string]: number } = {
-        'PAWN': 400,
-        'KNIGHT': 901,
-        'BISHOP': 1201,
-        'ROOK': 1501,
-        'QUEEN': 1801,
-        'KING': 2101
+        'PAWN': 400, 'KNIGHT': 901, 'BISHOP': 1201,
+        'ROOK': 1501, 'QUEEN': 1801, 'KING': 2101,
     };
-    
+
     // 숫자 서브티어를 로마자로 변환
-    const convertSubTierToRoman = (subTier: string): string => {
-        const romanMap: { [key: string]: string } = {
-            '1': 'I',
-            '2': 'II',
-            '3': 'III',
-            '4': 'IV',
-            '5': 'V'
-        };
-        return romanMap[subTier] || subTier;
-    };
-    
-    // rating으로 tier 계산
-    const getTierFromRating = (rating: number): string => {
-        const tiers = Object.entries(promotionThresholds).sort(([, a], [, b]) => b - a);
-        for (const [tier, minRating] of tiers) {
-            if (rating >= minRating) {
-                return tier;
-            }
-        }
-        return 'PAWN';
-    };
+    const convertSubTierToRoman = (subTier: string): string =>
+        ({ '1': 'I', '2': 'II', '3': 'III', '4': 'IV', '5': 'V' }[subTier] ?? subTier);
+
+    // rating으로 tier 계산 (플랫폼 반영)
+    const getTierFromRating = (rating: number): string =>
+        getTierName(rating, profile?.platform as 'LICHESS' | 'CHESSCOM' | undefined);
 
     // 스트릭 관련 상태
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());

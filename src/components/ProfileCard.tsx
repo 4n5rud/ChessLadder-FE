@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { ProfileResponse, UserPerfResponse, DailyStreakDto } from '../api/userService';
+import { getTierInfo, type Platform } from '../utils/tierUtils';
 
 import pawnImg    from '../assets/images/tier/pawn.png';
 import knightImg  from '../assets/images/tier/knight.png';
@@ -29,42 +30,6 @@ interface ProfileCardProps {
 
 const PLACEHOLDER_SVG =
     'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 width%3D%22120%22 height%3D%22120%22 viewBox%3D%220 0 120 120%22%3E%3Crect width%3D%22120%22 height%3D%22120%22 fill%3D%22%230d1626%22%2F%3E%3Ccircle cx%3D%2260%22 cy%3D%2248%22 r%3D%2220%22 fill%3D%22%23ffffff20%22%2F%3E%3Cellipse cx%3D%2260%22 cy%3D%2292%22 rx%3D%2230%22 ry%3D%2218%22 fill%3D%22%23ffffff10%22%2F%3E%3C%2Fsvg%3E';
-
-const LICHESS_RANGES: Record<string, [number, number][]> = {
-    PAWN:   [[400,500],[501,600],[601,700],[701,800],[801,900]],
-    KNIGHT: [[901,960],[961,1020],[1021,1080],[1081,1140],[1141,1200]],
-    BISHOP: [[1201,1260],[1261,1320],[1321,1380],[1381,1440],[1441,1500]],
-    ROOK:   [[1501,1560],[1561,1620],[1621,1680],[1681,1740],[1741,1800]],
-    QUEEN:  [[1801,1860],[1861,1920],[1921,1980],[1981,2040],[2041,2100]],
-    KING:   [[2101,2220],[2221,2340],[2341,2460],[2461,2580],[2581,2700]],
-};
-const CHESSCOM_RANGES: Record<string, [number, number][]> = {
-    PAWN:   [[100,220],[221,340],[341,460],[461,580],[581,700]],
-    KNIGHT: [[701,780],[781,860],[861,940],[941,1020],[1021,1100]],
-    BISHOP: [[1101,1180],[1181,1260],[1261,1340],[1341,1420],[1421,1500]],
-    ROOK:   [[1501,1560],[1561,1620],[1621,1680],[1681,1740],[1741,1800]],
-    QUEEN:  [[1801,1880],[1881,1960],[1961,2040],[2041,2120],[2121,2200]],
-    KING:   [[2201,2320],[2321,2440],[2441,2560],[2561,2680],[2681,2800]],
-};
-const TIER_ORDER_CARD = ['PAWN','KNIGHT','BISHOP','ROOK','QUEEN','KING'];
-const ROMAN_MAP: Record<number, string> = { 1:'I', 2:'II', 3:'III', 4:'IV', 5:'V' };
-
-function getTierInfoForCard(rating: number, platform?: 'LICHESS' | 'CHESSCOM'): { tier: string; subRoman: string } {
-    const ranges = platform === 'CHESSCOM' ? CHESSCOM_RANGES : LICHESS_RANGES;
-    for (const tier of TIER_ORDER_CARD) {
-        const subs = ranges[tier];
-        if (!subs) continue;
-        for (let i = 0; i < subs.length; i++) {
-            const [mn, mx] = subs[i];
-            if (rating >= mn && rating <= mx) {
-                return { tier, subRoman: ROMAN_MAP[5 - i] };
-            }
-        }
-    }
-    const lastKing = platform === 'CHESSCOM' ? CHESSCOM_RANGES['KING'] : LICHESS_RANGES['KING'];
-    if (lastKing && rating > lastKing[lastKing.length - 1][1]) return { tier: 'KING', subRoman: 'I' };
-    return { tier: 'PAWN', subRoman: 'V' };
-}
 
 const TIER_COLORS: Record<string, { primary: string; glow: string; text: string; bannerGradient: string }> = {
     PAWN:    { primary: '#4ade80', glow: 'rgba(74,222,128,0.28)',   text: '#4ade80', bannerGradient: 'linear-gradient(145deg, #051a0e 0%, #0b3020 55%, #0a1e14 100%)' },
@@ -96,7 +61,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
 
     const { tier: currentTier, subRoman } = userPerf.uncertain
         ? { tier: 'UNRATED', subRoman: '' }
-        : getTierInfoForCard(userPerf.rating, platform);
+        : getTierInfo(userPerf.rating, platform);
 
     const C = TIER_COLORS[currentTier] ?? TIER_COLORS.PAWN;
 

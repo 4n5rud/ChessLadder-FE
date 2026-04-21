@@ -4,17 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { searchUsers, type UserSearchResult } from '../api/userService';
 import lichessLogoImg from '../assets/images/logo/lichess-logo.png';
 import chesscomLogoImg from '../assets/images/logo/chesscom-logo.png';
-
-// ── Tier helpers ───────────────────────────────────────────────────────────────
-
-const THRESHOLDS = [
-  { key: 'KING',   min: 2101, color: 'rgba(255,215,0,1)',   bg: 'rgba(255,215,0,0.12)',   text: 'rgba(255,245,150,1)' },
-  { key: 'QUEEN',  min: 1801, color: 'rgba(255,140,0,1)',   bg: 'rgba(255,140,0,0.12)',   text: 'rgba(255,190,120,1)' },
-  { key: 'ROOK',   min: 1501, color: 'rgba(239,68,68,1)',   bg: 'rgba(239,68,68,0.12)',   text: 'rgba(255,170,170,1)' },
-  { key: 'BISHOP', min: 1201, color: 'rgba(168,85,247,1)',  bg: 'rgba(168,85,247,0.12)',  text: 'rgba(220,170,255,1)' },
-  { key: 'KNIGHT', min: 901,  color: 'rgba(59,130,246,1)',  bg: 'rgba(59,130,246,0.12)',  text: 'rgba(150,190,255,1)' },
-  { key: 'PAWN',   min: 0,    color: 'rgba(34,197,94,1)',   bg: 'rgba(34,197,94,0.12)',   text: 'rgba(120,255,170,1)' },
-] as const;
+import { getTierInfo, TIER_COLOR_SCHEME } from '../utils/tierUtils';
 
 const TIER_IMAGES: Record<string, string> = {
   PAWN:   new URL('../assets/images/tier/pawn.png',   import.meta.url).href,
@@ -24,23 +14,6 @@ const TIER_IMAGES: Record<string, string> = {
   QUEEN:  new URL('../assets/images/tier/queen.png',  import.meta.url).href,
   KING:   new URL('../assets/images/tier/king.png',   import.meta.url).href,
 };
-
-function getTier(rating: number) {
-  return THRESHOLDS.find(t => rating >= t.min) ?? THRESHOLDS[THRESHOLDS.length - 1];
-}
-
-function getSubTierRoman(rating: number): string {
-  const tierKey = getTier(rating).key;
-  const ranges: Record<string, [number, number]> = {
-    KING: [2101, 2700], QUEEN: [1801, 2100], ROOK: [1501, 1800],
-    BISHOP: [1201, 1500], KNIGHT: [901, 1200], PAWN: [400, 900],
-  };
-  const [min, max] = ranges[tierKey] ?? [0, 1000];
-  const size = (max - min) / 5;
-  const part = Math.ceil((rating - min) / size);
-  const sub = Math.max(1, Math.min(5, 6 - part));
-  return (['I', 'II', 'III', 'IV', 'V'] as const)[sub - 1];
-}
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -260,8 +233,8 @@ export default function UserSearchBar({ defaultPlatform = 'LICHESS' }: Props) {
                 ) : (
                   <ul>
                     {results.map((user, idx) => {
-                      const tier = getTier(user.rating);
-                      const sub  = getSubTierRoman(user.rating);
+                      const tierInfo = getTierInfo(user.rating, user.platform);
+                      const tierColor = TIER_COLOR_SCHEME[tierInfo.tier];
                       const isActive = idx === activeIdx;
                       return (
                         <li
@@ -277,14 +250,14 @@ export default function UserSearchBar({ defaultPlatform = 'LICHESS' }: Props) {
                           {/* Tier accent bar */}
                           <div
                             className="absolute left-0 top-0 bottom-0 w-0.5 rounded-r"
-                            style={{ background: isActive ? tier.color : 'transparent', transition: 'background 0.15s' }}
+                            style={{ background: isActive ? tierColor.mainColor : 'transparent', transition: 'background 0.15s' }}
                           />
                           <div className="flex items-center gap-4 px-5 py-3.5">
                             {/* Avatar */}
                             <div className="relative flex-shrink-0">
                               <div
                                 className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center"
-                                style={{ border: `2px solid ${tier.color}50`, background: 'rgba(255,255,255,0.06)' }}
+                                style={{ border: `2px solid ${tierColor.mainColor}50`, background: 'rgba(255,255,255,0.06)' }}
                               >
                                 {user.profileImageUrl ? (
                                   <img src={user.profileImageUrl} alt="" className="w-full h-full object-cover" />
@@ -311,19 +284,19 @@ export default function UserSearchBar({ defaultPlatform = 'LICHESS' }: Props) {
                             {/* Tier badge */}
                             <div
                               className="flex items-center gap-2 flex-shrink-0 px-3 py-2 rounded-xl"
-                              style={{ background: tier.bg, border: `1px solid ${tier.color}30` }}
+                              style={{ background: tierColor.borderColor, border: `1px solid ${tierColor.mainColor}30` }}
                             >
                               <img
-                                src={TIER_IMAGES[tier.key]}
-                                alt={tier.key}
+                                src={TIER_IMAGES[tierInfo.tier]}
+                                alt={tierInfo.tier}
                                 className="w-5 h-5 object-contain flex-shrink-0"
-                                style={{ filter: `drop-shadow(0 0 4px ${tier.color}80)` }}
+                                style={{ filter: `drop-shadow(0 0 4px ${tierColor.mainColor}80)` }}
                               />
                               <div className="text-right">
-                                <div className="text-[12px] font-black leading-none" style={{ color: tier.text }}>
-                                  {cap(tier.key)} <span className="opacity-70">{sub}</span>
+                                <div className="text-[12px] font-black leading-none" style={{ color: tierColor.darkText }}>
+                                  {cap(tierInfo.tier)} <span className="opacity-70">{tierInfo.subRoman}</span>
                                 </div>
-                                <div className="text-[11px] font-bold tabular-nums leading-none mt-0.5 opacity-60" style={{ color: tier.text }}>
+                                <div className="text-[11px] font-bold tabular-nums leading-none mt-0.5 opacity-60" style={{ color: tierColor.darkText }}>
                                   {user.rating.toLocaleString()}
                                 </div>
                               </div>
