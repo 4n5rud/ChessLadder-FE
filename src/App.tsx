@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { persistQueryClient } from '@tanstack/react-query-persist-client';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
-import { initializeAuthFromRefresh } from './api/authService';
+import { initializeAuth } from './api/authService';
 import Main from './page/Main';
 import OAuthSuccess from './page/OAuthSuccess';
 import OAuthFail from './page/OAuthFail';
@@ -60,7 +60,7 @@ persistQueryClient({
 function App() {
     useEffect(() => {
         // 페이지 로드 시 refresh 토큰으로 access 토큰 복구
-        initializeAuthFromRefresh();
+        initializeAuth();
     }, []);
 
     return(

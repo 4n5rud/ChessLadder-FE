@@ -1,10 +1,5 @@
 import { create } from 'zustand';
 
-/**
- * 인증(Auth) 상태 관리 스토어
- * 사용자 정보와 토큰을 메모리에서 관리
- */
-
 export interface User {
   id?: string | number;
   username?: string;
@@ -13,33 +8,36 @@ export interface User {
   description?: string | null;
   profile_image?: string | null;
   banner_image?: string | null;
+  platform?: string;
   [key: string]: any;
 }
 
+const PLATFORM_STORAGE_KEY = 'chessladder_platform';
+
 export interface AuthStore {
   user: User | null;
-  access_token: string | null;
   setUser: (user: User | null) => void;
-  setAccessToken: (token: string | null) => void;
   clearUser: () => void;
+  getStoredPlatform: () => 'LICHESS' | 'CHESSCOM';
 }
 
-/**
- * 전역 인증 스토어
- */
-export const useAuthStore = create<AuthStore>((set: any) => ({
+export const useAuthStore = create<AuthStore>(() => ({
   user: null,
-  access_token: null,
 
   setUser: (user: User | null) => {
-    set({ user });
-  },
-
-  setAccessToken: (token: string | null) => {
-    set({ access_token: token });
+    if (user?.platform) {
+      localStorage.setItem(PLATFORM_STORAGE_KEY, user.platform);
+    }
+    useAuthStore.setState({ user });
   },
 
   clearUser: () => {
-    set({ user: null, access_token: null });
+    useAuthStore.setState({ user: null });
+  },
+
+  getStoredPlatform: (): 'LICHESS' | 'CHESSCOM' => {
+    const stored = localStorage.getItem(PLATFORM_STORAGE_KEY)
+      ?? sessionStorage.getItem('oauth_platform');
+    return stored === 'CHESSCOM' ? 'CHESSCOM' : 'LICHESS';
   },
 }));
