@@ -60,6 +60,13 @@ const Profile = () => {
         'QUEEN':  { mainColor: 'rgba(255,140,0,0.85)',   lightBg: 'rgba(255,140,0,0.06)',   darkBg: 'rgba(255,140,0,0.11)',   borderColor: 'rgba(255,140,0,0.22)',   lightText: 'rgba(251,146,60,0.65)', darkText: 'rgba(253,186,116,1)'   },
         'KING':   { mainColor: 'rgba(255,215,0,0.85)',   lightBg: 'rgba(255,215,0,0.07)',   darkBg: 'rgba(255,215,0,0.11)',   borderColor: 'rgba(255,215,0,0.23)',   lightText: 'rgba(234,179,8,0.65)',  darkText: 'rgba(253,224,71,1)'   },
     };
+
+    const NO_TIER_STREAK_COLOR = {
+        mainColor: 'rgba(148,163,184,0.55)',
+        darkBg: 'rgba(148,163,184,0.08)',
+        borderColor: 'rgba(148,163,184,0.18)',
+        darkText: 'rgba(203,213,225,0.75)',
+    };
     
     // 티어별 프로모션 임계값 정의 (하위 호환용 — TierSection에 prop으로 전달)
     const promotionThresholds: { [key: string]: number } = {
@@ -74,6 +81,17 @@ const Profile = () => {
     // rating으로 tier 계산 (플랫폼 반영)
     const getTierFromRating = (rating: number): string =>
         getTierName(rating, profile?.platform as 'LICHESS' | 'CHESSCOM' | undefined);
+
+    const getStreakColorForCurrentTier = () => {
+        if (!userPerf || userPerf.uncertain) return NO_TIER_STREAK_COLOR;
+        const tier = getTierFromRating(userPerf.rating);
+        return tierColorScheme[tier] ?? NO_TIER_STREAK_COLOR;
+    };
+
+    const toRgbaBase = (rgbaText: string) => {
+        const m = rgbaText.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+        return m ? `rgba(${m[1]},${m[2]},${m[3]}` : 'rgba(148,163,184';
+    };
 
     // 스트릭 관련 상태
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -701,8 +719,7 @@ const Profile = () => {
                         <h2 className="text-2xl font-bold text-white text-animate">{t('profile.gameActivityRecord')}</h2>
                         {/* 현재 연속 스트릭 강조 */}
                         {(() => {
-                            const streakTier = userPerf && !userPerf.uncertain ? getTierFromRating(userPerf.rating) : 'PAWN';
-                            const stc = tierColorScheme[streakTier];
+                            const stc = getStreakColorForCurrentTier();
                             return (
                                 <div
                                     className="flex items-center gap-2.5 px-4 py-2 rounded-full border"
@@ -792,20 +809,21 @@ const Profile = () => {
                                                     else activity = 4;
                                                 }
 
-                                                // 어두운 배경에 자연스럽게 녹아드는 색상
+                                                const stc = getStreakColorForCurrentTier();
+                                                const base = toRgbaBase(stc.mainColor);
                                                 const colorStyles = [
                                                     'rgba(255,255,255,0.06)',  // 0: 없음
-                                                    'rgba(47,99,157,0.30)',    // 1: 1-2게임
-                                                    'rgba(47,99,157,0.52)',    // 2: 3-5게임
-                                                    'rgba(47,99,157,0.74)',    // 3: 6-8게임
-                                                    'rgba(47,99,157,0.95)',    // 4: 9+게임
+                                                    `${base},0.30)`,           // 1: 1-2게임
+                                                    `${base},0.52)`,           // 2: 3-5게임
+                                                    `${base},0.74)`,           // 3: 6-8게임
+                                                    `${base},0.95)`,           // 4: 9+게임
                                                 ];
                                                 const borderStyles = [
                                                     'rgba(255,255,255,0.08)',
-                                                    'rgba(47,99,157,0.40)',
-                                                    'rgba(47,99,157,0.65)',
-                                                    'rgba(47,99,157,0.88)',
-                                                    'rgba(74,143,212,0.90)',
+                                                    `${base},0.40)`,
+                                                    `${base},0.65)`,
+                                                    `${base},0.88)`,
+                                                    `${base},0.95)`,
                                                 ];
 
                                                 return (
@@ -875,8 +893,7 @@ const Profile = () => {
 
                         const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : null;
 
-                        const streakTier = userPerf && !userPerf.uncertain ? getTierFromRating(userPerf.rating) : 'PAWN';
-                        const stc = tierColorScheme[streakTier];
+                        const stc = getStreakColorForCurrentTier();
 
                         const items = [
                             {

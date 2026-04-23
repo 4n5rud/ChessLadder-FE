@@ -53,6 +53,15 @@ const TIER_COLOR_SCHEME: Record<string, {
   KING:   { mainColor: 'rgba(255,215,0,1)',    lightBg: 'rgba(255,215,0,0.06)',   darkBg: 'rgba(255,215,0,0.10)',   borderColor: 'rgba(255,215,0,0.20)',   lightText: 'rgba(255,230,100,0.65)', darkText: 'rgba(255,245,150,1)'  },
 };
 
+const NO_TIER_STREAK_COLOR = {
+  mainColor: 'rgba(148,163,184,0.55)',
+  lightBg: 'rgba(148,163,184,0.04)',
+  darkBg: 'rgba(148,163,184,0.08)',
+  borderColor: 'rgba(148,163,184,0.18)',
+  lightText: 'rgba(148,163,184,0.45)',
+  darkText: 'rgba(203,213,225,0.75)',
+};
+
 const PROMOTION_THRESHOLDS: { [key: string]: number } = {
   PAWN: 400, KNIGHT: 901, BISHOP: 1201, ROOK: 1501, QUEEN: 1801, KING: 2101,
 };
@@ -62,6 +71,11 @@ const convertSubTierToRoman = (subTier: string): string =>
 
 const getTierFromRating = (rating: number, platform?: 'LICHESS' | 'CHESSCOM'): string => {
   return getTierName(rating, platform);
+};
+
+const toRgbaBase = (rgbaText: string): string => {
+  const m = rgbaText.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  return m ? `rgba(${m[1]},${m[2]},${m[3]}` : 'rgba(148,163,184';
 };
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
@@ -370,8 +384,8 @@ const UserProfile = () => {
 
   const tierKey = userPerf && !userPerf.uncertain
     ? getTierFromRating(userPerf.rating, platform)
-    : 'PAWN';
-  const stc = TIER_COLOR_SCHEME[tierKey];
+    : null;
+  const stc = tierKey ? (TIER_COLOR_SCHEME[tierKey] ?? NO_TIER_STREAK_COLOR) : NO_TIER_STREAK_COLOR;
 
   const bannerBg = profile?.bannerImageUrl
     ? { backgroundImage: `url(${profile.bannerImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -548,9 +562,9 @@ const UserProfile = () => {
                 let cur = new Date(firstDay);
                 let wk  = 0;
                 const _tc = userPerf && !userPerf.uncertain
-                  ? TIER_COLOR_SCHEME[getTierFromRating(userPerf.rating, platform)].mainColor
-                  : TIER_COLOR_SCHEME['PAWN'].mainColor;
-                const _bc = _tc.replace(/,\s*1\)$/, '');
+                  ? (TIER_COLOR_SCHEME[getTierFromRating(userPerf.rating, platform)]?.mainColor ?? NO_TIER_STREAK_COLOR.mainColor)
+                  : NO_TIER_STREAK_COLOR.mainColor;
+                const _bc = toRgbaBase(_tc);
                 const colorStyles = [
                   'rgba(255,255,255,0.06)',
                   `${_bc},0.30)`, `${_bc},0.52)`,
