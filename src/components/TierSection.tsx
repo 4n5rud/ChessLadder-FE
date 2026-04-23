@@ -44,7 +44,7 @@ export const TierSection = ({
     userPerf,
     loadingPerf,
     promotionThresholds: _promotionThresholds,
-    tierColorScheme,
+    tierColorScheme: _tierColorScheme,
     platform,
 }: TierSectionProps) => {
     const { t, language } = useLanguage();
