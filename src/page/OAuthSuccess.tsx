@@ -1,35 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { handleOAuthSuccess } from '../api/authService';
 
-/**
- * OAuth 로그인 성공 페이지
- * 명세서 Step 5: 토큰 저장 및 관리
- * 
- * 프로세스:
- * 1. handleOAuthSuccess() 호출
- * 2. GET /api/auth/me로 현재 사용자 정보 조회
- * 3. 상태 관리와 localStorage에 사용자 정보 저장
- * 4. 홈으로 리다이렉트
- */
 export default function OAuthSuccess() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasRun = useRef(false);
 
   useEffect(() => {
+    // StrictMode 이중 실행 및 브라우저 재시도 방지
+    if (hasRun.current) return;
+    hasRun.current = true;
+
     const handleSuccess = async () => {
       try {
-        // Step 5: handleOAuthSuccess() 호출
         const result = await handleOAuthSuccess();
-        
+
         if (!result.success) {
           throw new Error('사용자 정보 조회 실패');
         }
-        
+
         setIsLoading(false);
-        
-        // 짧은 딜레이 후 홈으로 리다이렉트
+
         setTimeout(() => {
           navigate('/', { replace: true });
         }, 500);

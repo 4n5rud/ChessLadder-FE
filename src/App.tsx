@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { persistQueryClient } from '@tanstack/react-query-persist-client';
+import { Toaster, toast } from 'sonner';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { initializeAuth } from './api/authService';
 import Main from './page/Main';
@@ -59,13 +60,29 @@ persistQueryClient({
 
 function App() {
     useEffect(() => {
-        // 페이지 로드 시 refresh 토큰으로 access 토큰 복구
-        initializeAuth();
+        const params = new URLSearchParams(window.location.search);
+        const error = params.get('error');
+
+        if (error === 'auth_failed') {
+            toast.error('로그인이 만료되었습니다. 다시 시도해주세요.');
+        } else if (error === 'server_error') {
+            toast.error('로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
+        }
+
+        if (error) {
+            window.history.replaceState({}, '', '/');
+        }
+
+        // OAuth 콜백 페이지는 자체적으로 auth를 처리하므로 제외
+        if (!window.location.pathname.startsWith('/oauth/')) {
+            initializeAuth();
+        }
     }, []);
 
     return(
         <LanguageProvider>
             <QueryClientProvider client={queryClient}>
+                <Toaster position="top-center" richColors />
                 <BrowserRouter>
                     <Routes>
                         <Route path="/" element={<Main />}/>
