@@ -94,19 +94,19 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
     const label   = gameType.toUpperCase();
     const hasBanner = !!bannerImgSrc;
 
-    // ── Streak heatmap (선택 연도 전체) ─────────────────────────
+    // ── Streak heatmap (선택 연도 1월~12월, 미래 포함 전체) ────
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
     const heatmapData = (() => {
-        const weeks: { date: string; total: number }[][] = [];
+        const weeks: { date: string; total: number; future: boolean }[][] = [];
         const start = new Date(selectedYear, 0, 1);
-        const end = new Date(Math.min(
-            new Date(selectedYear, 11, 31).getTime(),
-            new Date().getTime(),
-        ));
+        const end   = new Date(selectedYear, 11, 31);
         let cur = new Date(start);
-        let week: { date: string; total: number }[] = [];
+        let week: { date: string; total: number; future: boolean }[] = [];
         while (cur <= end) {
             const ds = cur.toISOString().slice(0, 10);
-            week.push({ date: ds, total: streakMap.get(ds)?.total ?? 0 });
+            const isFuture = ds > todayStr;
+            week.push({ date: ds, total: isFuture ? 0 : (streakMap.get(ds)?.total ?? 0), future: isFuture });
             if (week.length === 7) { weeks.push(week); week = []; }
             cur.setDate(cur.getDate() + 1);
         }
@@ -403,7 +403,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                     {heatmapData.map((week, wi) => (
                         <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
                             {week.map((day) => (
-                                <div key={day.date} style={{ width: '100%', aspectRatio: '1 / 1', borderRadius: 2, background: getHeatColor(day.total), border: `1px solid ${getHeatBorder(day.total)}` }} />
+                                <div key={day.date} style={{ width: '100%', aspectRatio: '1 / 1', borderRadius: 2, background: day.future ? 'rgba(255,255,255,0.02)' : getHeatColor(day.total), border: `1px solid ${day.future ? 'rgba(255,255,255,0.04)' : getHeatBorder(day.total)}` }} />
                             ))}
                         </div>
                     ))}
