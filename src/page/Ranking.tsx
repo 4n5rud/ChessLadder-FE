@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../global/Header';
 import Footer from '../global/Footer';
 import { useLanguage } from '../context/LanguageContext';
-import { useAuthStore } from '../store/authStore';
 import { getRanking, type RankingUserResponse } from '../api/userService';
 import { getOAuthUrl, getChesscomOAuthUrl } from '../api/oauthService';
 import { logout as authLogout } from '../api/authService';
@@ -98,7 +97,6 @@ function UserRow({ user, platform, onClick }: { user: RankingUser; platform: Pla
 export default function Ranking() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const storeUser = useAuthStore((state) => state.user);
 
   const [selectedPlatform, setSelectedPlatform] = useState<'LICHESS' | 'CHESSCOM'>('LICHESS');
   const [users, setUsers] = useState<RankingUser[]>([]);
@@ -111,6 +109,7 @@ export default function Ranking() {
   const [myRank, setMyRank] = useState<number | null>(null);
   const [myRating, setMyRating] = useState<number | null>(null);
   const [isLoggedInUser, setIsLoggedInUser] = useState(false);
+  const [platformMismatch, setPlatformMismatch] = useState(false);
   const [isUnrated, setIsUnrated] = useState(false);
 
   const [isLichessLoading, setIsLichessLoading] = useState(false);
@@ -127,6 +126,7 @@ export default function Ranking() {
         setMyRank(response.my_rank ?? null);
         setMyRating(response.my_rating ?? null);
         setIsLoggedInUser(response.is_logged_in_user);
+        setPlatformMismatch(response.platform_mismatch ?? false);
         setIsUnrated(response.is_unrated ?? false);
       } catch {
         setError(t('common.error'));
@@ -178,7 +178,6 @@ export default function Ranking() {
   };
 
   const myTierInfo = myRating !== null ? getTierInfo(myRating, selectedPlatform) : null;
-  const isViewingOtherPlatform = !!storeUser && storeUser.platform !== selectedPlatform;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#070d1a]">
@@ -255,7 +254,7 @@ export default function Ranking() {
                     {t('common.yourRanking') || 'YOUR RANKING'}
                   </h2>
 
-                  {isViewingOtherPlatform ? (
+                  {platformMismatch ? (
                     /* 다른 플랫폼 열람 중 */
                     <div className="space-y-3">
                       <p className="text-xs text-white/50 leading-relaxed mb-4">

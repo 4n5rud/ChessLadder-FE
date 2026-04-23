@@ -76,6 +76,7 @@ export interface RankingApiResponse {
   page_size?: number;
   total_pages: number;
   is_logged_in_user: boolean;
+  platform_mismatch: boolean;
   is_unrated: boolean;
   my_rank: number | null;
   my_rating: number | null;
@@ -243,7 +244,7 @@ export const getRanking = async (
 
   const rankingArray: any[] = data.entries ?? data.ranking ?? data.users ?? data.ranking_users ?? data.rankingList ?? [];
 
-  // 명세서: data.ranking 배열, 각 항목 userId/bannerImage/profileImage
+  // 명세서: data.ranking 배열, 각 항목 user_id/banner_image/profile_image
   const rankingList = data.ranking ?? rankingArray ?? [];
   const users: RankingUserResponse[] = rankingList.map((u: any) => ({
     id: u.userId ?? u.id ?? u.user_id ?? 0,
@@ -257,8 +258,9 @@ export const getRanking = async (
     rated_games: Number(u.rated_games ?? u.ratedGames ?? 0) || 0,
   }));
 
-  // 명세서: myRankInfo.loggedInUser / .rank / .rating / .platformMismatch
+  // 명세서: my_rank_info.logged_in_user / .rank / .rating / .platform_mismatch
   const myInfo = data.myRankInfo ?? data.my_rank_info ?? null;
+  const platformMismatch = Boolean(myInfo?.platformMismatch ?? myInfo?.platform_mismatch ?? false);
   return {
     users,
     total_count: Number(data.totalCount ?? data.total_count ?? 0) || 0,
@@ -266,7 +268,8 @@ export const getRanking = async (
     page_size: Number(data.pageSize ?? data.page_size ?? 20) || 20,
     total_pages: Number(data.totalPages ?? data.total_pages ?? 0) || 0,
     is_logged_in_user: Boolean(myInfo?.loggedInUser ?? myInfo?.logged_in_user ?? false),
-    is_unrated: Boolean(myInfo?.platformMismatch ?? false),
+    platform_mismatch: platformMismatch,
+    is_unrated: Boolean(data.isUnrated ?? data.is_unrated ?? myInfo?.isUnrated ?? myInfo?.is_unrated ?? false),
     my_rank: myInfo?.rank ?? null,
     my_rating: myInfo?.rating ?? null,
     my_user_id: myInfo?.userId ?? myInfo?.user_id ?? null,
