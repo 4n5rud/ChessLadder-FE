@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '../global/Header';
 import Footer from '../global/Footer';
 import { useLanguage } from '../context/LanguageContext';
@@ -26,6 +26,14 @@ import kingImg from '../assets/images/tier/king.png';
 
 const GAME_TYPES = ['RAPID', 'BLITZ', 'CLASSICAL', 'BULLET'] as const;
 type GameType = typeof GAME_TYPES[number];
+
+const RANKING_STATE_KEY = 'ranking_view_state_v1';
+
+type RankingViewState = {
+  platform: 'LICHESS' | 'CHESSCOM';
+  gameType: GameType;
+  page: number;
+};
 
 interface RankingUser extends RankingUserResponse {}
 
@@ -97,14 +105,53 @@ function UserRow({ user, platform, onClick }: { user: RankingUser; platform: Pla
 export default function Ranking() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [selectedPlatform, setSelectedPlatform] = useState<'LICHESS' | 'CHESSCOM'>('LICHESS');
+  const readInitialState = (): RankingViewState => {
+    const fromQueryPlatform = (searchParams.get('platform') ?? '').toUpperCase();
+    const fromQueryGameType = (searchParams.get('gameType') ?? '').toUpperCase();
+    const fromQueryPageRaw = Number(searchParams.get('page') ?? '1');
+    const fromQueryPage = Number.isFinite(fromQueryPageRaw) && fromQueryPageRaw > 0
+      ? Math.floor(fromQueryPageRaw)
+      : 1;
+
+    const queryPlatform = fromQueryPlatform === 'CHESSCOM' ? 'CHESSCOM' : (fromQueryPlatform === 'LICHESS' ? 'LICHESS' : null);
+    const queryGameType = (GAME_TYPES as readonly string[]).includes(fromQueryGameType)
+      ? (fromQueryGameType as GameType)
+      : null;
+
+    if (queryPlatform && queryGameType) {
+      return { platform: queryPlatform, gameType: queryGameType, page: fromQueryPage };
+    }
+
+    try {
+      const raw = sessionStorage.getItem(RANKING_STATE_KEY);
+      if (!raw) return { platform: 'LICHESS', gameType: 'RAPID', page: 1 };
+      const parsed = JSON.parse(raw) as Partial<RankingViewState>;
+      const platform = parsed.platform === 'CHESSCOM' ? 'CHESSCOM' : 'LICHESS';
+      const gameType = (GAME_TYPES as readonly string[]).includes(String(parsed.gameType))
+        ? (parsed.gameType as GameType)
+        : 'RAPID';
+      const page = Number(parsed.page);
+      return {
+        platform,
+        gameType,
+        page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
+      };
+    } catch {
+      return { platform: 'LICHESS', gameType: 'RAPID', page: 1 };
+    }
+  };
+
+  const initialState = readInitialState();
+
+  const [selectedPlatform, setSelectedPlatform] = useState<'LICHESS' | 'CHESSCOM'>(initialState.platform);
   const [users, setUsers] = useState<RankingUser[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialState.page);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedGameType, setSelectedGameType] = useState<GameType>('RAPID');
+  const [selectedGameType, setSelectedGameType] = useState<GameType>(initialState.gameType);
 
   const [myRank, setMyRank] = useState<number | null>(null);
   const [myRating, setMyRating] = useState<number | null>(null);
@@ -114,6 +161,26 @@ export default function Ranking() {
 
   const [isLichessLoading, setIsLichessLoading] = useState(false);
   const [isChesscomLoading, setIsChesscomLoading] = useState(false);
+
+  useEffect(() => {
+    const nextState: RankingViewState = {
+      platform: selectedPlatform,
+      gameType: selectedGameType,
+      page: currentPage,
+    };
+    sessionStorage.setItem(RANKING_STATE_KEY, JSON.stringify(nextState));
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('platform', selectedPlatform);
+    nextParams.set('gameType', selectedGameType);
+    nextParams.set('page', String(currentPage));
+
+    const current = searchParams.toString();
+    const next = nextParams.toString();
+    if (current !== next) {
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [selectedPlatform, selectedGameType, currentPage, searchParams, setSearchParams]);
 
   useEffect(() => {
     const fetchRanking = async () => {
