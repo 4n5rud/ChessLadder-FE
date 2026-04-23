@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { ProfileResponse, UserPerfResponse, DailyStreakDto } from '../api/userService';
-import { getTierInfo, type Platform } from '../utils/tierUtils';
+import { getTierInfo } from '../utils/tierUtils';
 
 import pawnImg    from '../assets/images/tier/pawn.png';
 import knightImg  from '../assets/images/tier/knight.png';
@@ -41,8 +41,7 @@ const TIER_COLORS: Record<string, { primary: string; glow: string; text: string;
     UNRATED: { primary: '#94a3b8', glow: 'rgba(148,163,184,0.18)',  text: '#94a3b8', bannerGradient: 'linear-gradient(145deg, #0d1626 0%, #131f33 55%, #0d1626 100%)' },
 };
 
-const W_SPARK = 360;
-const H_SPARK = 108;
+const MONTH_SHORT = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
 const ProfileCard: React.FC<ProfileCardProps> = ({
     profile,
@@ -124,31 +123,57 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
     const winRate = games > 0 ? ((wins / games) * 100).toFixed(1) : '0.0';
     const label   = gameType.toUpperCase();
 
-    // ── Sparkline ───────────────────────────────────────────────
-    const spark = (() => {
-        const data = ratingHistory ?? [];
-        if (data.length < 2) return null;
-        const ratings = data.map((d: any) => d.rating as number);
-        const mn = Math.min(...ratings);
-        const mx = Math.max(...ratings);
-        const range = mx - mn || 1;
-        const padX = 4, padY = 10;
-        const pts = ratings.map((r, i) => ({
-            x: padX + (i / (ratings.length - 1)) * (W_SPARK - padX * 2),
-            y: (H_SPARK - padY) - ((r - mn) / range) * (H_SPARK - padY * 2),
-        }));
-        const polyline = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-        const area =
-            `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)} ` +
-            pts.slice(1).map(p => `L ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') +
-            ` L ${pts[pts.length-1].x.toFixed(1)},${H_SPARK} L ${pts[0].x.toFixed(1)},${H_SPARK} Z`;
-        const trend = ratings[ratings.length - 1] >= ratings[0];
-        const delta = ratings[ratings.length - 1] - ratings[0];
-        const last  = pts[pts.length - 1];
-        return { polyline, area, trend, delta, first: ratings[0], last: ratings[ratings.length - 1], mn, mx, lastPt: last };
+    const streakSummary = (() => {
+        let totalGames = 0;
+        let activeDays = 0;
+        for (const [, entry] of Array.from(streakMap.entries())) {
+            const total = Number(entry.total ?? 0) || 0;
+            totalGames += total;
+            if (total > 0) activeDays += 1;
+        }
+        return { totalGames, activeDays };
     })();
 
-    const sparkColor = spark?.trend ? '#4ade80' : '#f87171';
+    // ── Year/Month rating dots ─────────────────────────────────
+    const monthlyHistory = (() => {
+        const byMonth = new Map<string, number>();
+        const rows = Array.isArray(ratingHistory) ? ratingHistory : [];
+
+        for (const row of rows) {
+            const ym = typeof row?.yearMonth === 'string' ? row.yearMonth : null;
+            const rating = Number(row?.rating ?? NaN);
+            if (!ym || !/^\d{4}-\d{2}$/.test(ym) || Number.isNaN(rating)) continue;
+            byMonth.set(ym, rating);
+        }
+
+        const entries = Array.from(byMonth.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([yearMonth, rating]) => ({ yearMonth, rating }));
+
+        const yearSet = new Set(entries.map((e) => e.yearMonth.slice(0, 4)));
+        const years = Array.from(yearSet).sort((a, b) => a.localeCompare(b)).slice(-3);
+
+        const matrix: Record<string, Record<number, number>> = {};
+        years.forEach((y) => { matrix[y] = {}; });
+        entries.forEach((e) => {
+            const y = e.yearMonth.slice(0, 4);
+            const m = Number(e.yearMonth.slice(5, 7));
+            if (!matrix[y] || m < 1 || m > 12) return;
+            matrix[y][m] = e.rating;
+        });
+
+        const first = entries[0]?.rating ?? null;
+        const last = entries[entries.length - 1]?.rating ?? null;
+        const delta = first !== null && last !== null ? last - first : null;
+        const trendUp = delta !== null ? delta >= 0 : null;
+
+        return { years, matrix, count: entries.length, first, last, delta, trendUp };
+    })();
+
+    const getRatingDotColor = (rating: number): string => {
+        const info = getTierInfo(rating, platform);
+        return TIER_COLORS[info.tier]?.primary ?? 'rgba(255,255,255,0.7)';
+    };
 
     // ── Banner background ────────────────────────────────────────
     const hasBanner = !!bannerImgSrc;
@@ -309,7 +334,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
             </div>
 
             {/* ═══════════════════════════════════════════════════
-                BODY  (2-col: tier+streak | sparkline)
+                BODY  (2-col: tier+streak | rating month dots)
             ═══════════════════════════════════════════════════ */}
             <div style={{
                 display: 'grid',
@@ -357,7 +382,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                         </div>
                     </div>
 
-                    {/* Streak card */}
+                    {/* Streak summary */}
                     <div style={{
                         padding: '14px 16px',
                         borderRadius: 14,
@@ -369,167 +394,138 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                             : '1px solid rgba(255,255,255,0.07)',
                     }}>
                         <p style={{
-                            margin: '0 0 8px', fontSize: 8, fontWeight: 800,
+                            margin: '0 0 10px', fontSize: 8, fontWeight: 800,
                             letterSpacing: '0.22em', textTransform: 'uppercase',
                             color: currentStreak > 0 ? 'rgba(251,146,60,0.65)' : 'rgba(255,255,255,0.22)',
-                        }}>Current Streak</p>
+                        }}>Streak Summary</p>
 
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginBottom: 8 }}>
-                            <span style={{ fontSize: 13, lineHeight: 1 }}>🔥</span>
-                            <span style={{
-                                fontSize: 42, fontWeight: 900, lineHeight: 1,
-                                letterSpacing: '-0.04em',
-                                color: currentStreak > 0 ? '#fb923c' : 'rgba(255,255,255,0.18)',
-                            }}>{currentStreak}</span>
-                            <span style={{
-                                fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.28)',
-                                paddingBottom: 3,
-                            }}>days</span>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: 8,
+                        }}>
+                            {[
+                                { label: 'Current', value: currentStreak.toLocaleString(), unit: 'days', color: '#fb923c' },
+                                { label: 'Best', value: maxStreak.toLocaleString(), unit: 'days', color: 'rgba(255,255,255,0.78)' },
+                                { label: 'Active', value: streakSummary.activeDays.toLocaleString(), unit: 'days', color: 'rgba(255,255,255,0.72)' },
+                                { label: 'Games', value: streakSummary.totalGames.toLocaleString(), unit: 'total', color: 'rgba(255,255,255,0.88)' },
+                            ].map((item) => (
+                                <div
+                                    key={item.label}
+                                    style={{
+                                        borderRadius: 10,
+                                        padding: '8px 9px',
+                                        border: '1px solid rgba(255,255,255,0.08)',
+                                        background: 'rgba(255,255,255,0.03)',
+                                    }}
+                                >
+                                    <p style={{
+                                        margin: 0,
+                                        fontSize: 8,
+                                        fontWeight: 700,
+                                        letterSpacing: '0.13em',
+                                        textTransform: 'uppercase',
+                                        color: 'rgba(255,255,255,0.30)',
+                                    }}>{item.label}</p>
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginTop: 4 }}>
+                                        <span style={{
+                                            fontSize: 17,
+                                            lineHeight: 1,
+                                            fontWeight: 900,
+                                            letterSpacing: '-0.02em',
+                                            color: item.color,
+                                        }}>{item.value}</span>
+                                        <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.28)' }}>{item.unit}</span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-
-                        {maxStreak > 0 && (
-                            <div style={{
-                                display: 'flex', alignItems: 'center', gap: 5,
-                                paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)',
-                            }}>
-                                <span style={{
-                                    fontSize: 8, fontWeight: 700, letterSpacing: '0.15em',
-                                    textTransform: 'uppercase', color: 'rgba(255,255,255,0.22)',
-                                }}>Best</span>
-                                <span style={{
-                                    fontSize: 13, fontWeight: 900,
-                                    color: 'rgba(255,255,255,0.50)',
-                                    letterSpacing: '-0.02em',
-                                }}>{maxStreak}</span>
-                                <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)' }}>days</span>
-                            </div>
-                        )}
                     </div>
                 </div>
 
-                {/* ── Right column: sparkline ──────────────────── */}
+                {/* ── Right column: year/month dots ─────────────── */}
                 <div style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {/* Header row */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{
                             fontSize: 8, fontWeight: 800, letterSpacing: '0.22em',
                             textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)',
-                        }}>Rating History</span>
-                        {spark && (
+                        }}>Rating History (Y/M)</span>
+                        {monthlyHistory.delta !== null && monthlyHistory.trendUp !== null && (
                             <div style={{
                                 display: 'flex', alignItems: 'center', gap: 5,
                                 padding: '4px 10px', borderRadius: 7,
-                                background: spark.trend ? 'rgba(74,222,128,0.10)' : 'rgba(248,113,113,0.10)',
-                                border: `1px solid ${spark.trend ? 'rgba(74,222,128,0.28)' : 'rgba(248,113,113,0.28)'}`,
+                                background: monthlyHistory.trendUp ? 'rgba(74,222,128,0.10)' : 'rgba(248,113,113,0.10)',
+                                border: `1px solid ${monthlyHistory.trendUp ? 'rgba(74,222,128,0.28)' : 'rgba(248,113,113,0.28)'}`,
                             }}>
                                 <span style={{
                                     fontSize: 9, fontWeight: 900,
-                                    color: sparkColor,
-                                }}>{spark.trend ? '▲' : '▼'}</span>
+                                    color: monthlyHistory.trendUp ? '#4ade80' : '#f87171',
+                                }}>{monthlyHistory.trendUp ? '▲' : '▼'}</span>
                                 <span style={{
                                     fontSize: 12, fontWeight: 800,
-                                    color: sparkColor, letterSpacing: '-0.01em',
+                                    color: monthlyHistory.trendUp ? '#4ade80' : '#f87171',
+                                    letterSpacing: '-0.01em',
                                 }}>
-                                    {spark.delta > 0 ? '+' : ''}{spark.delta}
+                                    {monthlyHistory.delta > 0 ? '+' : ''}{monthlyHistory.delta}
                                 </span>
                             </div>
                         )}
                     </div>
 
-                    {/* Sparkline SVG */}
-                    {spark ? (
+                    {monthlyHistory.count > 0 ? (
                         <>
                             <div style={{
                                 borderRadius: 12,
                                 background: 'rgba(255,255,255,0.02)',
                                 border: '1px solid rgba(255,255,255,0.06)',
-                                padding: '10px 8px 6px',
-                                overflow: 'hidden',
+                                padding: '10px 10px 8px',
                             }}>
-                                <svg
-                                    width={W_SPARK} height={H_SPARK}
-                                    viewBox={`0 0 ${W_SPARK} ${H_SPARK}`}
-                                    style={{ display: 'block', width: '100%' }}
-                                >
-                                    <defs>
-                                        <linearGradient id="pcFill" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%"   stopColor={sparkColor} stopOpacity="0.30" />
-                                            <stop offset="75%"  stopColor={sparkColor} stopOpacity="0.04" />
-                                            <stop offset="100%" stopColor={sparkColor} stopOpacity="0.00" />
-                                        </linearGradient>
-                                        <linearGradient id="pcLine" x1="0" y1="0" x2="1" y2="0">
-                                            <stop offset="0%"   stopColor={sparkColor} stopOpacity="0.35" />
-                                            <stop offset="100%" stopColor={sparkColor} stopOpacity="1.00" />
-                                        </linearGradient>
-                                    </defs>
-
-                                    {/* Horizontal mid-grid */}
-                                    {[0.25, 0.5, 0.75].map(f => (
-                                        <line
-                                            key={f}
-                                            x1={4} y1={H_SPARK * f}
-                                            x2={W_SPARK - 4} y2={H_SPARK * f}
-                                            stroke="rgba(255,255,255,0.04)"
-                                            strokeWidth="1"
-                                            strokeDasharray="4,6"
-                                        />
+                                <div style={{ display: 'grid', gridTemplateColumns: '34px repeat(12, 1fr)', gap: 4 }}>
+                                    <div />
+                                    {MONTH_SHORT.map((m) => (
+                                        <div key={m} style={{ textAlign: 'center', fontSize: 8, color: 'rgba(255,255,255,0.22)', fontWeight: 700 }}>
+                                            {m}
+                                        </div>
                                     ))}
 
-                                    {/* Gradient fill area */}
-                                    <path d={spark.area} fill="url(#pcFill)" />
-
-                                    {/* Main polyline */}
-                                    <polyline
-                                        points={spark.polyline}
-                                        fill="none"
-                                        stroke="url(#pcLine)"
-                                        strokeWidth="2.2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-
-                                    {/* End-point dot */}
-                                    <circle
-                                        cx={spark.lastPt.x.toFixed(1)}
-                                        cy={spark.lastPt.y.toFixed(1)}
-                                        r="4"
-                                        fill={sparkColor}
-                                        opacity="0.95"
-                                    />
-                                    <circle
-                                        cx={spark.lastPt.x.toFixed(1)}
-                                        cy={spark.lastPt.y.toFixed(1)}
-                                        r="8"
-                                        fill={sparkColor}
-                                        opacity="0.12"
-                                    />
-
-                                    {/* Min label (bottom-left) */}
-                                    <text
-                                        x="6" y={H_SPARK - 2}
-                                        fontSize="8" fontWeight="700"
-                                        fill="rgba(255,255,255,0.22)"
-                                        fontFamily="Inter, sans-serif"
-                                    >{spark.mn}</text>
-
-                                    {/* Max label (top-left) */}
-                                    <text
-                                        x="6" y="12"
-                                        fontSize="8" fontWeight="700"
-                                        fill="rgba(255,255,255,0.22)"
-                                        fontFamily="Inter, sans-serif"
-                                    >{spark.mx}</text>
-                                </svg>
+                                    {monthlyHistory.years.map((year) => (
+                                        <React.Fragment key={year}>
+                                            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.32)', fontWeight: 700, paddingTop: 2 }}>
+                                                {year.slice(2)}
+                                            </div>
+                                            {Array.from({ length: 12 }, (_, idx) => idx + 1).map((month) => {
+                                                const rating = monthlyHistory.matrix[year]?.[month];
+                                                const hasData = typeof rating === 'number';
+                                                return (
+                                                    <div
+                                                        key={`${year}-${month}`}
+                                                        title={hasData ? `${year}-${String(month).padStart(2, '0')}: ${rating}` : `${year}-${String(month).padStart(2, '0')}: no data`}
+                                                        style={{
+                                                            width: 11,
+                                                            height: 11,
+                                                            borderRadius: 999,
+                                                            justifySelf: 'center',
+                                                            alignSelf: 'center',
+                                                            background: hasData ? getRatingDotColor(rating as number) : 'rgba(255,255,255,0.06)',
+                                                            border: hasData ? '1px solid rgba(255,255,255,0.45)' : '1px solid rgba(255,255,255,0.10)',
+                                                            boxShadow: hasData ? '0 0 8px rgba(255,255,255,0.10)' : 'none',
+                                                        }}
+                                                    />
+                                                );
+                                            })}
+                                        </React.Fragment>
+                                    ))}
+                                </div>
                             </div>
 
-                            {/* Start → End labels row */}
                             <div style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
                             }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                     <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase' }}>Start</span>
                                     <span style={{ fontSize: 15, fontWeight: 800, color: 'rgba(255,255,255,0.45)', letterSpacing: '-0.02em' }}>
-                                        {spark.first.toLocaleString()}
+                                        {monthlyHistory.first?.toLocaleString() ?? '-'}
                                     </span>
                                 </div>
 
@@ -538,14 +534,19 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                                     <span style={{
                                         fontSize: 8, fontWeight: 700, letterSpacing: '0.16em',
                                         textTransform: 'uppercase', color: 'rgba(255,255,255,0.20)',
-                                    }}>Last 12 mo.</span>
+                                    }}>Year / Month Dots</span>
                                     <div style={{ width: 24, height: 1, background: 'rgba(255,255,255,0.12)' }} />
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-end' }}>
                                     <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase' }}>Now</span>
-                                    <span style={{ fontSize: 15, fontWeight: 800, color: sparkColor, letterSpacing: '-0.02em' }}>
-                                        {spark.last.toLocaleString()}
+                                    <span style={{
+                                        fontSize: 15,
+                                        fontWeight: 800,
+                                        color: monthlyHistory.last ? getRatingDotColor(monthlyHistory.last) : 'rgba(255,255,255,0.45)',
+                                        letterSpacing: '-0.02em',
+                                    }}>
+                                        {monthlyHistory.last?.toLocaleString() ?? '-'}
                                     </span>
                                 </div>
                             </div>
@@ -558,7 +559,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                             borderRadius: 14,
                             background: 'rgba(255,255,255,0.02)',
                             border: '1px solid rgba(255,255,255,0.06)',
-                            minHeight: H_SPARK + 60,
+                            minHeight: 138,
                         }}>
                             <span style={{ fontSize: 24, opacity: 0.12 }}>♟</span>
                             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)', fontWeight: 600 }}>

@@ -260,7 +260,7 @@ const Header = () => {
                                             <button
                                                 onClick={() => { setIsMenuOpen(false); handleLichessLogin(); }}
                                                 disabled={isLoginLoading}
-                                                className="w-full flex items-center justify-center gap-2 bg-white text-black font-bold py-2 px-5 rounded-full shadow-md hover:bg-[#e6e6e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full flex items-center justify-center gap-2 bg-white text-black font-bold text-sm whitespace-nowrap py-2 px-5 rounded-full shadow-md hover:bg-[#e6e6e6] transition disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <img src={lichessLogoImg} alt="Lichess Logo" className="w-6 h-6" />
                                                 {isLoginLoading ? t('profile.loading') : t('main.loginWithLichess')}
@@ -269,7 +269,7 @@ const Header = () => {
                                             <button
                                                 onClick={() => { setIsMenuOpen(false); handleChesscomLogin(); }}
                                                 disabled={isChesscomLoginLoading}
-                                                className="w-full flex items-center justify-center gap-2 bg-[#81B64C] text-white font-bold py-2 px-5 rounded-full shadow-md hover:bg-[#6a9e3a] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full flex items-center justify-center gap-2 bg-[#81B64C] text-white font-bold text-sm whitespace-nowrap py-2 px-5 rounded-full shadow-md hover:bg-[#6a9e3a] transition disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <img src={chesscomLogoImg} alt="Chess.com Logo" className="w-7 h-7 object-contain" />
                                                 {isChesscomLoginLoading ? t('profile.loading') : t('main.loginWithChesscom')}

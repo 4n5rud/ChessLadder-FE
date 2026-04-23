@@ -282,16 +282,19 @@ export default function Ranking() {
                       <p className="text-xs text-white/50 leading-relaxed mb-4">
                         {t('ranking.loginPrompt')}
                       </p>
-                      <button onClick={() => handleLichessLogin()} disabled={isLichessLoading}
-                        className="w-full flex items-center gap-2 bg-white text-black font-semibold py-2.5 px-4 rounded-full hover:bg-gray-100 transition text-sm disabled:opacity-50">
-                        <img src={lichessLogoImg} alt="Lichess" className="w-5 h-5" />
-                        {isLichessLoading ? t('profile.loading') : t('main.loginWithLichess')}
-                      </button>
-                      <button onClick={() => handleChesscomLogin()} disabled={isChesscomLoading}
-                        className="w-full flex items-center gap-2 bg-[#81B64C] text-white font-semibold py-2.5 px-4 rounded-full hover:bg-[#70a33e] transition text-sm disabled:opacity-50">
-                        <img src={chesscomLogoImg} alt="Chess.com" className="w-5 h-5" />
-                        {isChesscomLoading ? t('profile.loading') : t('main.loginWithChesscom')}
-                      </button>
+                      {selectedPlatform === 'LICHESS' ? (
+                        <button onClick={() => handleLichessLogin()} disabled={isLichessLoading}
+                          className="w-full flex items-center gap-2 bg-white text-black font-semibold py-2.5 px-4 rounded-full hover:bg-gray-100 transition text-sm disabled:opacity-50">
+                          <img src={lichessLogoImg} alt="Lichess" className="w-5 h-5" />
+                          {isLichessLoading ? t('profile.loading') : t('main.loginWithLichess')}
+                        </button>
+                      ) : (
+                        <button onClick={() => handleChesscomLogin()} disabled={isChesscomLoading}
+                          className="w-full flex items-center gap-2 bg-[#81B64C] text-white font-semibold py-2.5 px-4 rounded-full hover:bg-[#70a33e] transition text-sm disabled:opacity-50">
+                          <img src={chesscomLogoImg} alt="Chess.com" className="w-5 h-5" />
+                          {isChesscomLoading ? t('profile.loading') : t('main.loginWithChesscom')}
+                        </button>
+                      )}
                     </div>
                   ) : isUnrated ? (
                     /* 언레이팅 */

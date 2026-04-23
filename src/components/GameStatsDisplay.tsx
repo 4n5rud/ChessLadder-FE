@@ -5,19 +5,23 @@ interface GameStatsDisplayProps {
   profile: ProfileResponse | null;
   userPerf: UserPerfResponse | null;
   summaryLoaded: boolean;
+  gameType?: string;
 }
 
-const GameStatsDisplay = ({ profile, userPerf: _userPerf, summaryLoaded }: GameStatsDisplayProps) => {
+const GameStatsDisplay = ({ profile, userPerf: _userPerf, summaryLoaded, gameType: _gameType }: GameStatsDisplayProps) => {
   const { language } = useLanguage();
 
   if (!profile) return null;
 
-  // 통계 계산
+  // 상단 카드는 전체 누적 통계 유지
   const totalGames = profile.allGames ?? 0;
   const wins = profile.wins ?? 0;
   const losses = profile.losses ?? 0;
   const draws = profile.draws ?? 0;
   const winRate = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(1) : '0.0';
+  const winsRate = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(1) : '0.0';
+  const lossesRate = totalGames > 0 ? ((losses / totalGames) * 100).toFixed(1) : '0.0';
+  const drawsRate = totalGames > 0 ? ((draws / totalGames) * 100).toFixed(1) : '0.0';
 
   // 승률에 따른 색상 결정
   const getProgressColor = (): string => {
@@ -97,7 +101,7 @@ const GameStatsDisplay = ({ profile, userPerf: _userPerf, summaryLoaded }: GameS
               </p>
               <div className="flex items-baseline gap-2">
                 <p className="text-3xl font-black text-green-500">{summaryLoaded ? wins : '?'}</p>
-                <p className="text-xs text-white/40">{((wins / totalGames) * 100).toFixed(1)}%</p>
+                <p className="text-xs text-white/40">{winsRate}%</p>
               </div>
             </div>
 
@@ -108,7 +112,7 @@ const GameStatsDisplay = ({ profile, userPerf: _userPerf, summaryLoaded }: GameS
               </p>
               <div className="flex items-baseline gap-2">
                 <p className="text-3xl font-black text-red-500">{summaryLoaded ? losses : '?'}</p>
-                <p className="text-xs text-white/40">{((losses / totalGames) * 100).toFixed(1)}%</p>
+                <p className="text-xs text-white/40">{lossesRate}%</p>
               </div>
             </div>
 
@@ -119,7 +123,7 @@ const GameStatsDisplay = ({ profile, userPerf: _userPerf, summaryLoaded }: GameS
               </p>
               <div className="flex items-baseline gap-2">
                 <p className="text-3xl font-black text-white/70">{summaryLoaded ? draws : '?'}</p>
-                <p className="text-xs text-white/40">{((draws / totalGames) * 100).toFixed(1)}%</p>
+                <p className="text-xs text-white/40">{drawsRate}%</p>
               </div>
             </div>
           </div>
