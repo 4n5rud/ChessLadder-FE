@@ -17,14 +17,6 @@ import blitzImg from '../assets/images/logo/game/blitz.webp';
 import classicalImg from '../assets/images/logo/game/classical.webp';
 import bulletImg from '../assets/images/logo/game/bullet.webp';
 
-// 티어 이미지 import
-import pawnImg from '../assets/images/tier/pawn.png';
-import knightImg from '../assets/images/tier/knight.png';
-import bishopImg from '../assets/images/tier/vishop.png';
-import rookImg from '../assets/images/tier/rook.png';
-import queenImg from '../assets/images/tier/queen.png';
-import kingImg from '../assets/images/tier/king.png';
-
 const GAME_TYPES = ['RAPID', 'BLITZ', 'CLASSICAL', 'BULLET'] as const;
 type GameType = typeof GAME_TYPES[number];
 
@@ -37,11 +29,6 @@ type RankingViewState = {
 };
 
 interface RankingUser extends RankingUserResponse {}
-
-const tierImages: { [key: string]: string } = {
-  'PAWN': pawnImg, 'KNIGHT': knightImg, 'BISHOP': bishopImg,
-  'ROOK': rookImg, 'QUEEN': queenImg,   'KING': kingImg
-};
 
 const getGameTypeImage = (gameType: GameType): string => {
   const map: Record<GameType, string> = { RAPID: rapidImg, BLITZ: blitzImg, CLASSICAL: classicalImg, BULLET: bulletImg };
