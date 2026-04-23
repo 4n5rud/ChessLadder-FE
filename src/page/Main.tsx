@@ -335,29 +335,26 @@ function Main() {
                 </div>
 
                 {/* Login buttons */}
-                <div className="relative flex flex-col sm:flex-row gap-3 items-center fade-in-bottom-section" style={{animationDelay: '1.5s'}}>
-                    {/* 비로그인: 두 버튼 모두 표시 / 로그인: 해당 플랫폼 버튼만 표시 */}
-                    {(!user || user.platform === 'LICHESS') && (
+                {!user && (
+                    <div className="relative flex flex-col sm:flex-row gap-3 items-center fade-in-bottom-section" style={{animationDelay: '1.5s'}}>
                         <button
                             onClick={handleLichessLogin}
-                            disabled={isLoading || !!user}
+                            disabled={isLoading}
                             className="flex items-center gap-3 bg-white border border-white text-black font-semibold py-3 px-7 rounded-full backdrop-blur-sm hover:bg-gray-100 hover:border-gray-200 transition text-base disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             <img src={lichessLogoImg} alt="Lichess" className="w-7 h-7 object-contain" />
-                            {isLoading ? t('profile.loading') : (user ? t('profile.alreadyLoggedIn') : t('main.loginWithLichess'))}
+                            {isLoading ? t('profile.loading') : t('main.loginWithLichess')}
                         </button>
-                    )}
-                    {(!user || user.platform === 'CHESSCOM') && (
                         <button
                             onClick={handleChesscomLogin}
-                            disabled={isChesscomLoading || !!user}
+                            disabled={isChesscomLoading}
                             className="flex items-center gap-3 bg-[#81B64C] border border-[#6a9e3a] text-white font-semibold py-3 px-7 rounded-full hover:bg-[#70a33e] transition text-base disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             <img src={chesscomLogoImg} alt="Chess.com" className="w-7 h-7 object-contain rounded-sm" />
-                            {isChesscomLoading ? t('profile.loading') : (user ? t('profile.alreadyLoggedIn') : t('main.loginWithChesscom'))}
+                            {isChesscomLoading ? t('profile.loading') : t('main.loginWithChesscom')}
                         </button>
-                    )}
-                </div>
+                    </div>
+                )}
 
                 {/* Stats cards */}
                 <div className="relative flex flex-col gap-2 items-stretch w-full max-w-xl mx-auto mt-3 md:mt-4 fade-in-bottom-section" style={{animationDelay: '1.5s'}}>
