@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { ProfileResponse, UserPerfResponse, DailyStreakDto, FirstMoveResponse } from '../api/userService';
+import type { ProfileResponse, UserPerfResponse, DailyStreakDto, FirstMoveResponse, ColorStatsResponse } from '../api/userService';
 import { getTierInfo } from '../utils/tierUtils';
 
 import pawnImg    from '../assets/images/tier/pawn.png';
@@ -27,6 +27,7 @@ interface ProfileCardProps {
     cardRef?: React.RefObject<HTMLDivElement | null>;
     platform?: 'LICHESS' | 'CHESSCOM';
     firstMoveStats?: FirstMoveResponse | null;
+    colorStats?: ColorStatsResponse | null;
 }
 
 const PLACEHOLDER_SVG =
@@ -54,6 +55,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
     cardRef,
     platform,
     firstMoveStats,
+    colorStats,
 }) => {
     const [profileImgSrc, setProfileImgSrc] = useState<string>(profile.profile_image || PLACEHOLDER_SVG);
     const [bannerImgSrc, setBannerImgSrc]   = useState<string | null>(profile.banner_image || null);
@@ -409,6 +411,62 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                     ))}
                 </div>
             </div>
+
+            {/* ═══════════════════════════════════════════════════
+                COLOR WIN RATE (white / black donuts)
+            ═══════════════════════════════════════════════════ */}
+            {colorStats && (() => {
+                const wW = colorStats.white_wins, wD = colorStats.white_draws, wL = colorStats.white_losses;
+                const bW = colorStats.black_wins, bD = colorStats.black_draws, bL = colorStats.black_losses;
+                const wTotal = (wW + wD + wL) || 1;
+                const bTotal = (bW + bD + bL) || 1;
+
+                const DX = 44, DY = 44, DR = 32, DSW = 10;
+                const CIRC = 2 * Math.PI * DR;
+                const seg = (n: number, t: number) => (n / t) * CIRC;
+                const rot = (deg: number) => `rotate(${deg} ${DX} ${DY})`;
+
+                const wWinSeg  = seg(wW, wTotal), wDrawSeg = seg(wD, wTotal);
+                const bWinSeg  = seg(bW, bTotal), bDrawSeg = seg(bD, bTotal);
+                const wWinRot  = -90, wDrawRot = wWinRot + (wW / wTotal) * 360, wLossRot = wDrawRot + (wD / wTotal) * 360;
+                const bWinRot  = -90, bDrawRot = bWinRot + (bW / bTotal) * 360, bLossRot = bDrawRot + (bD / bTotal) * 360;
+
+                const DonutBox = ({ label, wins, draws, losses, total, winSeg, drawSeg, lossSeg, winRot: wr, drawRot: dr, lossRot: lr, winColor }: {
+                    label: string; wins: number; draws: number; losses: number; total: number;
+                    winSeg: number; drawSeg: number; lossSeg: number;
+                    winRot: number; drawRot: number; lossRot: number; winColor: string;
+                }) => (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '10px 12px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <p style={{ margin: 0, fontSize: 8, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', alignSelf: 'flex-start' }}>{label}</p>
+                        <svg width={88} height={88} viewBox="0 0 88 88">
+                            <circle cx={DX} cy={DY} r={DR} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={DSW} />
+                            <circle cx={DX} cy={DY} r={DR} fill="none" stroke="#f87171" strokeWidth={DSW} strokeDasharray={`${seg(losses, total)} ${CIRC - seg(losses, total)}`} transform={rot(lr)} />
+                            <circle cx={DX} cy={DY} r={DR} fill="none" stroke="rgba(148,163,184,0.45)" strokeWidth={DSW} strokeDasharray={`${drawSeg} ${CIRC - drawSeg}`} transform={rot(dr)} />
+                            <circle cx={DX} cy={DY} r={DR} fill="none" stroke={winColor} strokeWidth={DSW} strokeDasharray={`${winSeg} ${CIRC - winSeg}`} transform={rot(wr)} />
+                            <text x={DX} y={DY - 3} textAnchor="middle" fontSize="12" fontWeight="900" fill="rgba(255,255,255,0.90)" fontFamily="Inter, sans-serif">{((wins / total) * 100).toFixed(1)}%</text>
+                            <text x={DX} y={DY + 9} textAnchor="middle" fontSize="7" fontWeight="700" fill="rgba(255,255,255,0.28)" fontFamily="Inter, sans-serif">WIN</text>
+                        </svg>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <span style={{ fontSize: 9, color: winColor }}>{wins}W</span>
+                            <span style={{ fontSize: 9, color: 'rgba(148,163,184,0.50)' }}>{draws}D</span>
+                            <span style={{ fontSize: 9, color: '#f87171' }}>{losses}L</span>
+                        </div>
+                    </div>
+                );
+
+                return (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', margin: '0 24px 16px', gap: 10 }}>
+                        <DonutBox label="⬜ White" wins={wW} draws={wD} losses={wL} total={wTotal}
+                            winSeg={wWinSeg} drawSeg={wDrawSeg} lossSeg={seg(wL, wTotal)}
+                            winRot={wWinRot} drawRot={wDrawRot} lossRot={wLossRot}
+                            winColor="rgba(255,255,255,0.85)" />
+                        <DonutBox label="⬛ Black" wins={bW} draws={bD} losses={bL} total={bTotal}
+                            winSeg={bWinSeg} drawSeg={bDrawSeg} lossSeg={seg(bL, bTotal)}
+                            winRot={bWinRot} drawRot={bDrawRot} lossRot={bLossRot}
+                            winColor={C.text} />
+                    </div>
+                );
+            })()}
 
             {/* ═══════════════════════════════════════════════════
                 FIRST MOVES (if available)

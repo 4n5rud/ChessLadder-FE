@@ -635,6 +635,7 @@ const Profile = () => {
                                                             convertSubTierToRoman={convertSubTierToRoman}
                                                             platform={profile.platform}
                                                             firstMoveStats={firstMoveStats}
+                                                            colorStats={colorStats}
                                                         />
                                                     )}
                                                 </div>
@@ -1061,6 +1062,7 @@ const Profile = () => {
                         cardRef={cardRef}
                         platform={profile.platform}
                         firstMoveStats={firstMoveStats}
+                        colorStats={colorStats}
                     />
                 )}
             </div>
