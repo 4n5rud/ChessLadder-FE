@@ -618,6 +618,7 @@ const Profile = () => {
                                                 <div style={{ width: '595px', height: '637px' }}>
                                                     {profile && userPerf && (
                                                         <ProfileCard
+                                                            key={`preview-${selectedGameType}-${selectedYear}-${ratingHistoryResponse?.data?.length ?? 0}-${currentStreakDays}`}
                                                             profile={profile}
                                                             userPerf={userPerf}
                                                             ratingHistory={ratingHistoryResponse?.data ?? []}
@@ -1095,6 +1096,7 @@ const Profile = () => {
             <div style={{ position: 'fixed', left: '-9999px', top: 0, pointerEvents: 'none', opacity: 1 }}>
                 {profile && userPerf && (
                     <ProfileCard
+                        key={`export-${selectedGameType}-${selectedYear}-${ratingHistoryResponse?.data?.length ?? 0}-${currentStreakDays}`}
                         profile={profile}
                         userPerf={userPerf}
                         ratingHistory={ratingHistoryResponse?.data ?? []}
