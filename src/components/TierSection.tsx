@@ -197,7 +197,7 @@ export const TierSection = ({
                 </div>
 
                 {/* Progress bar */}
-                <div className="mb-8">
+                <div className="mb-6">
                     <div className="flex items-center justify-between text-xs font-semibold mb-3" style={{ color: 'rgba(255,255,255,0.72)' }}>
                         <span>{cap(mainTier)} {currentSub} → {cap(nextTier)} {nextSub}</span>
                         <span>{remaining} {language === 'KR' ? '레이팅 남음' : 'rating left'}</span>
@@ -216,6 +216,45 @@ export const TierSection = ({
                         />
                     </div>
                 </div>
+
+                {/* Game-type stats strip */}
+                {(() => {
+                    const games = userPerf.gamesPlayed ?? 0;
+                    const wins = userPerf.wins ?? 0;
+                    const losses = userPerf.losses ?? 0;
+                    const draws = userPerf.draws ?? 0;
+                    const winRate = games > 0 ? ((wins / games) * 100).toFixed(1) : '0.0';
+                    const statItems: { label: string; value: string; color?: string }[] = [
+                        { label: language === 'KR' ? '총 게임' : 'Games',   value: games.toLocaleString() },
+                        { label: language === 'KR' ? '승리'   : 'Wins',     value: wins.toLocaleString(),   color: '#4ade80' },
+                        { label: language === 'KR' ? '패배'   : 'Losses',   value: losses.toLocaleString(), color: '#f87171' },
+                        { label: language === 'KR' ? '무승부' : 'Draws',    value: draws.toLocaleString() },
+                        { label: language === 'KR' ? '승률'   : 'Win Rate', value: `${winRate}%`,           color: textSolid },
+                    ];
+                    return (
+                        <div className="grid grid-cols-5 gap-2">
+                            {statItems.map((s, i, arr) => (
+                                <div
+                                    key={s.label}
+                                    className="flex flex-col items-center justify-center py-2.5 px-1"
+                                    style={{
+                                        background: 'rgba(255,255,255,0.03)',
+                                        borderRadius: 12,
+                                        border: '1px solid rgba(255,255,255,0.07)',
+                                        borderRight: i < arr.length - 1 ? undefined : undefined,
+                                    }}
+                                >
+                                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.13em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', marginBottom: 5 }}>
+                                        {s.label}
+                                    </span>
+                                    <span style={{ fontSize: 18, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em', color: s.color ?? 'rgba(255,255,255,0.82)' }}>
+                                        {s.value}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    );
+                })()}
                 </div>
             </div>
         </div>

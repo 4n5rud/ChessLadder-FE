@@ -252,8 +252,10 @@ const Profile = () => {
     }, [setAuthUser]);
 
     useEffect(() => {
-        // platform이 결정된 이후에만 호출
         if (!profile?.platform) return;
+
+        const controller = new AbortController();
+        const { signal } = controller;
 
         const fetchGameTypeData = async () => {
             setLoadingPerf(true);
@@ -262,30 +264,34 @@ const Profile = () => {
             setLoadingRatingHistory(true);
             try {
                 const [perfData, colorData, firstMoveData, ratingHistData] = await Promise.all([
-                    getUserPerf(selectedGameType),
-                    getColorStats(selectedGameType),
-                    getFirstMoveStats(selectedGameType),
-                    getRatingHistory(selectedGameType)
+                    getUserPerf(selectedGameType, signal),
+                    getColorStats(selectedGameType, signal),
+                    getFirstMoveStats(selectedGameType, signal),
+                    getRatingHistory(selectedGameType, signal),
                 ]);
-                // API 응답에서 data가 빈 배열이면 null 반환됨
+                if (signal.aborted) return;
                 setUserPerf(perfData);
                 setColorStats(colorData);
                 setFirstMoveStats(firstMoveData);
                 setRatingHistoryResponse(ratingHistData && ratingHistData.data.length > 0 ? ratingHistData : null);
-            } catch (error) {
+            } catch (error: any) {
+                if (signal.aborted) return;
                 setUserPerf(null);
                 setColorStats(null);
                 setFirstMoveStats(null);
                 setRatingHistoryResponse(null);
             } finally {
-                setLoadingPerf(false);
-                setLoadingColorStats(false);
-                setLoadingFirstMoveStats(false);
-                setLoadingRatingHistory(false);
+                if (!signal.aborted) {
+                    setLoadingPerf(false);
+                    setLoadingColorStats(false);
+                    setLoadingFirstMoveStats(false);
+                    setLoadingRatingHistory(false);
+                }
             }
         };
 
         fetchGameTypeData();
+        return () => controller.abort();
     }, [selectedGameType, profile?.platform]);
 
     // 년도 변경 시 스트릭 데이터 조회 (profile.platform 이 결정된 이후에만 실행)
@@ -628,6 +634,7 @@ const Profile = () => {
                                                             promotionThresholds={promotionThresholds}
                                                             convertSubTierToRoman={convertSubTierToRoman}
                                                             platform={profile.platform}
+                                                            firstMoveStats={firstMoveStats}
                                                         />
                                                     )}
                                                 </div>
@@ -985,60 +992,6 @@ const Profile = () => {
                 />
             </div>
 
-            {/* 선택된 타임클래스 perf 통계 */}
-            <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
-                <div className="bg-[#070d1a] border border-white/8 rounded-2xl p-5 md:p-6">
-                    <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
-                        <h3 className="text-white text-lg md:text-xl font-bold">
-                            {language === 'KR' ? '선택 타임클래스 퍼포먼스' : 'Selected TimeClass Performance'}
-                        </h3>
-                        <span className="px-2.5 py-1 rounded-md border border-white/15 bg-white/5 text-xs font-bold tracking-wider text-white/75">
-                            {selectedGameType}
-                        </span>
-                    </div>
-
-                    {loadingPerf ? (
-                        <div className="flex items-center justify-center py-12 text-white/35 text-sm">
-                            {t('profile.dataLoading')}
-                        </div>
-                    ) : userPerf ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {(() => {
-                                const games = userPerf.gamesPlayed ?? 0;
-                                const wins = userPerf.wins ?? 0;
-                                const losses = userPerf.losses ?? 0;
-                                const draws = userPerf.draws ?? 0;
-                                const winRate = games > 0 ? ((wins / games) * 100).toFixed(1) : '0.0';
-
-                                const stats = [
-                                    { label: 'Rating', value: String(userPerf.rating ?? 0), color: 'text-white' },
-                                    { label: language === 'KR' ? '총 게임' : 'Games', value: String(games), color: 'text-white/90' },
-                                    { label: language === 'KR' ? '승리' : 'Wins', value: String(wins), color: 'text-emerald-400' },
-                                    { label: language === 'KR' ? '패배' : 'Losses', value: String(losses), color: 'text-rose-400' },
-                                    { label: language === 'KR' ? '무승부' : 'Draws', value: String(draws), color: 'text-white/70' },
-                                    { label: language === 'KR' ? '승률' : 'Win Rate', value: `${winRate}%`, color: 'text-cyan-300' },
-                                ];
-
-                                return stats.map((s) => (
-                                    <div key={s.label} className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                                        <p className="text-[11px] uppercase tracking-wider text-white/35 mb-1">{s.label}</p>
-                                        <p className={`text-2xl font-black tabular-nums leading-none ${s.color}`}>{s.value}</p>
-                                    </div>
-                                ));
-                            })()}
-                        </div>
-                    ) : (
-                        <div className="py-10 text-center">
-                            <p className="text-white/35 text-sm">
-                                {language === 'KR'
-                                    ? `${selectedGameType} 타입 퍼포먼스 데이터가 없습니다.`
-                                    : `No performance data for ${selectedGameType}.`}
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
-
             {/* 레이팅 히스토리 섹션 */}
             <div className="max-w-6xl mx-auto px-3 md:px-6 mb-8 section-spacing">
                 <div className="flex flex-col gap-1 mb-6">
@@ -1107,6 +1060,7 @@ const Profile = () => {
                         convertSubTierToRoman={convertSubTierToRoman}
                         cardRef={cardRef}
                         platform={profile.platform}
+                        firstMoveStats={firstMoveStats}
                     />
                 )}
             </div>

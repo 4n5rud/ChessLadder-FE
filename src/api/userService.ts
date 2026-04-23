@@ -379,10 +379,10 @@ export const getUserStreak = async (year?: number, platform?: string): Promise<S
  * 응답: { message, data: [{ time_class, rating, games, wins, losses, draws }] }
  * 특정 타임클래스의 단일 항목을 UserPerfResponse 형태로 반환
  */
-export const getUserPerf = async (gameType: string = 'RAPID'): Promise<UserPerfResponse | null> => {
+export const getUserPerf = async (gameType: string = 'RAPID', signal?: AbortSignal): Promise<UserPerfResponse | null> => {
   const platform = getPlatform();
   const tc = gameType.toLowerCase();
-  const res = await api(`/stat/perf?platform=${platform}&timeClass=${tc}`);
+  const res = await api(`/stat/perf?platform=${platform}&timeClass=${tc}`, { signal });
   const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
 
   // data: [] (빈 배열) → null 반환
@@ -415,10 +415,10 @@ export const getUserPerf = async (gameType: string = 'RAPID'): Promise<UserPerfR
  * 응답: { message, data: [{ time_class, color("WHITE"|"BLACK"), wins, draws, losses }] }
  * timeClass 서버에서 필터링
  */
-export const getColorStats = async (gameType: string = 'RAPID'): Promise<ColorStatsResponse | null> => {
+export const getColorStats = async (gameType: string = 'RAPID', signal?: AbortSignal): Promise<ColorStatsResponse | null> => {
   const platform = getPlatform();
   const tc = gameType.toLowerCase();
-  const res = await api(`/stat/color?platform=${platform}&timeClass=${tc}`);
+  const res = await api(`/stat/color?platform=${platform}&timeClass=${tc}`, { signal });
   const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
 
   // data: [] (빈 배열) → null 반환
@@ -460,10 +460,10 @@ export const getColorStats = async (gameType: string = 'RAPID'): Promise<ColorSt
  * 응답: [{ timeClass, color("WHITE"|"BLACK"), move, count }]
  * timeClass 서버에서 필터링
  */
-export const getFirstMoveStats = async (gameType: string = 'RAPID'): Promise<FirstMoveResponse | null> => {
+export const getFirstMoveStats = async (gameType: string = 'RAPID', signal?: AbortSignal): Promise<FirstMoveResponse | null> => {
   const platform = getPlatform();
   const tc = gameType.toLowerCase();
-  const res = await api(`/stat/first-move?platform=${platform}&timeClass=${tc}`);
+  const res = await api(`/stat/first-move?platform=${platform}&timeClass=${tc}`, { signal });
   const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
 
   // data: [] (빈 배열) → null 반환
@@ -494,14 +494,14 @@ export const getFirstMoveStats = async (gameType: string = 'RAPID'): Promise<Fir
  * 응답: { from, to, data: [{ yearMonth, timeClass, rating }] }
  * timeClass 생략 시 전체 타임클래스 반환
  */
-export const getRatingHistory = async (timeClass?: string): Promise<RatingHistoryResponse> => {
+export const getRatingHistory = async (timeClass?: string, signal?: AbortSignal): Promise<RatingHistoryResponse> => {
   const platform = getPlatform();
   const url = timeClass
     ? `/stat/rating-history?platform=${platform}&timeClass=${timeClass.toLowerCase()}`
     : `/stat/rating-history?platform=${platform}`;
 
   try {
-    const res = await api(url);
+    const res = await api(url, { signal });
     const data = res.data ?? res;
 
     // 응답 구조: { from, to, data: [...] }
@@ -756,10 +756,12 @@ export const getPublicUserPerf = async (
   username: string,
   platform: 'LICHESS' | 'CHESSCOM',
   gameType: string = 'RAPID',
+  signal?: AbortSignal,
 ): Promise<UserPerfResponse | null> => {
   const tc = gameType.toLowerCase();
   const res = await api(
     `/users/${encodeURIComponent(username)}/stats/perf?platform=${platform}&timeClass=${tc}`,
+    { signal },
   );
   const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
   if (items.length === 0) return null;
@@ -851,11 +853,13 @@ export const getPublicUserColorStats = async (
   username: string,
   platform: 'LICHESS' | 'CHESSCOM',
   gameType: string = 'RAPID',
+  signal?: AbortSignal,
 ): Promise<ColorStatsResponse | null> => {
   try {
     const tc = gameType.toLowerCase();
     const res = await api(
       `/users/${encodeURIComponent(username)}/stats/color?platform=${platform}&timeClass=${tc}`,
+      { signal },
     );
     const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
     if (items.length === 0) return null;
@@ -889,11 +893,13 @@ export const getPublicUserFirstMoveStats = async (
   username: string,
   platform: 'LICHESS' | 'CHESSCOM',
   gameType: string = 'RAPID',
+  signal?: AbortSignal,
 ): Promise<FirstMoveResponse | null> => {
   try {
     const tc = gameType.toLowerCase();
     const res = await api(
       `/users/${encodeURIComponent(username)}/stats/first-move?platform=${platform}&timeClass=${tc}`,
+      { signal },
     );
     const items: any[] = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
     if (items.length === 0) return null;
@@ -921,12 +927,13 @@ export const getPublicUserRatingHistory = async (
   username: string,
   platform: 'LICHESS' | 'CHESSCOM',
   timeClass?: string,
+  signal?: AbortSignal,
 ): Promise<RatingHistoryResponse> => {
   try {
     const url = timeClass
       ? `/users/${encodeURIComponent(username)}/stats/rating-history?platform=${platform}&timeClass=${timeClass.toLowerCase()}`
       : `/users/${encodeURIComponent(username)}/stats/rating-history?platform=${platform}`;
-    const res = await api(url);
+    const res = await api(url, { signal });
     const data = res.data ?? res;
     if (data && typeof data === 'object' && 'from' in data && 'to' in data && 'data' in data) {
       return {

@@ -18,20 +18,26 @@ export const api = async (endpoint: string, options: RequestInit = {}) => {
     headers.set('Content-Type', 'application/json');
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), 10000);
+
+  const signal: AbortSignal = options.signal
+    ? (typeof AbortSignal.any === 'function'
+        ? AbortSignal.any([options.signal, timeoutController.signal])
+        : timeoutController.signal)
+    : timeoutController.signal;
 
   let response: Response;
   try {
     response = await fetch(fullUrl, {
       ...options,
       headers,
-      signal: controller.signal,
+      signal,
       credentials: 'include',
     });
   } catch (fetchError: any) {
     clearTimeout(timeoutId);
-    if (fetchError.name === 'AbortError') throw new Error('서버 응답 시간이 초과되었습니다.');
+    if (fetchError.name === 'AbortError') throw fetchError;
     throw fetchError;
   } finally {
     clearTimeout(timeoutId);
