@@ -47,7 +47,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
     userPerf,
     ratingHistory,
     streakMap,
-    selectedYear: _sy,
+    selectedYear,
     gameType,
     promotionThresholds: _pt,
     convertSubTierToRoman: _cstr,
@@ -94,24 +94,20 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
     const label   = gameType.toUpperCase();
     const hasBanner = !!bannerImgSrc;
 
-    // ── Streak heatmap (last 26 weeks) ───────────────────────────
+    // ── Streak heatmap (선택 연도 전체) ─────────────────────────
     const heatmapData = (() => {
         const weeks: { date: string; total: number }[][] = [];
-        const today = new Date();
-        // 시작일: 오늘부터 26주 이전
-        const start = new Date(today);
-        start.setDate(start.getDate() - 26 * 7 + 1);
-        // 주의 시작일로 조정 (월요일 기준)
+        const start = new Date(selectedYear, 0, 1);
+        const end = new Date(Math.min(
+            new Date(selectedYear, 11, 31).getTime(),
+            new Date().getTime(),
+        ));
         let cur = new Date(start);
         let week: { date: string; total: number }[] = [];
-        while (cur <= today) {
+        while (cur <= end) {
             const ds = cur.toISOString().slice(0, 10);
-            const entry = streakMap.get(ds);
-            week.push({ date: ds, total: entry?.total ?? 0 });
-            if (week.length === 7) {
-                weeks.push(week);
-                week = [];
-            }
+            week.push({ date: ds, total: streakMap.get(ds)?.total ?? 0 });
+            if (week.length === 7) { weeks.push(week); week = []; }
             cur.setDate(cur.getDate() + 1);
         }
         if (week.length > 0) weeks.push(week);
@@ -400,14 +396,14 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
             ═══════════════════════════════════════════════════ */}
             <div style={{ margin: '0 24px 16px', padding: '12px 12px 10px', borderRadius: 14, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.20em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' }}>Activity (Last 26 weeks)</span>
+                    <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.20em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' }}>Activity {selectedYear}</span>
                     <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.20)' }}>Less → More</span>
                 </div>
-                <div style={{ display: 'flex', gap: 2 }}>
+                <div style={{ display: 'flex', gap: 2, width: '100%' }}>
                     {heatmapData.map((week, wi) => (
-                        <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
                             {week.map((day) => (
-                                <div key={day.date} style={{ width: 9, height: 9, borderRadius: 2, background: getHeatColor(day.total), border: `1px solid ${getHeatBorder(day.total)}` }} />
+                                <div key={day.date} style={{ width: '100%', aspectRatio: '1 / 1', borderRadius: 2, background: getHeatColor(day.total), border: `1px solid ${getHeatBorder(day.total)}` }} />
                             ))}
                         </div>
                     ))}
