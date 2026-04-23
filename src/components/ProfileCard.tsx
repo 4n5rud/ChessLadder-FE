@@ -431,9 +431,9 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                 const wWinRot  = -90, wDrawRot = wWinRot + (wW / wTotal) * 360, wLossRot = wDrawRot + (wD / wTotal) * 360;
                 const bWinRot  = -90, bDrawRot = bWinRot + (bW / bTotal) * 360, bLossRot = bDrawRot + (bD / bTotal) * 360;
 
-                const DonutBox = ({ label, wins, draws, losses, total, winSeg, drawSeg, lossSeg, winRot: wr, drawRot: dr, lossRot: lr, winColor }: {
+                const DonutBox = ({ label, wins, draws, losses, total, winSeg, drawSeg, winRot: wr, drawRot: dr, lossRot: lr, winColor }: {
                     label: string; wins: number; draws: number; losses: number; total: number;
-                    winSeg: number; drawSeg: number; lossSeg: number;
+                    winSeg: number; drawSeg: number;
                     winRot: number; drawRot: number; lossRot: number; winColor: string;
                 }) => (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '10px 12px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -457,11 +457,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                 return (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', margin: '0 24px 16px', gap: 10 }}>
                         <DonutBox label="⬜ White" wins={wW} draws={wD} losses={wL} total={wTotal}
-                            winSeg={wWinSeg} drawSeg={wDrawSeg} lossSeg={seg(wL, wTotal)}
+                            winSeg={wWinSeg} drawSeg={wDrawSeg}
                             winRot={wWinRot} drawRot={wDrawRot} lossRot={wLossRot}
                             winColor="rgba(255,255,255,0.85)" />
                         <DonutBox label="⬛ Black" wins={bW} draws={bD} losses={bL} total={bTotal}
-                            winSeg={bWinSeg} drawSeg={bDrawSeg} lossSeg={seg(bL, bTotal)}
+                            winSeg={bWinSeg} drawSeg={bDrawSeg}
                             winRot={bWinRot} drawRot={bDrawRot} lossRot={bLossRot}
                             winColor={C.text} />
                     </div>
