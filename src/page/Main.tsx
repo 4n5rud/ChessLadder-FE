@@ -46,11 +46,11 @@ function Main() {
             icon: pawnImg,
             color: 'linear-gradient(135deg, #C0A060, #A0805F)',
             levels: [
-                {level: 'V', min: 400, max: 500},
-                {level: 'IV', min: 501, max: 600},
-                {level: 'III', min: 601, max: 700},
-                {level: 'II', min: 701, max: 800},
-                {level: 'I', min: 801, max: 900},
+                {level: 'Ⅴ', min: 400, max: 500},
+                {level: 'Ⅳ', min: 501, max: 600},
+                {level: 'Ⅲ', min: 601, max: 700},
+                {level: 'Ⅱ', min: 701, max: 800},
+                {level: 'Ⅰ', min: 801, max: 900},
             ]
         },
         {
@@ -59,11 +59,11 @@ function Main() {
             icon: knightImg,
             color: 'linear-gradient(135deg, #7CA0D0, #5C80B0)',
             levels: [
-                {level: 'V', min: 901, max: 960},
-                {level: 'IV', min: 961, max: 1020},
-                {level: 'III', min: 1021, max: 1080},
-                {level: 'II', min: 1081, max: 1140},
-                {level: 'I', min: 1141, max: 1200},
+                {level: 'Ⅴ', min: 901, max: 960},
+                {level: 'Ⅳ', min: 961, max: 1020},
+                {level: 'Ⅲ', min: 1021, max: 1080},
+                {level: 'Ⅱ', min: 1081, max: 1140},
+                {level: 'Ⅰ', min: 1141, max: 1200},
             ]
         },
         {
@@ -72,11 +72,11 @@ function Main() {
             icon: bishopImg,
             color: 'linear-gradient(135deg, #BFA7D2, #9F87B2)',
             levels: [
-                {level: 'V', min: 1201, max: 1260},
-                {level: 'IV', min: 1261, max: 1320},
-                {level: 'III', min: 1321, max: 1380},
-                {level: 'II', min: 1381, max: 1440},
-                {level: 'I', min: 1441, max: 1500},
+                {level: 'Ⅴ', min: 1201, max: 1260},
+                {level: 'Ⅳ', min: 1261, max: 1320},
+                {level: 'Ⅲ', min: 1321, max: 1380},
+                {level: 'Ⅱ', min: 1381, max: 1440},
+                {level: 'Ⅰ', min: 1441, max: 1500},
             ]
         },
         {
@@ -85,11 +85,11 @@ function Main() {
             icon: rookImg,
             color: 'linear-gradient(135deg, #E6B7C2, #C697A2)',
             levels: [
-                {level: 'V', min: 1501, max: 1560},
-                {level: 'IV', min: 1561, max: 1620},
-                {level: 'III', min: 1621, max: 1680},
-                {level: 'II', min: 1681, max: 1740},
-                {level: 'I', min: 1741, max: 1800},
+                {level: 'Ⅴ', min: 1501, max: 1560},
+                {level: 'Ⅳ', min: 1561, max: 1620},
+                {level: 'Ⅲ', min: 1621, max: 1680},
+                {level: 'Ⅱ', min: 1681, max: 1740},
+                {level: 'Ⅰ', min: 1741, max: 1800},
             ]
         },
         {
@@ -98,11 +98,11 @@ function Main() {
             icon: queenImg,
             color: 'linear-gradient(135deg, #F5D06F, #D5B04F)',
             levels: [
-                {level: 'V', min: 1801, max: 1860},
-                {level: 'IV', min: 1861, max: 1920},
-                {level: 'III', min: 1921, max: 1980},
-                {level: 'II', min: 1981, max: 2040},
-                {level: 'I', min: 2041, max: 2100},
+                {level: 'Ⅴ', min: 1801, max: 1860},
+                {level: 'Ⅳ', min: 1861, max: 1920},
+                {level: 'Ⅲ', min: 1921, max: 1980},
+                {level: 'Ⅱ', min: 1981, max: 2040},
+                {level: 'Ⅰ', min: 2041, max: 2100},
             ]
         },
         {
@@ -111,11 +111,11 @@ function Main() {
             icon: kingImg,
             color: 'linear-gradient(135deg, #F7E08C, #D7C06C)',
             levels: [
-                {level: 'V', min: 2101, max: 2220},
-                {level: 'IV', min: 2221, max: 2340},
-                {level: 'III', min: 2341, max: 2460},
-                {level: 'II', min: 2461, max: 2580},
-                {level: 'I', min: 2581, max: '2700+'},
+                {level: 'Ⅴ', min: 2101, max: 2220},
+                {level: 'Ⅳ', min: 2221, max: 2340},
+                {level: 'Ⅲ', min: 2341, max: 2460},
+                {level: 'Ⅱ', min: 2461, max: 2580},
+                {level: 'Ⅰ', min: 2581, max: '2700+'},
             ]
         },
     ];
@@ -128,11 +128,11 @@ function Main() {
             icon: pawnImg,
             color: 'linear-gradient(135deg, #C0A060, #A0805F)',
             levels: [
-                {level: 'V', min: 100, max: 220},
-                {level: 'IV', min: 221, max: 340},
-                {level: 'III', min: 341, max: 460},
-                {level: 'II', min: 461, max: 580},
-                {level: 'I', min: 581, max: 700},
+                {level: 'Ⅴ', min: 100, max: 220},
+                {level: 'Ⅳ', min: 221, max: 340},
+                {level: 'Ⅲ', min: 341, max: 460},
+                {level: 'Ⅱ', min: 461, max: 580},
+                {level: 'Ⅰ', min: 581, max: 700},
             ]
         },
         {
@@ -141,11 +141,11 @@ function Main() {
             icon: knightImg,
             color: 'linear-gradient(135deg, #7CA0D0, #5C80B0)',
             levels: [
-                {level: 'V', min: 701, max: 780},
-                {level: 'IV', min: 781, max: 860},
-                {level: 'III', min: 861, max: 940},
-                {level: 'II', min: 941, max: 1020},
-                {level: 'I', min: 1021, max: 1100},
+                {level: 'Ⅴ', min: 701, max: 780},
+                {level: 'Ⅳ', min: 781, max: 860},
+                {level: 'Ⅲ', min: 861, max: 940},
+                {level: 'Ⅱ', min: 941, max: 1020},
+                {level: 'Ⅰ', min: 1021, max: 1100},
             ]
         },
         {
@@ -154,11 +154,11 @@ function Main() {
             icon: bishopImg,
             color: 'linear-gradient(135deg, #BFA7D2, #9F87B2)',
             levels: [
-                {level: 'V', min: 1101, max: 1180},
-                {level: 'IV', min: 1181, max: 1260},
-                {level: 'III', min: 1261, max: 1340},
-                {level: 'II', min: 1341, max: 1420},
-                {level: 'I', min: 1421, max: 1500},
+                {level: 'Ⅴ', min: 1101, max: 1180},
+                {level: 'Ⅳ', min: 1181, max: 1260},
+                {level: 'Ⅲ', min: 1261, max: 1340},
+                {level: 'Ⅱ', min: 1341, max: 1420},
+                {level: 'Ⅰ', min: 1421, max: 1500},
             ]
         },
         {
@@ -167,11 +167,11 @@ function Main() {
             icon: rookImg,
             color: 'linear-gradient(135deg, #E6B7C2, #C697A2)',
             levels: [
-                {level: 'V', min: 1501, max: 1560},
-                {level: 'IV', min: 1561, max: 1620},
-                {level: 'III', min: 1621, max: 1680},
-                {level: 'II', min: 1681, max: 1740},
-                {level: 'I', min: 1741, max: 1800},
+                {level: 'Ⅴ', min: 1501, max: 1560},
+                {level: 'Ⅳ', min: 1561, max: 1620},
+                {level: 'Ⅲ', min: 1621, max: 1680},
+                {level: 'Ⅱ', min: 1681, max: 1740},
+                {level: 'Ⅰ', min: 1741, max: 1800},
             ]
         },
         {
@@ -180,11 +180,11 @@ function Main() {
             icon: queenImg,
             color: 'linear-gradient(135deg, #F5D06F, #D5B04F)',
             levels: [
-                {level: 'V', min: 1801, max: 1880},
-                {level: 'IV', min: 1881, max: 1960},
-                {level: 'III', min: 1961, max: 2040},
-                {level: 'II', min: 2041, max: 2120},
-                {level: 'I', min: 2121, max: 2200},
+                {level: 'Ⅴ', min: 1801, max: 1880},
+                {level: 'Ⅳ', min: 1881, max: 1960},
+                {level: 'Ⅲ', min: 1961, max: 2040},
+                {level: 'Ⅱ', min: 2041, max: 2120},
+                {level: 'Ⅰ', min: 2121, max: 2200},
             ]
         },
         {
@@ -193,11 +193,11 @@ function Main() {
             icon: kingImg,
             color: 'linear-gradient(135deg, #F7E08C, #D7C06C)',
             levels: [
-                {level: 'V', min: 2201, max: 2320},
-                {level: 'IV', min: 2321, max: 2440},
-                {level: 'III', min: 2441, max: 2560},
-                {level: 'II', min: 2561, max: 2680},
-                {level: 'I', min: 2681, max: '2800+'},
+                {level: 'Ⅴ', min: 2201, max: 2320},
+                {level: 'Ⅳ', min: 2321, max: 2440},
+                {level: 'Ⅲ', min: 2441, max: 2560},
+                {level: 'Ⅱ', min: 2561, max: 2680},
+                {level: 'Ⅰ', min: 2681, max: '2800+'},
             ]
         },
     ];

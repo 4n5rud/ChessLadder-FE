@@ -1,6 +1,7 @@
 import type { UserPerfResponse } from "../api/userService";
 import { useLanguage } from "../context/LanguageContext";
-import { getTierInfo, getTierRanges, TIER_COLOR_SCHEME, type Platform } from "../utils/tierUtils";
+import { getTierInfo, getTierRanges, TIER_COLOR_SCHEME, SUB_ROMAN, type Platform } from "../utils/tierUtils";
+import { TierBadge } from "./TierBadge";
 
 interface TierSectionProps {
     userPerf: UserPerfResponse | null;
@@ -13,27 +14,23 @@ interface TierSectionProps {
 
 
 // 다음 레벨 계산 함수
-const getNextLevel = (_currentRating: number, currentTier: string, currentSub: string, tierRanges: Record<string, any>) => {
+const getNextLevel = (_currentRating: number, currentTier: string, currentSubNum: number, tierRanges: Record<string, any>) => {
     const tierOrder = ['PAWN', 'KNIGHT', 'BISHOP', 'ROOK', 'QUEEN', 'KING'];
     const tierIndex = tierOrder.indexOf(currentTier);
-    const currentSubNum = parseInt(currentSub === 'I' ? '1' : currentSub === 'II' ? '2' : currentSub === 'III' ? '3' : currentSub === 'IV' ? '4' : '5');
 
     let nextTier = currentTier;
-    let nextSub = currentSub;
+    let nextSub = SUB_ROMAN[currentSubNum];
     let nextMin = 0;
 
     if (currentSubNum === 1) {
-        // 현재 메인 티어의 I 단계 → 다음 메인 티어의 V 단계
         if (tierIndex < tierOrder.length - 1) {
             nextTier = tierOrder[tierIndex + 1];
-            nextSub = 'V';
+            nextSub = SUB_ROMAN[5];
             nextMin = tierRanges[nextTier].subTiers[5][0];
         }
     } else {
-        // 같은 메인 티어 내에서 다음 서브 단계로
         const nextSubNum = currentSubNum - 1;
-        const romanConvert: Record<number, string> = { 5: 'V', 4: 'IV', 3: 'III', 2: 'II', 1: 'I' };
-        nextSub = romanConvert[nextSubNum];
+        nextSub = SUB_ROMAN[nextSubNum];
         nextMin = tierRanges[currentTier].subTiers[nextSubNum][0];
     }
 
@@ -83,22 +80,16 @@ export const TierSection = ({
     }
 
     const tierInfo = getTierInfo(userPerf.rating, platform);
-    const { tier: mainTier, subRoman: currentSub, levelMin, levelMax } = tierInfo;
+    const { tier: mainTier, subRoman: currentSub, subNum: currentSubNum, levelMin, levelMax } = tierInfo;
 
     const tierRanges = getTierRanges(platform);
 
-    const { nextTier, nextSub, nextMin } = getNextLevel(userPerf.rating, mainTier, currentSub, tierRanges);
+    const { nextTier, nextSub, nextMin } = getNextLevel(userPerf.rating, mainTier, currentSubNum, tierRanges);
 
     const remaining = Math.max(nextMin - userPerf.rating, 0);
     const levelRange = levelMax - levelMin;
     const currentProgress = userPerf.rating - levelMin;
     const pct = Math.min(Math.max((currentProgress / levelRange) * 100, 0), 100);
-
-    const tierNameMap: Record<string, string> = {
-        PAWN: 'pawn.png', KNIGHT: 'knight.png', BISHOP: 'vishop.png',
-        ROOK: 'rook.png', QUEEN: 'queen.png', KING: 'king.png',
-    };
-    const tierImageSrc = new URL(`../assets/images/tier/${tierNameMap[mainTier] || 'pawn.png'}`, import.meta.url).href;
 
     const cap = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 
@@ -150,46 +141,23 @@ export const TierSection = ({
 
                 <div className="relative z-10">
                 {/* Tier info row */}
-                <div className="flex flex-col md:flex-row md:items-center gap-5 md:gap-8 mb-8">
-                    {/* Tier image */}
-                    <div
-                        className="flex-shrink-0 w-28 h-28 md:w-36 md:h-36 mx-auto md:mx-0 rounded-2xl border-2 flex items-center justify-center shadow-md"
-                        style={{
-                            background: 'linear-gradient(145deg, #111b31 0%, #0d162a 100%)',
-                            borderColor: `${mainSolid}66`,
-                            boxShadow: `inset 0 0 0 1px ${mainSolid}26`,
-                        }}
-                    >
-                        <img
-                            src={tierImageSrc}
-                            alt={mainTier}
-                            className="w-20 h-20 md:w-28 md:h-28 object-contain"
-                            style={{ filter: `drop-shadow(0 0 5px ${mainSolid})` }}
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
-                    </div>
+                <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-10 mb-8">
+                    {/* Unified tier badge */}
+                    <TierBadge
+                        tier={mainTier}
+                        subRoman={currentSub}
+                        size="lg"
+                        className="mx-auto md:mx-0"
+                    />
 
-                    {/* Rating + level */}
+                    {/* Rating info */}
                     <div className="flex-1 text-center md:text-left">
-                        <div className="flex flex-col md:flex-row md:items-end gap-2 md:gap-4 mb-3 justify-center md:justify-start">
-                            <p
-                                className="text-4xl md:text-6xl font-black drop-shadow-lg"
-                                style={{ color: textSolid }}
-                            >
-                                {cap(mainTier)}
-                            </p>
-                            <span
-                                className="inline-flex items-center justify-center min-w-[44px] md:min-w-[56px] h-9 md:h-11 px-3 rounded-xl font-black text-2xl md:text-3xl leading-none"
-                                style={{
-                                    color: textSolid,
-                                    background: `${mainSolid}22`,
-                                    border: `1px solid ${mainSolid}66`,
-                                    boxShadow: `inset 0 0 0 1px ${mainSolid}2a, 0 0 10px ${mainSolid}33`,
-                                }}
-                            >
-                                {currentSub}
-                            </span>
-                        </div>
+                        <p
+                            className="text-4xl md:text-6xl font-black drop-shadow-lg mb-2"
+                            style={{ color: textSolid }}
+                        >
+                            {cap(mainTier)}
+                        </p>
                         <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.72)' }}>
                             {userPerf.rating} Rating
                         </p>

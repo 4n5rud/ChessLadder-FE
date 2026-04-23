@@ -33,7 +33,7 @@ export const CHESSCOM_PROMOTION_THRESHOLDS: Record<TierKey, number> = {
   PAWN: 100, KNIGHT: 701, BISHOP: 1101, ROOK: 1501, QUEEN: 1801, KING: 2201,
 };
 
-export const SUB_ROMAN: Record<number, string> = { 1:'I', 2:'II', 3:'III', 4:'IV', 5:'V' };
+export const SUB_ROMAN: Record<number, string> = { 1:'Ⅰ', 2:'Ⅱ', 3:'Ⅲ', 4:'Ⅳ', 5:'Ⅴ' };
 
 export interface TierInfo {
   tier: TierKey;

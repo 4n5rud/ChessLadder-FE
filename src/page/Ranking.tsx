@@ -9,6 +9,7 @@ import { logout as authLogout } from '../api/authService';
 import lichessLogoImg from '../assets/images/logo/lichess-logo.png';
 import chesscomLogoImg from '../assets/images/logo/chesscom-logo.png';
 import { getTierInfo, TIER_COLOR_SCHEME, type Platform } from '../utils/tierUtils';
+import { TierBadge } from '../components/TierBadge';
 
 // 게임 타입 이미지 import
 import rapidImg from '../assets/images/logo/game/rapid.webp';
@@ -50,7 +51,6 @@ const getGameTypeImage = (gameType: GameType): string => {
 function UserRow({ user, platform, onClick }: { user: RankingUser; platform: Platform; onClick: () => void }) {
   const tierInfo = getTierInfo(user.rating, platform);
   const tierColor = TIER_COLOR_SCHEME[tierInfo.tier] || TIER_COLOR_SCHEME['PAWN'];
-  const tierImage = tierImages[tierInfo.tier] || tierImages['PAWN'];
 
   return (
     <div
@@ -87,12 +87,7 @@ function UserRow({ user, platform, onClick }: { user: RankingUser; platform: Pla
       </div>
 
       <div className="flex-shrink-0 flex items-center gap-3 relative z-10">
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg" style={{ backgroundColor: tierColor.borderColor }}>
-          <img src={tierImage} alt={tierInfo.tier} className="w-6 h-6 object-contain" />
-          <span className="text-xs font-black tracking-wide" style={{ color: tierColor.mainColor }}>
-            {tierInfo.tier} {tierInfo.subRoman}
-          </span>
-        </div>
+        <TierBadge tier={tierInfo.tier} subRoman={tierInfo.subRoman} size="sm" />
         <div className="text-right">
           <p className="text-sm font-black text-white">{user.rating}</p>
           <p className="text-xs text-white/40">Rating</p>
@@ -345,20 +340,20 @@ export default function Ranking() {
                     </div>
                   ) : !isLoggedInUser ? (
                     /* 비로그인 */
-                    <div className="space-y-3">
+                    <div className="flex flex-col items-center text-center space-y-3">
                       <p className="text-xs text-white/50 leading-relaxed mb-4">
                         {t('ranking.loginPrompt')}
                       </p>
                       {selectedPlatform === 'LICHESS' ? (
                         <button onClick={() => handleLichessLogin()} disabled={isLichessLoading}
-                          className="w-full flex items-center gap-2 bg-white text-black font-semibold py-2.5 px-4 rounded-full hover:bg-gray-100 transition text-sm disabled:opacity-50">
-                          <img src={lichessLogoImg} alt="Lichess" className="w-5 h-5" />
+                          className="w-full flex items-center justify-center gap-2 bg-white text-black font-semibold py-2.5 px-4 rounded-full hover:bg-gray-100 transition text-sm disabled:opacity-50">
+                          <img src={lichessLogoImg} alt="Lichess" className="w-5 h-5 object-contain" />
                           {isLichessLoading ? t('profile.loading') : t('main.loginWithLichess')}
                         </button>
                       ) : (
                         <button onClick={() => handleChesscomLogin()} disabled={isChesscomLoading}
-                          className="w-full flex items-center gap-2 bg-[#81B64C] text-white font-semibold py-2.5 px-4 rounded-full hover:bg-[#70a33e] transition text-sm disabled:opacity-50">
-                          <img src={chesscomLogoImg} alt="Chess.com" className="w-5 h-5" />
+                          className="w-full flex items-center justify-center gap-2 bg-[#81B64C] text-white font-semibold py-2.5 px-4 rounded-full hover:bg-[#70a33e] transition text-sm disabled:opacity-50">
+                          <img src={chesscomLogoImg} alt="Chess.com" className="w-5 h-5 object-contain rounded-sm" />
                           {isChesscomLoading ? t('profile.loading') : t('main.loginWithChesscom')}
                         </button>
                       )}
@@ -388,22 +383,12 @@ export default function Ranking() {
                     /* 랭킹 정보 */
                     <div className="space-y-4">
                       {/* Tier 카드 — 메인 포커스 */}
-                      <div
-                        className="relative rounded-2xl overflow-hidden p-5 flex flex-col items-center gap-3"
-                        style={{ background: `linear-gradient(135deg, ${TIER_COLOR_SCHEME[myTierInfo.tier]?.borderColor}, transparent)`, border: `1px solid ${TIER_COLOR_SCHEME[myTierInfo.tier]?.borderColor}` }}
-                      >
-                        <img
-                          src={tierImages[myTierInfo.tier]}
-                          alt={myTierInfo.tier}
-                          className="w-16 h-16 object-contain drop-shadow-lg"
-                        />
-                        <div className="text-center">
-                          <p className="text-xs font-bold tracking-[0.2em] uppercase mb-0.5"
-                            style={{ color: TIER_COLOR_SCHEME[myTierInfo.tier]?.mainColor }}>
-                            {myTierInfo.tier}
-                          </p>
-                          <p className="text-3xl font-black text-white leading-none">{myTierInfo.subRoman}</p>
-                        </div>
+                      <div className="flex flex-col items-center gap-3">
+                        <TierBadge tier={myTierInfo.tier} subRoman={myTierInfo.subRoman} size="lg" />
+                        <p className="text-xs font-bold tracking-[0.2em] uppercase"
+                          style={{ color: TIER_COLOR_SCHEME[myTierInfo.tier]?.mainColor }}>
+                          {myTierInfo.tier}
+                        </p>
                       </div>
 
                       {/* Rank / Rating */}
