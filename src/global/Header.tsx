@@ -130,9 +130,10 @@ const Header = () => {
 
     return (
         <>
-        <div className="w-full bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 text-center text-sm text-amber-300 font-medium">
-            ⚠️ 현재 데이터 수집 문제로 레이팅 히스토리 정보가 10분간(2026-04-27 / pm4:33 ~ 2026-04-27 / pm4:43) 보이지 않을 예정입니다
-        </div>
+        
+        {/* <div className="w-full bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 text-center text-sm text-amber-300 font-medium">
+            ⚠️ 현재 데이터 수집 문제로 레이팅 히스토리 정보가 20분간(2026-04-27 / pm4:33 ~ 2026-04-27 / pm4:53) 보이지 않을 예정입니다
+        </div> */}
         <header className="relative sticky top-0 border-b border-white/8 pb-1 pt-1 px-4 md:px-8 lg:px-30 w-full bg-[#070d1a] flex items-center gap-2 md:gap-8 h-14 min-h-0 z-50">
             <Link to="/" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition flex-shrink-0">
                 <img src={knightLogo} alt="ChessLadder Logo" width="32" height="32"/>
