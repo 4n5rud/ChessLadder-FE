@@ -261,6 +261,7 @@ const MonthlyRatingHistoryChart = ({
         border: { display: false },
       },
       x: {
+        offset: true,
         ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 10 }, maxTicksLimit: 9, maxRotation: 0 },
         grid:  { display: false },
         border: { display: false },
