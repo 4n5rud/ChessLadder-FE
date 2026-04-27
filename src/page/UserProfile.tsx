@@ -451,17 +451,10 @@ const UserProfile = () => {
                   <h1 className="text-2xl md:text-4xl font-black text-white mb-2">
                     {profile?.username ?? username}
                   </h1>
-                  <div className="text-[10px] md:text-xs font-normal uppercase tracking-wider mb-5 flex flex-col md:flex-row gap-2 md:gap-4">
+                  <div className="text-[10px] md:text-xs font-normal uppercase tracking-wider mb-5">
                     <p className="text-white/40 whitespace-nowrap">
                       {isKR ? 'ChessLadder 가입' : 'ChessLadder joined'}:{' '}
                       {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '-'}
-                    </p>
-                    <p className="text-white/40 whitespace-nowrap">
-                      {platform === 'CHESSCOM' ? 'Chess.com' : 'Lichess'}{' '}
-                      {isKR ? '가입' : 'joined'}:{' '}
-                      {profile?.platformJoinedAt
-                        ? new Date(profile.platformJoinedAt).toLocaleDateString()
-                        : '-'}
                     </p>
                   </div>
 

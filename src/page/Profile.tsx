@@ -537,12 +537,9 @@ const Profile = () => {
                             <h1 className="text-2xl md:text-4xl font-black text-white mb-2">
                                 {profile?.username || 'User'}
                             </h1>
-                            <div className="text-[10px] md:text-xs font-normal uppercase tracking-wider mb-6 flex flex-col md:flex-row gap-2 md:gap-4">
+                            <div className="text-[10px] md:text-xs font-normal uppercase tracking-wider mb-6">
                                 <p className="text-white/40 whitespace-nowrap">
                                     {language === 'KR' ? '체스래더 가입일' : 'ChessLadder Joined'}: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '-'}
-                                </p>
-                                <p className="text-white/40 whitespace-nowrap">
-                                    {t('profile.lichessJoinDate')}: {profile?.lichessCreatedAt ? new Date(profile.lichessCreatedAt).toLocaleDateString() : '-'}
                                 </p>
                             </div>
 

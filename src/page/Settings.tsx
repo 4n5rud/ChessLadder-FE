@@ -333,18 +333,6 @@ const Settings = () => {
                     {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'}
                   </p>
                 </div>
-
-                {/* 플랫폼 가입일 */}
-                <div>
-                  <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-1">
-                    {isKR ? `${platformName} 가입일` : `${platformName} Joined`}
-                  </p>
-                  <p className="text-white/70 text-sm">
-                    {profile?.platformJoinedAt
-                      ? new Date(profile.platformJoinedAt).toLocaleDateString()
-                      : '—'}
-                  </p>
-                </div>
               </div>
             )}
           </section>
