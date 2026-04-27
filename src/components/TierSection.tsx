@@ -146,7 +146,7 @@ export const TierSection = ({
                     <TierBadge
                         tier={mainTier}
                         subRoman={currentSub}
-                        size="lg"
+                        size="xl"
                         className="mx-auto md:mx-0"
                     />
 

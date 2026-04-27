@@ -20,15 +20,16 @@ const TIER_GRAD: Record<TierKey, { hi: string; lo: string }> = {
   KING:   { hi: '#fbbf24', lo: '#92400e' },
 };
 
-type Size = 'xs' | 'sm' | 'lg';
+type Size = 'xs' | 'sm' | 'lg' | 'xl';
 
 const SIZE_MAP: Record<Size, {
   h: number; img: number; roman: number;
   topBar: number; padX: number; padY: number; r: number; gap: number;
 }> = {
-  xs: { h: 28, img: 16, roman: 12, topBar: 2, padX: 6,  padY: 4,  r: 7,  gap: 6  },
-  sm: { h: 38, img: 22, roman: 15, topBar: 2, padX: 8,  padY: 6,  r: 10, gap: 8  },
-  lg: { h: 72, img: 48, roman: 30, topBar: 3, padX: 14, padY: 10, r: 16, gap: 12 },
+  xs: { h: 28,  img: 16, roman: 12, topBar: 2, padX: 6,  padY: 4,  r: 7,  gap: 6  },
+  sm: { h: 38,  img: 22, roman: 15, topBar: 2, padX: 8,  padY: 6,  r: 10, gap: 8  },
+  lg: { h: 72,  img: 48, roman: 30, topBar: 3, padX: 14, padY: 10, r: 16, gap: 12 },
+  xl: { h: 100, img: 68, roman: 42, topBar: 4, padX: 20, padY: 14, r: 20, gap: 16 },
 };
 
 interface TierBadgeProps {
@@ -101,7 +102,7 @@ export function TierBadge({ tier, subRoman, size = 'sm', className, style }: Tie
           width: s.img,
           height: s.img,
           objectFit: 'contain',
-          filter: `drop-shadow(0 1px ${size === 'lg' ? 8 : 4}px ${g.hi}aa)`,
+          filter: `drop-shadow(0 1px ${size === 'lg' || size === 'xl' ? 10 : 4}px ${g.hi}aa)`,
           position: 'relative',
           zIndex: 1,
           flexShrink: 0,

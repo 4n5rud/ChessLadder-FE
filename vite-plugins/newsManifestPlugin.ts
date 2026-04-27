@@ -6,6 +6,7 @@ import type { Plugin } from 'vite';
  * manifest.json 생성 함수
  * - 항상 현재 실제 존재하는 파일들만 리스트업
  * - public/news 폴더에서만 읽음 (모든 환경에서 동일)
+ * 
  */
 function generateManifest() {
   const newsDir = path.join(process.cwd(), 'public', 'news');

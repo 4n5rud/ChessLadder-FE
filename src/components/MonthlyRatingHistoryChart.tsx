@@ -225,6 +225,9 @@ const MonthlyRatingHistoryChart = ({
   const options: any = {
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: { right: 16, left: 4 },
+    },
     plugins: {
       legend: { display: false },
       tooltip: {
