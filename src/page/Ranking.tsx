@@ -186,7 +186,7 @@ export default function Ranking() {
     fetchRanking();
   }, [currentPage, selectedGameType, selectedPlatform, t]);
 
-  const handleUserClick = (username: string) => navigate(`/profile/${username}?platform=${selectedPlatform}`);
+  const handleUserClick = (username: string) => navigate(`/profile/${username}?platform=${selectedPlatform}&gameType=${selectedGameType}`);
 
   const handleLichessLogin = async (switchPlatform = false) => {
     if (isLichessLoading) return;

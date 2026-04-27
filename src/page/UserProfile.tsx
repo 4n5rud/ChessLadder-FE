@@ -85,6 +85,11 @@ const UserProfile = () => {
   const [searchParams] = useSearchParams();
   const platform = (searchParams.get('platform') ?? 'LICHESS').toUpperCase() as 'LICHESS' | 'CHESSCOM';
   const navigate = useNavigate();
+  const gameTypes = ['BULLET', 'BLITZ', 'RAPID', 'CLASSICAL'];
+  const initialGameType = (() => {
+    const qt = (searchParams.get('gameType') ?? '').toUpperCase();
+    return (gameTypes as string[]).includes(qt) ? qt : 'RAPID';
+  })();
 
   const { t, language } = useLanguage();
   const isKR = language === 'KR';
@@ -113,8 +118,7 @@ const UserProfile = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [availableYears, setAvailableYears] = useState<number[]>([]);
 
-  const [selectedGameType, setSelectedGameType] = useState('RAPID');
-  const gameTypes = ['BULLET', 'BLITZ', 'RAPID', 'CLASSICAL'];
+  const [selectedGameType, setSelectedGameType] = useState(initialGameType);
   const gameTypeDisplayNames: { [key: string]: string } = {
     BULLET: 'Bullet', BLITZ: 'Blitz', RAPID: 'Rapid', CLASSICAL: 'Classical',
   };
