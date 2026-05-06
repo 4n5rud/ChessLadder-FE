@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../global/Header';
 import Footer from '../global/Footer';
@@ -7,11 +7,11 @@ import {
   getUserProfile,
   updateUserDescription,
   deleteAccount,
-  getSyncStatus,
 } from '../api/userService';
-import type { ProfileResponse, SyncStatusResponse } from '../api/userService';
+import type { ProfileResponse } from '../api/userService';
 import { logout } from '../api/oauthService';
 import { useLanguage } from '../context/LanguageContext';
+import { useSyncPolling } from '../hooks/useSyncPolling';
 import lichessLogoImg  from '../assets/images/logo/lichess-logo.png';
 import chesscomLogoImg from '../assets/images/logo/chesscom-logo.png';
 
@@ -31,9 +31,9 @@ const Settings = () => {
   const [saveResult, setSaveResult] = useState<'success' | 'fail' | null>(null);
 
   // 동기화 상태
-  const [syncStatus, setSyncStatus] = useState<SyncStatusResponse | null>(null);
-  const [loadingSync, setLoadingSync] = useState(false);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { syncStatus, loading: loadingSync, refresh: handleRefreshSync } = useSyncPolling(
+    profile?.platform as 'LICHESS' | 'CHESSCOM' | undefined,
+  );
 
   // 계정 탈퇴 모달
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -63,53 +63,6 @@ const Settings = () => {
     load();
   }, []);
 
-  // 동기화 상태 조회 (+ 폴링)
-  useEffect(() => {
-    if (!profile?.platform) return;
-
-    const platform = profile.platform as 'LICHESS' | 'CHESSCOM';
-
-    const stopPolling = () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
-
-    const startPolling = () => {
-      stopPolling();
-      pollingRef.current = setInterval(async () => {
-        try {
-          const s = await getSyncStatus(platform);
-          setSyncStatus(s);
-          if (s.status !== 'IN_PROGRESS' && s.status !== 'PENDING') {
-            stopPolling();
-          }
-        } catch {
-          stopPolling();
-        }
-      }, 3000);
-    };
-
-    const fetchSync = async () => {
-      try {
-        setLoadingSync(true);
-        const s = await getSyncStatus(platform);
-        setSyncStatus(s);
-        if (s.status === 'IN_PROGRESS' || s.status === 'PENDING') {
-          startPolling();
-        }
-      } catch {
-        // ignore
-      } finally {
-        setLoadingSync(false);
-      }
-    };
-
-    fetchSync();
-
-    return () => stopPolling();
-  }, [profile?.platform]);
 
   const handleSaveDescription = async () => {
     setSavingDescription(true);
@@ -138,18 +91,6 @@ const Settings = () => {
     } catch {
       setDeletingAccount(false);
       setShowDeleteModal(false);
-    }
-  };
-
-  const handleRefreshSync = async () => {
-    if (!profile?.platform) return;
-    const platform = profile.platform as 'LICHESS' | 'CHESSCOM';
-    setLoadingSync(true);
-    try {
-      const s = await getSyncStatus(platform);
-      setSyncStatus(s);
-    } finally {
-      setLoadingSync(false);
     }
   };
 
